@@ -1,0 +1,82 @@
+ms0p3
+null_params/mb1b1/tcfr(?)
+100m its in 1m27s
+Batch 0 avg P0 val -0.088960
+Batch 0 avg P1 val -0.440649
+Batch 0 avg P2 val 0.528775
+play 100m:
+  Avg P0 outcome: -0.089611
+  Avg P1 outcome: -0.440473
+  Avg P2 outcome: 0.530084
+ecfr
+100m its in 2m13s
+Thread 0 avg P0 val -0.089502
+Thread 0 avg P1 val -0.440590
+Thread 0 avg P2 val 0.528803
+ecfrb
+100m its in 2m38s
+Thread 0 avg P0 val -0.089127
+Thread 0 avg P1 val -0.440780
+Thread 0 avg P2 val 0.528658
+
+slumbot2017
+Batch 0 avg P0 val -0.088805
+Batch 0 avg P1 val -0.441153
+Batch 0 avg P2 val 0.529070
+run_mp_rgbr
+Took a *long* time
+P0 best response: 0.006396 (3.20 mbb/g)
+P1 best response: 0.015139 (7.57 mbb/g)
+P2 best response: 0.006906 (3.45 mbb/g)
+Gap: 0.028441
+Exploitability: 4.74 mbb/g
+What do these values mean?
+
+
+ms0p3
+null_params
+mb1b1ai
+tcfr
+100m its, 8 threaded in 1m32s
+Batch 0 avg P0 val -0.089466
+Batch 0 avg P1 val -0.440714
+Batch 0 avg P2 val 0.529099
+Avg P0 outcome: -0.088687
+Avg P1 outcome: -0.440938
+Avg P2 outcome: 0.529625
+
+ecfr
+100m its in 2m41s
+Thread 0 avg P0 val -0.089679
+Thread 0 avg P1 val -0.440697
+Thread 0 avg P2 val 0.528740
+
+ecfrb
+Boost true
+Boost when action prob less than 1%.
+100m its, 8 threaded in 3m12s
+Batch 0 avg P0 val -0.102341
+Batch 0 avg P1 val -0.440529
+Batch 0 avg P2 val 0.500172
+Hmm, still calling with 22, 33, 44, 55, 66, 77, 88, 99, TT, JJ, QQ, KK, AQs (25%), AQo (25%),
+AKs (46%), AKo (27%), AA.
+Looser than I hoped for.
+Well, what is P2 pushing with?
+Pushes with AA 74% of the time, KK 17% of the time, QQ 6.5% of the time, and then a
+smattering.
+
+ecfrb
+Boost true
+Boost when action prob less than 0.1%.
+1b, 8 threaded in 30m0s
+Batch 0 avg P0 val -0.088990
+Batch 0 avg P1 val -0.441641
+Batch 0 avg P2 val 0.528867
+Redid
+100m its in 3m8s
+Thread 0 avg P0 val -0.088666
+Thread 0 avg P1 val -0.440882
+Thread 0 avg P2 val 0.525978
+
+play ecfr vs. ecfrb (0.1%)
+Avg B outcome: -0.000166 (-0.1 mbb/g) over 100000000 dup hands

@@ -1,0 +1,4 @@
+# "none" is a special bucketing name which signifies not to use buckets at
+# all.  It will cause code to be used that uses exact hands rather than buckets.
+CardAbstractionName none
+Bucketings none,none,none,none

@@ -1,0 +1,20 @@
+How should I calculate RGBR for multiplayer?
+
+Seems like I implemented this in Slumbot 2017.  Do I believe the results?  Run it again,
+I guess.
+
+I'm thinking I want a 1 vs. n-1 best-response.  Holding n-1 of our strategies fixed,
+compute the best response for the opponent in the remaining position.  Do that for each
+position.
+
+Is it possible to take a sampling-based approach to best-response calculation?
+
+I thought any sampling-based approach leads to "clairvoyance" for the responder.
+
+What does Trevor propose?  Is he sampling from the target player's strategy?
+
+Can I adapt my approximate RGBR technique?  Play according to the target strategy profile
+for streets 0...n-1.  Starting from street n allow responder to modify his strategy.
+Can sample board cards for streets 0...n.
+
+

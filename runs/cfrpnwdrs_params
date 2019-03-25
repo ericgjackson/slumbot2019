@@ -1,0 +1,7 @@
+# No warmup, double regrets and sumprobs
+CFRConfigName cfrpnwdrs
+Algorithm cfrp
+NNR true
+RegretFloors 0,0,0,0
+DoubleRegrets true
+DoubleSumprobs true

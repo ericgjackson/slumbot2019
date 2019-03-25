@@ -1,0 +1,8 @@
+# Soft warmup of 1, double regrets and sumprobs
+CFRConfigName cfrps1drs
+Algorithm cfrp
+NNR true
+RegretFloors 0,0,0,0
+SoftWarmup 1
+DoubleRegrets true
+DoubleSumprobs true

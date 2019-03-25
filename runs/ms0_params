@@ -1,0 +1,11 @@
+GameName ms0
+MaxStreet 0
+NumRanks 13
+NumSuits 4
+NumHoleCards 2
+NumFlopCards 1
+Ante 0
+SmallBlind 1
+BigBlind 2
+FirstToAct 1
+NumPlayers 2

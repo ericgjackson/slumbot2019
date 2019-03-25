@@ -1,0 +1,43 @@
+ms0
+none/mb1b1/cfrps
+200 its: 0.6 mbb/g
+P0 best response: -0.043399 (-21.70 mbb/g)
+P1 best response: 0.045793 (22.90 mbb/g)
+play determ (100m):    Avg P1 outcome: 0.073230
+play nondeterm (100m): Avg P1 outcome: 0.044793
+
+ms0/null/mb1b1/cfrps
+Exploitability: 0.60 mbb/g
+
+null/mb1b1/tcfr
+100m its
+Batch 0 avg P0 val -0.045588
+Batch 0 avg P1 val 0.045136
+P0 best response: -0.044151 (-22.08 mbb/g)
+P1 best response: 0.045373 (22.69 mbb/g)
+Gap: 0.001223
+Exploitability: 0.31 mbb/g
+
+1b its in 9m32s
+Exploitability: 0.14 mbb/g
+
+null/mb1b1/ecfr
+100m in 1m17s
+Thread 0 avg P0 val -0.045806
+Thread 0 avg P1 val 0.044980
+Exploitability: 0.10 mbb/g
+
+
+---------------------------------------------
+
+ms1f1
+mb1b1
+cfrps
+200 its: 2.86 mbb/g
+
+---------------------------------------------
+
+ms1f3
+mb1b1
+cfrps
+200 its in 42.5s: 1.43 mbb/g

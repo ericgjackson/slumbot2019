@@ -1,0 +1,12 @@
+# Three card flop
+GameName ms1f3
+MaxStreet 1
+NumRanks 13
+NumSuits 4
+NumHoleCards 2
+NumFlopCards 3
+Ante 0
+SmallBlind 1
+BigBlind 2
+FirstToAct 1,0
+NumPlayers 2

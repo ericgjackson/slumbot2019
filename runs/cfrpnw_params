@@ -1,0 +1,7 @@
+# No warmup, normal scaling
+CFRConfigName cfrpnw
+Algorithm cfrp
+NNR true
+RegretFloors 0,0,0,0
+RegretScaling 16,16,16,16
+SumprobScaling 16,16,16,16

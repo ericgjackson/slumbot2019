@@ -1,0 +1,108 @@
+Looking at ms0p3/mb1b1ai
+
+Does P2 ever open push?
+1273 observed times.  That's pretty few.
+Why are counts so high at b160?
+We update sumprobs at opp-choice node.
+At our-choice node we (sometimes) traverse all succs.
+What does P0 call with at b160?
+22 7 times
+33 1 time
+44 7 times
+55 6 times
+64o 1 time
+66 10 times
+74o 2 times
+77 10 times
+82o 1 time
+87o 1 time
+88 17 times
+99 61 times
+TT 27 times
+J7o 2 times
+J9s 2 times
+JTs 1 time
+JJ 65 times
+Q2s 1 time
+Q7s 2 times
+QTs 1 time
+QQ 384 times (still 0.004)
+K8s 1 time
+KTs 2 times
+KTo 1 time
+KK 77,592 times (86%)
+A2s 20,144 times (33.6%?!?)
+A5s 20,370 times (33.8%?!?)
+Smattering of others
+AA 90,314 times (100%)
+
+What does P1 call with at b160c?
+22: 48%
+44: 100%
+66: 100%
+84s: 100%
+96s: 10%
+99: 100%
+TT: 100%
+JJ: 100%
+Q8s: 88%
+QJs: 100%
+QQ: 100%
+K6s: 100%
+KQs: 100%
+KK: 100%
+A4s: 100%
+A8s: 100%
+ATs: 100%
+ATo: 100%
+AA: 100%
+
+Too loose
+
+I think we're seeing the pattern I expected to see.
+P1 doesn't have a good strategy at b160c.
+Really should only be calling with aces and kings.
+
+A couple of hard-coded settings in boost code.
+Boost when prob of action falls below 0.01.
+Adjust regrets by 1000 when boosting.
+The adjustment code ought to reflect how and/or if we are compressing regrets.
+
+Alternative to boosting.  Could we run a version of CFR where players played according to
+their own strategies?  Specifically, P2 would only push the hands his strategy says to
+push.  (Average strategy?  Current strategy?  The current strategy might not say to push any.
+So it has to be the average strategy?)
+
+-------------------------------------------
+
+Did boosting work on ms0p3/mb1b1ai?
+It seemed to.
+This was boosting when action prob < 0.1%.
+
+P1 calls with 22 sometimes, 33 rarely, 44, 55 rarely, 66 rarely, 77 rarely, 88, 99 almost
+always, TT 87%,
+Handful of odd hands occasionally too
+What hands does P2 push with?
+Sum of probs is 0.325.
+AA 14.1%, KK 2.7% and then a handful.
+Looks like about half the time when we push, it's aces or kings.  Maybe less.
+Is it surprising that P1 calls with 44?  I guess I'm a little surprised.  Expect to be crushed
+by AA or KK half the time and flipping a lot the rest of the time.  Need to look at CVs.
+What is P0 calling with incidentally?  That should make it even harder to call with 44.
+1b its, 8 threaded in 30m50s
+Batch 0 avg P0 val -0.089490
+Batch 0 avg P1 val -0.441893
+Batch 0 avg P2 val 0.529009
+Now what hands does P1 call with?
+88: 55%; 99: 61%; TT: 34%; JJ: 100%; QQ: 100%; KK: 100%; AA: 100%
+Looks pretty good.
+What hands does P2 push with?
+Total of 0.24495.
+AA 0.1; AKs 0.022; KK 0.01; K2o: 0.012; K2s: 0.012
+Must be an assortment of other random hands.
+
+-------------------------------------------
+
+Are we going to boost regrets too much?  The first time we get to the boosting the probs of
+an action are too low.  We may return multiple times in quick succession before the probs
+adjust.

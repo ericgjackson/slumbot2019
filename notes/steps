@@ -1,0 +1,9 @@
+../bin/build_hand_value_tree ms0_params
+../bin/build_null_buckets ms0_params 0
+../bin/build_betting_tree ms0_params mb1b1_params 
+../bin/run_cfrp ms0_params none_params mb1b1_params cfrps_params 8 1 200
+../bin/run_rgbr ms0_params none_params mb1b1_params cfrps_params 8 200 avg
+
+OR:
+
+../bin/run_tcfr ms0p3_params null_params mb1b1_params tcfr_params 8 0 0 1000000000 8

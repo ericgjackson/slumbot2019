@@ -1,0 +1,4 @@
+CFRConfigName ecfr
+Algorithm tcfr
+ActiveMod 1
+Freeze 1,2,3,4,5

@@ -1,0 +1,6 @@
+# Soft warmup of 1, no scaling
+CFRConfigName cfrps1ns
+Algorithm cfrp
+NNR true
+RegretFloors 0,0,0,0
+SoftWarmup 1

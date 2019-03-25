@@ -1,0 +1,32 @@
+Ideas for best-response or approximate best-response calculations.
+
+What did Trevor do?  Was it some kind of pseudo-best-response calculation?  He called it
+pretty-good best-response.  Treat target player's strategy as fixed.  Then we have a one
+player game.  Solve it Monte Carlo Tree Search like you would a game of perfect information
+like Go.
+
+He also mentions frequentist best-response as a quick and dirty best-response calculation.
+What is that?
+
+Model the target player P's strategy by observing it play.  The model is in some abstraction
+which is different from P's abstraction.
+
+Then compute a best-response to the abstracted game.
+
+Issues with applying to multi-player:
+1) I don't think I can compute a best-response to an abstracted strategy efficiently,
+not even if the abstraction is crude.
+2) Because it's a full best-response we don't have the clairvoyance problem that I do with
+some other sampled approaches.
+
+What about just taking a target strategy P and then run CFR with all the other positions allowed
+to adapt?  That seems pretty good.  That supports imperfect recall.
+
+Probably want the frozen players to play according to the average strategy and not according
+to the current strategy.
+
+Only do target player iterations.
+If freeze is true, might want to check that we have sumprobs for all opponents on all streets.
+P0 does not really improve against ms0p6 trained for 100m its
+But it does improve against ms0p6 trained for 1m its
+Makes sense.

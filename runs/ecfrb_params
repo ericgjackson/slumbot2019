@@ -1,0 +1,4 @@
+CFRConfigName ecfrb
+Algorithm tcfr
+ActiveMod 1
+BoostThresholds 0.001,0.001,0.001,0.001

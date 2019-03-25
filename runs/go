@@ -1,0 +1,13 @@
+#!/bin/bash
+
+
+time ../bin/run_cfrp ms3f1t1r1h5_params none_params mb2b2pft_params cfrpnwdrs_params 8 101 200
+../bin/run_rgbr ms3f1t1r1h5_params none_params mb2b2pft_params cfrpnwdrs_params 8 200 avg
+time ../bin/run_cfrp ms3f1t1r1h5_params none_params mb2b2pft_params cfrpnwdrs_params 8 201 400
+../bin/run_rgbr ms3f1t1r1h5_params none_params mb2b2pft_params cfrpnwdrs_params 8 400 avg
+time ../bin/run_cfrp ms3f1t1r1h5_params none_params mb2b2pft_params cfrpnwdrs_params 8 401 600
+../bin/run_rgbr ms3f1t1r1h5_params none_params mb2b2pft_params cfrpnwdrs_params 8 600 avg
+time ../bin/run_cfrp ms3f1t1r1h5_params none_params mb2b2pft_params cfrpnwdrs_params 8 601 800
+../bin/run_rgbr ms3f1t1r1h5_params none_params mb2b2pft_params cfrpnwdrs_params 8 800 avg
+time ../bin/run_cfrp ms3f1t1r1h5_params none_params mb2b2pft_params cfrpnwdrs_params 8 801 1000
+../bin/run_rgbr ms3f1t1r1h5_params none_params mb2b2pft_params cfrpnwdrs_params 8 1000 avg

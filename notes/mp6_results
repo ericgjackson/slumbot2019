@@ -1,0 +1,54 @@
+ms0p6
+null_params
+mb1b1ai
+ecfrb
+100m its in 9m23s
+Batch 0 avg P0 val -0.356311
+Batch 0 avg P1 val -1.018594
+Batch 0 avg P2 val 0.273744
+Batch 0 avg P3 val 0.308959
+Batch 0 avg P4 val 0.353569
+Batch 0 avg P5 val 0.422770
+ecfr
+1m its in 5.4s
+Batch 0 avg P0 val -0.442280
+Batch 0 avg P1 val -1.165466
+Batch 0 avg P2 val 0.284243
+Batch 0 avg P3 val 0.312495
+Batch 0 avg P4 val 0.359371
+Batch 0 avg P5 val 0.384911
+
+100m its in 7m56s
+Batch 0 avg P0 val -0.357272
+Batch 0 avg P1 val -1.018503
+Batch 0 avg P2 val 0.277643
+Batch 0 avg P3 val 0.311786
+Batch 0 avg P4 val 0.356027
+Batch 0 avg P5 val 0.422631
+100m-200m its in 8m34s
+Batch 8 avg P0 val -0.356049
+Batch 8 avg P1 val -1.015170
+Batch 8 avg P2 val 0.277015
+Batch 8 avg P3 val 0.312371
+Batch 8 avg P4 val 0.356266
+Batch 8 avg P5 val 0.423589
+
+play ecfr vs. ecfrb (0.001)
+Avg B outcome: -0.000780 (-0.4 mbb/g) over 100000000 dup hands
+MBB confidence interval: -0.456040--0.323927
+Avg P0 outcome: -0.355128
+Avg P1 outcome: -1.017135
+Avg P2 outcome: 0.278807
+Avg P3 outcome: 0.310956
+Avg P4 outcome: 0.357533
+Avg P5 outcome: 0.424967
+
+play ecfr/0 vs. ecfr/8
+Avg B outcome: 0.000357 (0.2 mbb/g) over 100000000 dup hands
+MBB confidence interval: 0.135171-0.221774
+Avg P0 outcome: -0.351613
+Avg P1 outcome: -1.019561
+Avg P2 outcome: 0.275277
+Avg P3 outcome: 0.317404
+Avg P4 outcome: 0.355461
+Avg P5 outcome: 0.423033

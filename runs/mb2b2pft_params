@@ -1,0 +1,9 @@
+BettingAbstractionName mb2b2pft
+Limit false
+StackSize 400
+Asymmetric false
+NoLimitTreeType 1
+MinBet 2
+AlwaysAllIn false
+MaxBets 2,2,2,1
+BetSizes 0.5,1.0;0.5,1.0|0.5,1.0;0.5,1.0|0.5,1.0;0.5,1.0|1.0

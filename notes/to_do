@@ -1,0 +1,18 @@
+Fix nondeterm play
+
+It's a mess that we need to pass around root_bd_st/root_bd and if we get it wrong there are subtle
+errors.
+
+Is there a discrepancy with suited vs. unsuited hands in TCFR?  Can get very different strategies.
+
+Implement sampled_br?  Or just use CFR with n-1 players strategies' fixed?
+
+To copy from macduff:
+Slumbot website code and data
+Settings from .bashrc (e.g., AWS_SECRET_KEY)
+
+Build a system with lots of reentrancy.  Then cluster distinct histories that were pooled by the
+distributions that reach them.  Then retrain with each cluster becoming a distinct node.  Could
+also factor in how often the histories are reached.
+
+Create a new github repository.  Call it slumbot2019.  Check everything in there.

@@ -1,0 +1,8 @@
+# Uses defaults: NNR, scaling of 16, soft warmup of 100
+CFRConfigName cfrps
+Algorithm cfrp
+NNR true
+RegretFloors 0,0,0,0
+RegretScaling 16,16,16,16
+SumprobScaling 16,16,16,16
+SoftWarmup 100
