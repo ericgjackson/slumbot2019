@@ -14,10 +14,9 @@ class Writer;
 
 class Node {
 public:
-  Node(int id, int street, int player_acting,
-       const std::shared_ptr<Node> &call_succ, const std::shared_ptr<Node> &fold_succ,
-       std::vector< std::shared_ptr<Node> > *bet_succs, int num_remaining,
-       int bet_to);
+  Node(int id, int street, int player_acting, const std::shared_ptr<Node> &call_succ,
+       const std::shared_ptr<Node> &fold_succ, std::vector< std::shared_ptr<Node> > *bet_succs,
+       int num_remaining, int bet_to);
   Node(Node *node);
   Node(int id, int last_bet_to, int num_succs, unsigned short flags, unsigned char player_acting,
        unsigned char num_remaining);
@@ -39,7 +38,7 @@ public:
   int FoldSuccIndex(void) const;
   int DefaultSuccIndex(void) const;
   std::string ActionName(int s);
-  void PrintTree(int depth, std::string name, int last_street);
+  void PrintTree(int depth, const std::string &name, bool ***seen, int last_street);
   bool HasCallSucc(void) const {return (bool)(flags_ & kHasCallSuccFlag);}
   bool HasFoldSucc(void) const {return (bool)(flags_ & kHasFoldSuccFlag);}
   int ID(void) const {return id_;}
@@ -109,7 +108,6 @@ class BettingTree {
   int num_terminals_;
   Node **terminals_;
   int **num_nonterminals_;
-  // Pool *pool_;
 };
 
 bool TwoSuccsCorrespond(Node *node1, int s1, Node *node2, int s2);

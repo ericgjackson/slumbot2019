@@ -32,7 +32,7 @@ public:
   virtual ~CFRStreetValues(void);
   CFRValueType MyType(void) const;
   bool Players(int p) const {return players_[p];}
-  T *AllValues(int p, int nt) {return data_[p][nt];}
+  T *AllValues(int p, int nt) {return data_[p] ? data_[p][nt] : nullptr;}
   void AllocateAndClear2(Node *node);
   void AllocateAndClear(Node *node);
   void RMProbs(int p, int nt, int offset, int num_succs, int dsi, double *probs) const;

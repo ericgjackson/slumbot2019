@@ -3,7 +3,7 @@ none/mb1b1/cfrps
 200 its: 0.6 mbb/g
 P0 best response: -0.043399 (-21.70 mbb/g)
 P1 best response: 0.045793 (22.90 mbb/g)
-play determ (100m):    Avg P1 outcome: 0.073230
+play determ (100m):    Avg P1 outcome: 0.073230  BUGGY
 play nondeterm (100m): Avg P1 outcome: 0.044793
 
 ms0/null/mb1b1/cfrps

@@ -25,7 +25,7 @@ public:
   int RootBd(void) const {return root_bd_;}
   double *FinalVals(void) const {return final_vals_;}
 
-  void SetOppProbs(double *opp_probs);
+  void SetOppProbs(const std::shared_ptr<double []> &opp_probs);
   void SetThreadIndex(int t) {thread_index_ = t;}
   void SetIt(int it) {it_ = it;}
   void SetLastCheckpointIt(int it) {last_checkpoint_it_ = it;}
@@ -44,7 +44,7 @@ public:
   BettingTree *subtree_;
   CFRP *cfr_;
   bool *subtree_streets_;
-  double *opp_probs_;
+  std::shared_ptr<double []> opp_probs_;
   const HandTree *hand_tree_;
   int thread_index_;
   double *final_vals_;

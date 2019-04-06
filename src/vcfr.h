@@ -38,8 +38,9 @@ class VCFR {
 			    const VCFRState &state);
   virtual double *OppChoice(Node *node, int lbd, 
 			    const VCFRState &state);
-  virtual void Split(Node *node, double *opp_probs, const HandTree *hand_tree,
-		     const std::string &action_sequence, int *prev_canons, double *vals);
+  virtual void Split(Node *node, const std::shared_ptr<double []> &opp_probs,
+		     const HandTree *hand_tree, const std::string &action_sequence,
+		     int *prev_canons, double *vals);
   virtual double *StreetInitial(Node *node, int lbd,
 				const VCFRState &state);
   virtual void SetCurrentStrategy(Node *node);

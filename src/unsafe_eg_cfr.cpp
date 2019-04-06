@@ -11,6 +11,7 @@
 #include "unsafe_eg_cfr.h"
 #include "vcfr_state.h"
 
+using std::shared_ptr;
 using std::string;
 using std::unique_ptr;
 
@@ -22,9 +23,10 @@ UnsafeEGCFR::UnsafeEGCFR(const CardAbstraction &ca, const CardAbstraction &base_
 	ResolvingMethod::UNSAFE, false, false, num_threads) {
 }
 
-void UnsafeEGCFR::SolveSubgame(BettingTree *subtree, int solve_bd, double **reach_probs,
-			       const string &action_sequence, const HandTree *hand_tree,
-			       double *opp_cvs, int target_p, bool both_players, int num_its) {
+void UnsafeEGCFR::SolveSubgame(BettingTree *subtree, int solve_bd,
+			       shared_ptr<double []> *reach_probs, const string &action_sequence,
+			       const HandTree *hand_tree, double *opp_cvs, int target_p,
+			       bool both_players, int num_its) {
   int subtree_st = subtree->Root()->Street();
   int num_players = Game::NumPlayers();
   int max_street = Game::MaxStreet();

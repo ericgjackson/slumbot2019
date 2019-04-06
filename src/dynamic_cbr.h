@@ -1,6 +1,8 @@
 #ifndef _DYNAMIC_CBR_H_
 #define _DYNAMIC_CBR_H_
 
+#include <memory>
+
 #include "vcfr.h"
 
 class Buckets;
@@ -15,12 +17,12 @@ public:
 	     const Buckets &buckets, const BettingTree *betting_tree, int num_threads);
   DynamicCBR(void);
   ~DynamicCBR(void);
-  double *Compute(Node *node, double **reach_probs, int gbd, HandTree *hand_tree, int root_bd_st,
-		  int root_bd, int target_p, bool cfrs, bool zero_sum, bool current,
+  double *Compute(Node *node, std::shared_ptr<double []> *reach_probs, int gbd, HandTree *hand_tree,
+		  int root_bd_st, int root_bd, int target_p, bool cfrs, bool zero_sum, bool current,
 		  bool purify_opp);
 private:
-  double *Compute(Node *node, int p, double *opp_probs, int gbd, HandTree *hand_tree,
-		  int root_bd_st, int root_bd);
+  double *Compute(Node *node, int p, const std::shared_ptr<double []> &opp_probs, int gbd,
+		  HandTree *hand_tree, int root_bd_st, int root_bd);
 
   bool cfrs_;
 };

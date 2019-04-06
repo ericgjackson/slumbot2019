@@ -28,6 +28,7 @@
 #include "io.h"
 #include "resolving_method.h"
 
+using std::shared_ptr;
 using std::string;
 using std::unique_ptr;
 
@@ -296,17 +297,18 @@ CFRValues *ReadSubgame(const string &action_sequence, BettingTree *subtree, int 
   return sumprobs;
 }
 
-double ***GetSuccReachProbs(Node *node, int gbd, HandTree *hand_tree, const Buckets &buckets,
-			    const CFRValues *sumprobs, double **reach_probs, int root_bd_st,
-			    int root_bd, bool purify) {
+shared_ptr<double []> **GetSuccReachProbs(Node *node, int gbd, HandTree *hand_tree,
+					  const Buckets &buckets, const CFRValues *sumprobs,
+					  shared_ptr<double []> *reach_probs, int root_bd_st,
+					  int root_bd, bool purify) {
   int num_succs = node->NumSuccs();
-  double ***succ_reach_probs = new double **[num_succs];
+  shared_ptr<double []> **succ_reach_probs = new shared_ptr<double []> *[num_succs];
   int max_card1 = Game::MaxCard() + 1;
   int num_enc = max_card1 * max_card1;
   for (int s = 0; s < num_succs; ++s) {
-    succ_reach_probs[s] = new double *[2];
+    succ_reach_probs[s] = new shared_ptr<double []>[2];
     for (int p = 0; p < 2; ++p) {
-      succ_reach_probs[s][p] = new double[num_enc];
+      succ_reach_probs[s][p].reset(new double[num_enc]);
     }
   }
   int st = node->Street();
@@ -418,8 +420,9 @@ void FloorCVs(Node *subtree_root, double *opp_reach_probs, const CanonicalCards 
   
 }
 
-void CalculateMeanCVs(double *p0_cvs, double *p1_cvs, int num_hole_card_pairs, double **reach_probs,
-		      const CanonicalCards *hands, double *p0_mean_cv, double *p1_mean_cv) {
+static void CalculateMeanCVs(double *p0_cvs, double *p1_cvs, int num_hole_card_pairs,
+			     shared_ptr<double []> *reach_probs, const CanonicalCards *hands,
+			     double *p0_mean_cv, double *p1_mean_cv) {
   int maxcard1 = Game::MaxCard() + 1;
   double sum_p0_cvs = 0, sum_p1_cvs = 0, sum_joint_probs = 0;
   for (int i = 0; i < num_hole_card_pairs; ++i) {
@@ -449,11 +452,11 @@ void CalculateMeanCVs(double *p0_cvs, double *p1_cvs, int num_hole_card_pairs, d
   *p1_mean_cv = sum_p1_cvs / sum_joint_probs;
 }
 
-void ZeroSumCVs(double *p0_cvs, double *p1_cvs, int num_hole_card_pairs, double **reach_probs,
-		const CanonicalCards *hands) {
+void ZeroSumCVs(double *p0_cvs, double *p1_cvs, int num_hole_card_pairs,
+		shared_ptr<double []> *reach_probs, const CanonicalCards *hands) {
   double p0_mean_cv, p1_mean_cv;
-  CalculateMeanCVs(p0_cvs, p1_cvs, num_hole_card_pairs, reach_probs, hands,
-		   &p0_mean_cv, &p1_mean_cv);
+  CalculateMeanCVs(p0_cvs, p1_cvs, num_hole_card_pairs, reach_probs, hands, &p0_mean_cv,
+		   &p1_mean_cv);
   fprintf(stderr, "Mean CVs: %f, %f\n", p0_mean_cv, p1_mean_cv);
 
   double avg = (p0_mean_cv + p1_mean_cv) / 2.0;
@@ -482,9 +485,8 @@ void ZeroSumCVs(double *p0_cvs, double *p1_cvs, int num_hole_card_pairs, double 
 
   // I can take this out
   double adj_p0_mean_cv, adj_p1_mean_cv;
-  CalculateMeanCVs(p0_cvs, p1_cvs, num_hole_card_pairs, reach_probs, hands,
-		   &adj_p0_mean_cv, &adj_p1_mean_cv);
-  fprintf(stderr, "Adj mean CVs: P0 %f, P1 %f\n", adj_p0_mean_cv,
-	  adj_p1_mean_cv);
+  CalculateMeanCVs(p0_cvs, p1_cvs, num_hole_card_pairs, reach_probs, hands, &adj_p0_mean_cv,
+		   &adj_p1_mean_cv);
+  fprintf(stderr, "Adj mean CVs: P0 %f, P1 %f\n", adj_p0_mean_cv, adj_p1_mean_cv);
   
 }

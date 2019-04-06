@@ -28,11 +28,12 @@
 #include "vcfr_state.h"
 #include "vcfr.h"
 
+using std::shared_ptr;
 using std::unique_ptr;
 
 RGBR::RGBR(const CardAbstraction &ca, const BettingAbstraction &ba, const CFRConfig &cc,
-	   const Buckets &buckets, const BettingTree *betting_tree, bool current,
-	   int num_threads, const bool *streets) :
+	   const Buckets &buckets, const BettingTree *betting_tree, bool current, int num_threads,
+	   const bool *streets) :
   CFRP(ca, ba, cc, buckets, betting_tree, num_threads, -1) {
   br_current_ = current;
   value_calculation_ = true;
@@ -124,7 +125,7 @@ double RGBR::Go(int it, int p) {
   }
 
   if (subgame_street_ >= 0 && subgame_street_ <= max_street) pre_phase_ = true;
-  double *opp_probs = AllocateOppProbs(true);
+  shared_ptr<double []> opp_probs = AllocateOppProbs(true);
   int **street_buckets = AllocateStreetBuckets();
   VCFRState state(opp_probs, street_buckets, hand_tree_);
   SetStreetBuckets(0, 0, state);
@@ -136,7 +137,6 @@ double RGBR::Go(int it, int p) {
     vals = Process(betting_tree_->Root(), 0, state, 0);
   }
   DeleteStreetBuckets(street_buckets);
-  delete [] opp_probs;
   
   int num_hole_card_pairs = Game::NumHoleCardPairs(0);
 

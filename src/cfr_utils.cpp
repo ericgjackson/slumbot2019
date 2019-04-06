@@ -20,6 +20,7 @@
 #include "io.h"
 #include "split.h"
 
+using std::shared_ptr;
 using std::string;
 using std::unique_ptr;
 using std::vector;
@@ -103,8 +104,7 @@ double *Fold(Node *node, int p, const CanonicalCards *hands, double *opp_probs,
     int enc = hi * max_card1 + lo;
     double opp_prob = opp_probs[enc];
     vals[i] = half_pot *
-      (sum_opp_probs + opp_prob -
-       (total_card_probs[hi] + total_card_probs[lo]));
+      (sum_opp_probs + opp_prob - (total_card_probs[hi] + total_card_probs[lo]));
   }
 
   return vals;
@@ -131,9 +131,10 @@ void CommonBetResponseCalcs(int st, const CanonicalCards *hands, double *opp_pro
 }
 
 static void UpdateSumprobsAndSuccOppProbs(int enc, int num_succs, double reach_prob,
-					  double *current_probs, double **succ_opp_probs,
-					  int it, int soft_warmup, int hard_warmup,
-					  double sumprob_scaling, double *sumprobs) {
+					  double *current_probs,
+					  shared_ptr<double []> *succ_opp_probs, int it,
+					  int soft_warmup, int hard_warmup, double sumprob_scaling,
+					  double *sumprobs) {
   for (int s = 0; s < num_succs; ++s) {
     double succ_opp_prob = reach_prob * current_probs[s];
     succ_opp_probs[s][enc] = succ_opp_prob;
@@ -156,9 +157,10 @@ static void UpdateSumprobsAndSuccOppProbs(int enc, int num_succs, double reach_p
 }
 
 static void UpdateSumprobsAndSuccOppProbs(int enc, int num_succs, double reach_prob,
-					  double *current_probs, double **succ_opp_probs,
-					  int it, int soft_warmup, int hard_warmup,
-					  double sumprob_scaling, int *sumprobs) {
+					  double *current_probs,
+					  shared_ptr<double []> *succ_opp_probs, int it,
+					  int soft_warmup, int hard_warmup, double sumprob_scaling,
+					  int *sumprobs) {
   bool downscale = false;
   for (int s = 0; s < num_succs; ++s) {
     double succ_opp_prob = reach_prob * current_probs[s];
@@ -179,10 +181,6 @@ static void UpdateSumprobsAndSuccOppProbs(int enc, int num_succs, double reach_p
 	sumprobs[s] += lrint(succ_opp_prob * (it - soft_warmup) *
 			     sumprob_scaling);
       }
-#if 0
-      fprintf(stderr, "sps[%u] %i sop %f cp %f\n", s, sumprobs[s],
-	      succ_opp_prob, current_probs[s]);
-#endif
       if (sumprobs[s] > 2000000000) {
 	downscale = true;
       }
@@ -202,9 +200,9 @@ static void UpdateSumprobsAndSuccOppProbs(int enc, int num_succs, double reach_p
 // current probs.
 template <typename T>
 void ProcessOppProbs(Node *node, const CanonicalCards *hands, int **street_buckets,
-		     double *opp_probs, double **succ_opp_probs, double *current_probs,
-		     int it, int soft_warmup, int hard_warmup, double sumprob_scaling,
-		     CFRStreetValues<T> *sumprobs) {
+		     double *opp_probs, shared_ptr<double []> *succ_opp_probs,
+		     double *current_probs, int it, int soft_warmup, int hard_warmup,
+		     double sumprob_scaling, CFRStreetValues<T> *sumprobs) {
   int st = node->Street();
   int num_succs = node->NumSuccs();
   int pa = node->PlayerActing();
@@ -234,27 +232,26 @@ void ProcessOppProbs(Node *node, const CanonicalCards *hands, int **street_bucke
       int offset = b * num_succs;
       my_current_probs = current_probs + offset;
       if (sumprobs) my_sumprobs = sumprobs->AllValues(pa, nt) + offset;
-      UpdateSumprobsAndSuccOppProbs(enc, num_succs, opp_prob, my_current_probs,
-				    succ_opp_probs, it, soft_warmup,
-				    hard_warmup, sumprob_scaling, my_sumprobs);
+      UpdateSumprobsAndSuccOppProbs(enc, num_succs, opp_prob, my_current_probs, succ_opp_probs, it,
+				    soft_warmup, hard_warmup, sumprob_scaling, my_sumprobs);
     }
   }
 }
 
 // Instantiate
 template void ProcessOppProbs<int>(Node *node, const CanonicalCards *hands, int **street_buckets,
-				   double *opp_probs, double **succ_opp_probs,
+				   double *opp_probs, shared_ptr<double []> *succ_opp_probs,
 				   double *current_probs, int it, int soft_warmup, int hard_warmup,
 				   double sumprob_scaling, CFRStreetValues<int> *sumprobs);
 template void ProcessOppProbs<double>(Node *node, const CanonicalCards *hands,
 				      int **street_buckets, double *opp_probs,
-				      double **succ_opp_probs, double *current_probs, int it,
-				      int soft_warmup, int hard_warmup, double sumprob_scaling,
-				      CFRStreetValues<double> *sumprobs);
+				      shared_ptr<double []> *succ_opp_probs, double *current_probs,
+				      int it, int soft_warmup, int hard_warmup,
+				      double sumprob_scaling, CFRStreetValues<double> *sumprobs);
 
 template <typename T1, typename T2>
 void ProcessOppProbs(Node *node, int lbd, const CanonicalCards *hands, bool bucketed,
-		     int **street_buckets, double *opp_probs, double **succ_opp_probs,
+		     int **street_buckets, double *opp_probs, shared_ptr<double []> *succ_opp_probs,
 		     const CFRStreetValues<T1> &cs_vals, int dsi, int it, int soft_warmup,
 		     int hard_warmup, double sumprob_scaling, CFRStreetValues<T2> *sumprobs) {
   int st = node->Street();
@@ -291,14 +288,9 @@ void ProcessOppProbs(Node *node, int lbd, const CanonicalCards *hands, bool buck
       }
       cs_vals.RMProbs(pa, nt, offset, num_succs, dsi, current_probs.get());
       // double was = all_sumprobs[offset];
-      UpdateSumprobsAndSuccOppProbs(enc, num_succs, opp_prob,
-				    current_probs.get(), succ_opp_probs, it,
-				    soft_warmup, hard_warmup, sumprob_scaling,
+      UpdateSumprobsAndSuccOppProbs(enc, num_succs, opp_prob, current_probs.get(), succ_opp_probs,
+				    it, soft_warmup, hard_warmup, sumprob_scaling,
 				    all_sumprobs ? all_sumprobs + offset : nullptr);
-#if 0
-      printf("it %u lbd %u st %u pa %u nt %u s 0 sp %f was %f\n", it, lbd, st,
-	     pa, nt, (double)all_sumprobs[offset], was);
-#endif
     }
   }
 }
@@ -306,28 +298,32 @@ void ProcessOppProbs(Node *node, int lbd, const CanonicalCards *hands, bool buck
 // Instantiate
 template void
 ProcessOppProbs<int, int>(Node *node, int lbd, const CanonicalCards *hands, bool bucketed,
-			  int **street_buckets, double *opp_probs, double **succ_opp_probs,
+			  int **street_buckets, double *opp_probs,
+			  shared_ptr<double []> *succ_opp_probs,
 			  const CFRStreetValues<int> &cs_vals, int dsi, int it,
 			  int soft_warmup, int hard_warmup, double sumprob_scaling,
 			  CFRStreetValues<int> *sumprobs);
 template void
 ProcessOppProbs<double, double>(Node *node, int lbd, const CanonicalCards *hands,
 				bool bucketed, int **street_buckets, double *opp_probs,
-				double **succ_opp_probs, const CFRStreetValues<double> &cs_vals,
-				int dsi, int it, int soft_warmup, int hard_warmup,
-				double sumprob_scaling, CFRStreetValues<double> *sumprobs);
+				shared_ptr<double []> *succ_opp_probs,
+				const CFRStreetValues<double> &cs_vals, int dsi, int it,
+				int soft_warmup, int hard_warmup, double sumprob_scaling,
+				CFRStreetValues<double> *sumprobs);
 template void
 ProcessOppProbs<int, double>(Node *node, int lbd, const CanonicalCards *hands,
 			     bool bucketed, int **street_buckets, double *opp_probs,
-			     double **succ_opp_probs, const CFRStreetValues<int> &cs_vals,
-			     int dsi, int it, int soft_warmup, int hard_warmup,
-			     double sumprob_scaling, CFRStreetValues<double> *sumprobs);
+			     shared_ptr<double []> *succ_opp_probs,
+			     const CFRStreetValues<int> &cs_vals, int dsi, int it, int soft_warmup,
+			     int hard_warmup, double sumprob_scaling,
+			     CFRStreetValues<double> *sumprobs);
 template void
 ProcessOppProbs<double, int>(Node *node, int lbd, const CanonicalCards *hands,
 			     bool bucketed, int **street_buckets, double *opp_probs,
-			     double **succ_opp_probs, const CFRStreetValues<double> &cs_vals,
-			     int dsi, int it, int soft_warmup, int hard_warmup,
-			     double sumprob_scaling, CFRStreetValues<int> *sumprobs);
+			     shared_ptr<double []> *succ_opp_probs,
+			     const CFRStreetValues<double> &cs_vals, int dsi, int it,
+			     int soft_warmup, int hard_warmup, double sumprob_scaling,
+			     CFRStreetValues<int> *sumprobs);
 
 #if 0
 // Abstracted, integer regrets

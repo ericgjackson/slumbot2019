@@ -1,0 +1,20 @@
+Build a system with lots of reentrancy.  Then cluster distinct histories that were pooled by the
+distributions that reach them.  Then retrain with each cluster becoming a distinct node.  Could
+also factor in how often the histories are reached.
+
+With a reentrant tree we pool together many information sets that would ordinarily be
+separate.
+
+Can I maintain some sort of history-dependent information?
+
+Suppose I learn a per-bucket history-dependent CV offset?  Might need to be a multiplier
+rather than an offset.  Wouldn't want to apply to fold nodes.
+
+More simply, would like to do a good job of choosing which states to make reentrant.
+I presume that it should be the least visited.  But we could also solve a small game
+(small abstraction or short deck) with a full non-reentrant betting abstraction.
+Then cluster states based on reach distributions.
+
+What if I train a reentrant system, then expand subtrees one-by-one (or batch-by-batch)?
+Do additional training for each multiplied-out subtree.  Maybe do targeted CFR to
+direct training to the multiplied-out subtree.

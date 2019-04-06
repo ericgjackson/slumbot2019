@@ -1,7 +1,20 @@
-// There are two players (computed strategies) given to the program, named
-// A and B.  P0 and P1 in contrast refer to the two positions (big blind and
-// button respectively).  A and B alternate during play between being the
-// button (P1) and the big blind (P0).
+// Assesses head-to-head performance between two strategies using "play"; i.e., sampling hands
+// and sampling a betting sequence according to the players' strategies.
+//
+// Handles multiplayer.  Handles reentrant betting trees.
+//
+// There are two players (computed strategies) given to the program, named A and B.  There are
+// N positions where N may be more than 2.  It can get confusing keeping track of what's a player
+// and what's a position.
+//
+// In 3-player, position 0 is the small blind, position 1 is the big blind and position 2 is the
+// button.
+//
+// In each "duplicate" hand, we play N hands where strategy B is assigned to each of the N
+// positions one-by-one.
+//
+// If I want to support asymmetric systems again, I may need to go back to having a separate
+// CFRValues object for each position.
 
 #include <math.h>
 #include <pthread.h>
@@ -40,8 +53,9 @@ using std::unique_ptr;
 
 class Player {
 public:
-  Player(const BettingAbstraction &ba, const CardAbstraction &a_ca, const CardAbstraction &b_ca,
-	 const CFRConfig &a_cc, const CFRConfig &b_cc, int a_it, int b_it);
+  Player(const BettingAbstraction &a_ba, const BettingAbstraction &b_ba,
+	 const CardAbstraction &a_ca, const CardAbstraction &b_ca, const CFRConfig &a_cc,
+	 const CFRConfig &b_cc, int a_it, int b_it);
   ~Player(void);
   void Go(unsigned long long int num_duplicate_hands, bool deterministic);
 private:
@@ -53,12 +67,14 @@ private:
 			 bool deterministic, double *a_sum, double *b_sum);
 
   int num_players_;
-  bool asymmetric_;
-  BettingTree **betting_trees_;
+  bool a_asymmetric_;
+  bool b_asymmetric_;
+  BettingTree **a_betting_trees_;
+  BettingTree **b_betting_trees_;
   const Buckets *a_buckets_;
   const Buckets *b_buckets_;
-  CFRValues **a_probs_;
-  CFRValues **b_probs_;
+  unique_ptr<CFRValues> a_probs_;
+  unique_ptr<CFRValues> b_probs_;
   int *boards_;
   int **raw_hcps_;
   unique_ptr<int []> hvs_;
@@ -131,11 +147,20 @@ void Player::Play(Node **nodes, int b_pos, int *contributions, int last_bet_to, 
     }
     return;
   } else {
-    int orig_pa = p0_node->PlayerActing();
-    Node *node = nodes[orig_pa];
-    int nt = node->NonterminalID();
-    int st = node->Street();
-    int num_succs = node->NumSuccs();
+#if 0
+    if (nodes[0]->NonterminalID() != nodes[1]->NonterminalID()) {
+      fprintf(stderr, "NT ID mismatch %i vs %i st %i vs %i lbt %i vs %i pa %i vs %i\n",
+	      nodes[0]->NonterminalID(), nodes[1]->NonterminalID(), nodes[0]->Street(),
+	      nodes[1]->Street(), nodes[0]->LastBetTo(), nodes[1]->LastBetTo(),
+	      nodes[0]->PlayerActing(), nodes[1]->PlayerActing());
+      exit(-1);
+    }
+#endif
+    // Assumption is that we can get the street from any node
+    int st = p0_node->Street();
+    // Assumption is that we can get num_succs from any node
+    // Won't work for asymmetric maybe
+    int num_succs = p0_node->NumSuccs();
     // Find the next player to act.  Start with the first candidate and move
     // forward until we find someone who has not folded.  The first candidate
     // is either the last player plus one, or, if we are starting a new
@@ -149,7 +174,9 @@ void Player::Play(Node **nodes, int b_pos, int *contributions, int last_bet_to, 
       ++actual_pa;
     }
     
-    int dsi = node->DefaultSuccIndex();
+    // Assumption is that we can get the default succ index from any node
+    // Won't work for asymmetric maybe
+    int dsi = p0_node->DefaultSuccIndex();
     int bd = boards_[st];
     int raw_hcp = raw_hcps_[actual_pa][st];
     int num_hole_card_pairs = Game::NumHoleCardPairs(st);
@@ -180,54 +207,44 @@ void Player::Play(Node **nodes, int b_pos, int *contributions, int last_bet_to, 
     
     double cum = 0;
     unique_ptr<double []> probs(new double[num_succs]);
+    // The *actual* player acting may be different from the player acting value of the current
+    // node because of reentrant betting trees.  We need the *actual* player acting to determine
+    // whether A or B is acting here.  Be need the node's player acting value to query the
+    // probabilities for the appropriate information set.
+    int nt = nodes[actual_pa]->NonterminalID();
+    int node_pa = nodes[actual_pa]->PlayerActing();
     if (actual_pa == b_pos) {
-      b_probs_[orig_pa]->RMProbs(st, orig_pa, nt, b_offset, num_succs, dsi, probs.get());
-      // b_probs_[orig_pa]->Probs(orig_pa, st, nt, b_offset, num_succs, dsi, probs.get());
-#if 0
-      fprintf(stderr, "b pa %u st %u nt %u bd %u nhcp %u hcp %u b_offset %u "
-	      "probs %f %f r %f\n", orig_pa, st, nt, bd, num_hole_card_pairs,
-	      hcp, b_offset, probs[0], probs[1], r);
-#endif
+      b_probs_->RMProbs(st, node_pa, nt, b_offset, num_succs, dsi, probs.get());
     } else {
-      a_probs_[orig_pa]->RMProbs(st, orig_pa, nt, a_offset, num_succs, dsi, probs.get());
-      // a_probs_[orig_pa]->Probs(orig_pa, st, nt, a_offset, num_succs, dsi, probs.get());
-#if 0
-      fprintf(stderr, "a pa %u st %u nt %u bd %u nhcp %u hcp %u b_offset %u "
-	      "probs %f %f r %f\n", orig_pa, st, nt, bd, num_hole_card_pairs,
-	      hcp, a_offset, probs[0], probs[1], r);
-#endif
+      a_probs_->RMProbs(st, node_pa, nt, a_offset, num_succs, dsi, probs.get());
     }
     int s;
     for (s = 0; s < num_succs - 1; ++s) {
-      // Look up probabilities with orig_pa which may be different from
-      // actual_pa.
       double prob = probs[s];
       cum += prob;
       if (r < cum) break;
     }
-    if (s == node->CallSuccIndex()) {
+    if (s == nodes[actual_pa]->CallSuccIndex()) {
       unique_ptr<Node * []> succ_nodes(new Node *[num_players_]);
       for (int p = 0; p < num_players_; ++p) {
 	int csi = nodes[p]->CallSuccIndex();
 	succ_nodes[p] = nodes[p]->IthSucc(csi);
       }
-      // fprintf(stderr, "Call\n");
       contributions[actual_pa] = last_bet_to;
       Play(succ_nodes.get(), b_pos, contributions, last_bet_to, folded, num_remaining, actual_pa,
 	   st, outcomes);
-    } else if (s == node->FoldSuccIndex()) {
+    } else if (s == nodes[actual_pa]->FoldSuccIndex()) {
       unique_ptr<Node * []> succ_nodes(new Node *[num_players_]);
       for (int p = 0; p < num_players_; ++p) {
 	int fsi = nodes[p]->FoldSuccIndex();
 	succ_nodes[p] = nodes[p]->IthSucc(fsi);
       }
-      // fprintf(stderr, "Fold\n");
       folded[actual_pa] = true;
       outcomes[actual_pa] = -(int)contributions[actual_pa];
       Play(succ_nodes.get(), b_pos, contributions, last_bet_to, folded, num_remaining - 1,
 	   actual_pa, st, outcomes);
     } else {
-      Node *my_succ = node->IthSucc(s);
+      Node *my_succ = nodes[actual_pa]->IthSucc(s);
       int new_bet_to = my_succ->LastBetTo();
       unique_ptr<Node * []> succ_nodes(new Node *[num_players_]);
       for (int p = 0; p < num_players_; ++p) {
@@ -246,7 +263,6 @@ void Player::Play(Node **nodes, int b_pos, int *contributions, int last_bet_to, 
 	}
 	succ_nodes[p] = nodes[p]->IthSucc(ps);
       }
-      // fprintf(stderr, "Bet\n");
       contributions[actual_pa] = new_bet_to;
       Play(succ_nodes.get(), b_pos, contributions, new_bet_to, folded, num_remaining, actual_pa,
 	   st, outcomes);
@@ -303,16 +319,14 @@ void Player::PlayDuplicateHand(unsigned long long int h, const Card *cards, bool
     }
     unique_ptr<Node * []> nodes(new Node *[num_players_]);
     for (int p = 0; p < num_players_; ++p) {
-      nodes[p] = betting_trees_[p]->Root();
+      if (p == b_pos) nodes[p] = b_betting_trees_[p]->Root();
+      else            nodes[p] = a_betting_trees_[p]->Root();
     }
     Play(nodes.get(), b_pos, contributions.get(), Game::BigBlind(), folded.get(), num_players_,
 	 1000, -1, outcomes.get());
     for (int p = 0; p < num_players_; ++p) {
-      if (p == b_pos) {
-	*b_sum += outcomes[p];
-      } else {
-	*a_sum += outcomes[p];
-      }
+      if (p == b_pos) *b_sum += outcomes[p];
+      else            *a_sum += outcomes[p];
       sum_pos_outcomes_[p] += outcomes[p];
     }
   }
@@ -470,9 +484,9 @@ void Player::Go(unsigned long long int num_duplicate_hands, bool deterministic) 
   }
 }
 
-Player::Player(const BettingAbstraction &ba, const CardAbstraction &a_ca,
-	       const CardAbstraction &b_ca, const CFRConfig &a_cc, const CFRConfig &b_cc, int a_it,
-	       int b_it) {
+Player::Player(const BettingAbstraction &a_ba, const BettingAbstraction &b_ba,
+	       const CardAbstraction &a_ca, const CardAbstraction &b_ca, const CFRConfig &a_cc,
+	       const CFRConfig &b_cc, int a_it, int b_it) {
   a_buckets_ = new Buckets(a_ca, false);
   if (strcmp(a_ca.CardAbstractionName().c_str(), b_ca.CardAbstractionName().c_str())) {
     b_buckets_ = new Buckets(b_ca, false);
@@ -486,55 +500,72 @@ Player::Player(const BettingAbstraction &ba, const CardAbstraction &a_ca,
   BoardTree::Create();
   BoardTree::CreateLookup();
 
-  asymmetric_ = ba.Asymmetric();
-  betting_trees_ = new BettingTree *[num_players_];
-  if (asymmetric_) {
+  a_asymmetric_ = a_ba.Asymmetric();
+  b_asymmetric_ = b_ba.Asymmetric();
+  a_betting_trees_ = new BettingTree *[num_players_];
+  b_betting_trees_ = new BettingTree *[num_players_];
+  if (a_asymmetric_) {
+    fprintf(stderr, "Asymmetric not supported yet\n");
+    exit(-1);
     for (int asym_p = 0; asym_p < num_players_; ++asym_p) {
-      betting_trees_[asym_p] = BettingTree::BuildAsymmetricTree(ba, asym_p);
+      a_betting_trees_[asym_p] = BettingTree::BuildAsymmetricTree(a_ba, asym_p);
     }
   } else {
-    betting_trees_[0] = BettingTree::BuildTree(ba);
+    a_betting_trees_[0] = BettingTree::BuildTree(a_ba);
     for (int asym_p = 1; asym_p < num_players_; ++asym_p) {
-      betting_trees_[asym_p] = betting_trees_[0];
+      a_betting_trees_[asym_p] = a_betting_trees_[0];
     }
   }
-  
-  a_probs_ = new CFRValues *[num_players_];
-  b_probs_ = new CFRValues *[num_players_];
-  for (int p = 0; p < num_players_; ++p) {
-    unique_ptr<bool []> players(new bool[num_players_]);
-    for (int p1 = 0; p1 < num_players_; ++p1) {
-      players[p1] = (p1 == p);
+  if (b_asymmetric_) {
+    fprintf(stderr, "Asymmetric not supported yet\n");
+    exit(-1);
+    for (int asym_p = 0; asym_p < num_players_; ++asym_p) {
+      b_betting_trees_[asym_p] = BettingTree::BuildAsymmetricTree(b_ba, asym_p);
     }
-    a_probs_[p] = new CFRValues(players.get(), nullptr, 0, 0, *a_buckets_, betting_trees_[p]);
-    b_probs_[p] = new CFRValues(players.get(), nullptr, 0, 0, *b_buckets_, betting_trees_[p]);
+  } else {
+    b_betting_trees_[0] = BettingTree::BuildTree(b_ba);
+    for (int asym_p = 1; asym_p < num_players_; ++asym_p) {
+      b_betting_trees_[asym_p] = b_betting_trees_[0];
+    }
   }
 
-  char dir[500], buf[100];
+  // Note assumption that we can use the betting tree for position 0
+  a_probs_.reset(new CFRValues(nullptr, nullptr, 0, 0, *a_buckets_, a_betting_trees_[0]));
+  b_probs_.reset(new CFRValues(nullptr, nullptr, 0, 0, *b_buckets_, b_betting_trees_[0]));
+
+  char dir[500];
+  
+  sprintf(dir, "%s/%s.%u.%s.%u.%u.%u.%s.%s", Files::OldCFRBase(),
+	  Game::GameName().c_str(), Game::NumPlayers(),
+	  a_ca.CardAbstractionName().c_str(),
+	  Game::NumRanks(), Game::NumSuits(), Game::MaxStreet(),
+	  a_ba.BettingAbstractionName().c_str(),
+	  a_cc.CFRConfigName().c_str());
+  // Note assumption that we can use the betting tree for position 0
+  a_probs_->Read(dir, a_it, a_betting_trees_[0]->Root(), "x", -1, true);
+
+  sprintf(dir, "%s/%s.%u.%s.%u.%u.%u.%s.%s", Files::OldCFRBase(), Game::GameName().c_str(),
+	  Game::NumPlayers(), b_ca.CardAbstractionName().c_str(), Game::NumRanks(),
+	  Game::NumSuits(), Game::MaxStreet(), b_ba.BettingAbstractionName().c_str(),
+	  b_cc.CFRConfigName().c_str());
+  // Note assumption that we can use the betting tree for position 0
+  b_probs_->Read(dir, b_it, b_betting_trees_[0]->Root(), "x", -1, true);
+
+#if 0
+  // If we want to go back to supporting asymmetric systems, may need to have a separate
+  // CFRValues object for each position for each player.
+  char buf[100];
   for (int p = 0; p < num_players_; ++p) {
-    sprintf(dir, "%s/%s.%u.%s.%u.%u.%u.%s.%s", Files::OldCFRBase(),
-	    Game::GameName().c_str(), Game::NumPlayers(),
-	    a_ca.CardAbstractionName().c_str(),
-	    Game::NumRanks(), Game::NumSuits(), Game::MaxStreet(),
-	    ba.BettingAbstractionName().c_str(),
-	    a_cc.CFRConfigName().c_str());
-    if (asymmetric_) {
+    if (a_asymmetric_) {
       sprintf(buf, ".p%u", p);
       strcat(dir, buf);
     }
-    a_probs_[p]->Read(dir, a_it, betting_trees_[p]->Root(), "x", -1, true);
-    // fprintf(stderr, "Read A P%u probs\n", p);
-    sprintf(dir, "%s/%s.%u.%s.%u.%u.%u.%s.%s", Files::OldCFRBase(), Game::GameName().c_str(),
-	    Game::NumPlayers(), b_ca.CardAbstractionName().c_str(), Game::NumRanks(),
-	    Game::NumSuits(), Game::MaxStreet(), ba.BettingAbstractionName().c_str(),
-	    b_cc.CFRConfigName().c_str());
-    if (asymmetric_) {
+    if (b_asymmetric_) {
       sprintf(buf, ".p%u", p);
       strcat(dir, buf);
     }
-    b_probs_[p]->Read(dir, b_it, betting_trees_[p]->Root(), "x", -1, true);
-    // fprintf(stderr, "Read B P%u probs\n", p);
   }
+#endif
 
   int max_street = Game::MaxStreet();
   boards_ = new int[max_street + 1];
@@ -599,31 +630,33 @@ Player::~Player(void) {
   delete [] raw_hcps_;
   if (b_buckets_ != a_buckets_) delete b_buckets_;
   delete a_buckets_;
-  for (int p = 0; p < num_players_; ++p) {
-    delete a_probs_[p];
-    delete b_probs_[p];
-  }
-  delete [] a_probs_;
-  delete [] b_probs_;
-  if (asymmetric_) {
+  if (a_asymmetric_) {
     for (int asym_p = 0; asym_p < num_players_; ++asym_p) {
-      delete betting_trees_[asym_p];
+      delete a_betting_trees_[asym_p];
     }
   } else {
-    delete betting_trees_[0];
+    delete a_betting_trees_[0];
   }
-  delete [] betting_trees_;
+  delete [] a_betting_trees_;
+  if (b_asymmetric_) {
+    for (int asym_p = 0; asym_p < num_players_; ++asym_p) {
+      delete b_betting_trees_[asym_p];
+    }
+  } else {
+    delete b_betting_trees_[0];
+  }
+  delete [] b_betting_trees_;
 }
 
 static void Usage(const char *prog_name) {
   fprintf(stderr, "USAGE: %s <game params> <A card params> <B card params> "
-	  "<betting abstraction params> <A CFR params> <B CFR params> <A it> <B it> "
-	  "<num duplicate hands> [determ|nondeterm]\n", prog_name);
+	  "<A betting abstraction params> <B betting abstraction params> <A CFR params> "
+	  "<B CFR params> <A it> <B it> <num duplicate hands> [determ|nondeterm]\n", prog_name);
   exit(-1);
 }
 
 int main(int argc, char *argv[]) {
-  if (argc != 11) Usage(argv[0]);
+  if (argc != 12) Usage(argv[0]);
   Files::Init();
   unique_ptr<Params> game_params = CreateGameParams();
   game_params->ReadFromFile(argv[1]);
@@ -636,25 +669,29 @@ int main(int argc, char *argv[]) {
   b_card_params->ReadFromFile(argv[3]);
   unique_ptr<CardAbstraction>
     b_card_abstraction(new CardAbstraction(*b_card_params));
-  unique_ptr<Params> betting_params = CreateBettingAbstractionParams();
-  betting_params->ReadFromFile(argv[4]);
+  unique_ptr<Params> a_betting_params = CreateBettingAbstractionParams();
+  a_betting_params->ReadFromFile(argv[4]);
   unique_ptr<BettingAbstraction>
-    betting_abstraction(new BettingAbstraction(*betting_params));
+    a_betting_abstraction(new BettingAbstraction(*a_betting_params));
+  unique_ptr<Params> b_betting_params = CreateBettingAbstractionParams();
+  b_betting_params->ReadFromFile(argv[5]);
+  unique_ptr<BettingAbstraction>
+    b_betting_abstraction(new BettingAbstraction(*b_betting_params));
   unique_ptr<Params> a_cfr_params = CreateCFRParams();
-  a_cfr_params->ReadFromFile(argv[5]);
+  a_cfr_params->ReadFromFile(argv[6]);
   unique_ptr<CFRConfig>
     a_cfr_config(new CFRConfig(*a_cfr_params));
   unique_ptr<Params> b_cfr_params = CreateCFRParams();
-  b_cfr_params->ReadFromFile(argv[6]);
+  b_cfr_params->ReadFromFile(argv[7]);
   unique_ptr<CFRConfig>
     b_cfr_config(new CFRConfig(*b_cfr_params));
 
   int a_it, b_it;
-  if (sscanf(argv[7], "%i", &a_it) != 1) Usage(argv[0]);
-  if (sscanf(argv[8], "%i", &b_it) != 1) Usage(argv[0]);
+  if (sscanf(argv[8], "%i", &a_it) != 1) Usage(argv[0]);
+  if (sscanf(argv[9], "%i", &b_it) != 1) Usage(argv[0]);
   unsigned long long int num_duplicate_hands;
-  if (sscanf(argv[9], "%llu", &num_duplicate_hands) != 1) Usage(argv[0]);
-  string darg = argv[10];
+  if (sscanf(argv[10], "%llu", &num_duplicate_hands) != 1) Usage(argv[0]);
+  string darg = argv[11];
   bool deterministic;
   if (darg == "determ")         deterministic = true;
   else if (darg == "nondeterm") deterministic = false;
@@ -670,8 +707,8 @@ int main(int argc, char *argv[]) {
   // Leave this in if we don't want reproducibility
   InitRand();
 
-  Player *player = new Player(*betting_abstraction, *a_card_abstraction, *b_card_abstraction,
-			      *a_cfr_config, *b_cfr_config, a_it, b_it);
+  Player *player = new Player(*a_betting_abstraction, *b_betting_abstraction, *a_card_abstraction,
+			      *b_card_abstraction, *a_cfr_config, *b_cfr_config, a_it, b_it);
   player->Go(num_duplicate_hands, deterministic);
   delete player;
 }

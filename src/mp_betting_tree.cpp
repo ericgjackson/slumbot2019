@@ -32,8 +32,7 @@ static unsigned long long int HashKey(const string &key) {
   return fasthash64((void *)key.c_str(), key.size(), 0);
 }
 
-bool BettingTreeBuilder::FindReentrantNode(const string &key,
-					   shared_ptr<Node> *node) {
+bool BettingTreeBuilder::FindReentrantNode(const string &key, shared_ptr<Node> *node) {
   unordered_map< unsigned long long int, shared_ptr<Node> >::iterator it;
   unsigned long long int h = HashKey(key);
   it = node_map_->find(h);
@@ -362,15 +361,10 @@ void BettingTreeBuilder::CreateMPSuccs(int street, int last_bet_size,
 }
 
 shared_ptr<Node>
-BettingTreeBuilder::CreateMPSubtree(int st,
-				    int last_bet_size,
-				    int bet_to,
-				    int num_street_bets,
-				    int num_bets,
-				    int player_acting,
-				    int num_players_to_act,
-				    bool *folded, int target_player,
-				    string *key, int *terminal_id) {
+BettingTreeBuilder::CreateMPSubtree(int st, int last_bet_size, int bet_to, int num_street_bets,
+				    int num_bets, int player_acting, int num_players_to_act,
+				    bool *folded, int target_player, string *key,
+				    int *terminal_id) {
   if (folded[player_acting]) {
     fprintf(stderr, "CreateMPSubtree: Player already folded\n");
     exit(-1);

@@ -1,37 +1,38 @@
 ms0p6
-null_params
-mb1b1ai
-ecfrb
-100m its in 9m23s
-Batch 0 avg P0 val -0.356311
-Batch 0 avg P1 val -1.018594
-Batch 0 avg P2 val 0.273744
-Batch 0 avg P3 val 0.308959
-Batch 0 avg P4 val 0.353569
-Batch 0 avg P5 val 0.422770
-ecfr
-1m its in 5.4s
-Batch 0 avg P0 val -0.442280
-Batch 0 avg P1 val -1.165466
-Batch 0 avg P2 val 0.284243
-Batch 0 avg P3 val 0.312495
-Batch 0 avg P4 val 0.359371
-Batch 0 avg P5 val 0.384911
+null/mb1b1/ecfr
+100m its in 7m6s
+Thread 0 avg P0 val -0.356597
+Thread 0 avg P1 val -1.016585
+Thread 0 avg P2 val 0.277275
+Thread 0 avg P3 val 0.312405
+Thread 0 avg P4 val 0.356472
+Thread 0 avg P5 val 0.423383
+null/mb1b1/ecfrb
+100m its in 8m24s
+Thread 0 avg P0 val -0.356654
+Thread 0 avg P1 val -1.016687
+Thread 0 avg P2 val 0.277138
+Thread 0 avg P3 val 0.312293
+Thread 0 avg P4 val 0.356505
+Thread 0 avg P5 val 0.423443
 
-100m its in 7m56s
-Batch 0 avg P0 val -0.357272
-Batch 0 avg P1 val -1.018503
-Batch 0 avg P2 val 0.277643
-Batch 0 avg P3 val 0.311786
-Batch 0 avg P4 val 0.356027
-Batch 0 avg P5 val 0.422631
-100m-200m its in 8m34s
-Batch 8 avg P0 val -0.356049
-Batch 8 avg P1 val -1.015170
-Batch 8 avg P2 val 0.277015
-Batch 8 avg P3 val 0.312371
-Batch 8 avg P4 val 0.356266
-Batch 8 avg P5 val 0.423589
+null/mb1b1ai/ecfr
+100m its in 8m47s
+Thread 0 avg P0 val -0.357548
+Thread 0 avg P1 val -1.018037
+Thread 0 avg P2 val 0.277262
+Thread 0 avg P3 val 0.311937
+Thread 0 avg P4 val 0.355801
+Thread 0 avg P5 val 0.422779
+
+null/mb1b1ai/ecfrb
+100m its in 10m29s
+Thread 0 avg P0 val -0.356663
+Thread 0 avg P1 val -1.017658
+Thread 0 avg P2 val 0.273334
+Thread 0 avg P3 val 0.308716
+Thread 0 avg P4 val 0.354304
+Thread 0 avg P5 val 0.422727
 
 play ecfr vs. ecfrb (0.001)
 Avg B outcome: -0.000780 (-0.4 mbb/g) over 100000000 dup hands

@@ -1,0 +1,59 @@
+h5ms3f1
+Five ranks, four streets, one card flop
+
+null/mb1b1/ecfr
+1b in 73m
+Thread 0 avg P0 val -0.668464
+Thread 0 avg P1 val 0.518608
+Exploitability: 29.06 mbb/g
+
+null/mb1b1/tcfr
+1b in 26m
+Thread 0 avg P0 val -0.634502
+Thread 0 avg P1 val 0.542251
+Exploitability: 91.94 mbb/g
+1b-2b in 25m
+Exploitability: 72.02 mbb/g
+2b-3b in 25m
+Exploitability: 63.98 mbb/g
+
+null/mb1b1r1/tcfr
+1b in 21m
+Thread 0 avg P0 val -0.578063
+Thread 0 avg P1 val 0.558801
+Exploitability: 746.17 mbb/g
+
+null/mb1b1r3/tcfr
+1b in 22m
+Thread 0 avg P0 val -0.582455
+Thread 0 avg P1 val 0.559441
+Exploitability: 606.45 mbb/g
+
+null/mb1b1r3mrp108/tcfr
+1b in 24m
+Exploitability: 453.37 mbb/g
+
+All tests 100m hands
+Need to redo all the reentrant results
+play ecfr/0 (73m) vs. tcfr/0 (26m)            Avg B outcome: -0.013376 (-6.7 mbb/g)
+play ecfr/0 (73m) vs. tcfr/1 (51m)            Avg B outcome: -0.007454 (-3.7 mbb/g)
+play ecfr/0 (73m) vs. tcfr/2 (76m)            Avg B outcome: -0.005610 (-2.8 mbb/g)
+play mb1b1/tcfr/0 vs. mb1b1r1/tcfr/0:         Avg B outcome: -0.009090 (-4.5 mbb/g)   BUGGY?
+play mb1b1/tcfr/0 vs. mb1b1r1/tcfr/0:         Avg B outcome: -0.024499 (-12.2 mbb/g) REDO
+play mb1b1/tcfr/1 vs. mb1b1r1/tcfr/1:         Avg B outcome: 0.002462 (1.2 mbb/g)     BUGGY?
+play mb1b1/tcfr/0 vs. mb1b1r3/tcfr/0:         Avg B outcome: -0.011123 (-5.6 mbb/g)   BUGGY?
+play mb1b1/tcfr/0 vs. mb1b1r3mrp108/tcfr/0:   Avg B outcome: -0.022983 (-11.5 mbb/g)  BUGGY?
+
+Weird that the systems with less reentrancy do worse head-to-head.
+
+Compare with Slumbot2017 head-to-head results
+mb1b1ar is identical to mb1b1r1.
+
+Redo old slumbot2017 result
+ms3f1t1r1h5/null/mb1b1ar/tcfr
+1b its in 21m
+Exploitability: 796.24 mbb/g
+ms3f1t1r1h5/null/mb1b1/tcfr
+1b its in 25m
+Exploitability: 91.95 mbb/g
+play2 mb1b1 vs. mb1b1ar 100m hands: Avg B outcome: -0.029344 (-14.7 mbb/g)

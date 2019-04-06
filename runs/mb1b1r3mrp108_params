@@ -1,0 +1,11 @@
+BettingAbstractionName mb1b1r3mrp108
+Limit false
+StackSize 162
+Asymmetric false
+NoLimitTreeType 1
+MinBet 2
+MaxBets 1,1,1,1
+AlwaysAllIn false
+BetSizes 1.0|1.0|1.0|1.0
+ReentrantStreets 3
+MinReentrantPot 108

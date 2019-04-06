@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <memory>
 #include <string>
 
 #include "betting_tree.h"
@@ -17,6 +18,7 @@
 #include "subgame_utils.h"
 #include "vcfr_state.h"
 
+using std::shared_ptr;
 using std::string;
 
 DynamicCBR::DynamicCBR(const CardAbstraction &ca, const BettingAbstraction &ba,
@@ -37,8 +39,8 @@ DynamicCBR::~DynamicCBR(void) {
 // If so, they will be for the subgame rooted at root_bd_st and root_bd.
 // So we must map our global board index gbd into a local board index lbd
 // whenever we access hand_tree or the probabilities inside sumprobs.
-double *DynamicCBR::Compute(Node *node, int p, double *opp_probs, int gbd, HandTree *hand_tree, 
-			     int root_bd_st, int root_bd) {
+double *DynamicCBR::Compute(Node *node, int p, const shared_ptr<double []> &opp_probs, int gbd,
+			    HandTree *hand_tree, int root_bd_st, int root_bd) {
   int st = node->Street();
   // time_t start_t = time(NULL);
   int num_hole_card_pairs = Game::NumHoleCardPairs(st);
@@ -48,8 +50,7 @@ double *DynamicCBR::Compute(Node *node, int p, double *opp_probs, int gbd, HandT
   int **street_buckets = AllocateStreetBuckets();
   // Should set this appropriately
   string action_sequence = "x";
-  VCFRState state(opp_probs, hand_tree, 0, action_sequence, root_bd,
-		  root_bd_st, street_buckets);
+  VCFRState state(opp_probs, hand_tree, 0, action_sequence, root_bd, root_bd_st, street_buckets);
   SetStreetBuckets(st, gbd, state);
   p_ = p;
   double *vals = Process(node, lbd, state, st);
@@ -79,7 +80,7 @@ double *DynamicCBR::Compute(Node *node, int p, double *opp_probs, int gbd, HandT
   double ev = sum / num_hole_card_pairs;
 #endif
 
-  FloorCVs(node, opp_probs, hands, vals);
+  FloorCVs(node, opp_probs.get(), hands, vals);
   return vals;
 }
 
@@ -88,9 +89,9 @@ double *DynamicCBR::Compute(Node *node, int p, double *opp_probs, int gbd, HandT
 // solving for P0.  We might say cfr_target_p is 0.  Then I want T-values for
 // P1.  So I pass in 1 to Compute(). We'll need the reach probs of P1's
 // opponent, who is P0.
-double *DynamicCBR::Compute(Node *node, double **reach_probs, int gbd, HandTree *hand_tree,
-			     int root_bd_st, int root_bd, int target_p, bool cfrs, bool zero_sum,
-			     bool current, bool purify_opp) {
+double *DynamicCBR::Compute(Node *node, shared_ptr<double []> *reach_probs, int gbd,
+			    HandTree *hand_tree, int root_bd_st, int root_bd, int target_p,
+			    bool cfrs, bool zero_sum, bool current, bool purify_opp) {
   cfrs_ = cfrs;
   br_current_ = current;
   if (purify_opp) {
@@ -103,10 +104,8 @@ double *DynamicCBR::Compute(Node *node, double **reach_probs, int gbd, HandTree 
     prob_method_ = ProbMethod::REGRET_MATCHING;
   }
   if (zero_sum) {
-    double *p0_cvs = Compute(node, 0, reach_probs[1], gbd, hand_tree,
-			     root_bd_st, root_bd);
-    double *p1_cvs = Compute(node, 1, reach_probs[0], gbd, hand_tree,
-			     root_bd_st, root_bd);
+    double *p0_cvs = Compute(node, 0, reach_probs[1], gbd, hand_tree, root_bd_st, root_bd);
+    double *p1_cvs = Compute(node, 1, reach_probs[0], gbd, hand_tree, root_bd_st, root_bd);
     int st = node->Street();
     int num_hole_card_pairs = Game::NumHoleCardPairs(st);
     // Don't pass in bd.  This is a local hand tree specific to the current
@@ -122,8 +121,7 @@ double *DynamicCBR::Compute(Node *node, double **reach_probs, int gbd, HandTree 
       return p0_cvs;
     }
   } else {
-    return Compute(node, target_p, reach_probs[target_p^1], gbd,
-		   hand_tree, root_bd_st, root_bd);
+    return Compute(node, target_p, reach_probs[target_p^1], gbd, hand_tree, root_bd_st, root_bd);
   }
 }
 

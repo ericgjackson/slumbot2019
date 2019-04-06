@@ -2,7 +2,7 @@
 #include "sorting.h"
 
 PDILowerCompare g_pdi_lower_compare;
-PUIUILowerCompare g_puiui_lower_compare;
+PIILowerCompare g_pii_lower_compare;
 PDSHigherCompare g_pds_higher_compare;
 PFUILowerCompare g_pfui_lower_compare;
 

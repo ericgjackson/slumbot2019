@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <memory>
 #include <string>
 
 #include "betting_tree.h"
@@ -9,6 +10,7 @@
 #include "hand_tree.h"
 #include "vcfr_state.h"
 
+using std::shared_ptr;
 using std::string;
 
 // Currently allocate for all streets.  Could be smarter and allocate just
@@ -33,13 +35,13 @@ void DeleteStreetBuckets(int **street_buckets) {
   delete [] street_buckets;
 }
 
-double *AllocateOppProbs(bool initialize) {
+shared_ptr<double []> AllocateOppProbs(bool initialize) {
   int num_hole_cards = Game::NumCardsForStreet(0);
   int max_card1 = Game::MaxCard() + 1;
   int num_enc;
   if (num_hole_cards == 1) num_enc = max_card1;
   else                     num_enc = max_card1 * max_card1;
-  double *opp_probs = new double[num_enc];
+  shared_ptr<double []> opp_probs(new double[num_enc]);
   if (initialize) {
     for (int i = 0; i < num_enc; ++i) opp_probs[i] = 1.0;
   }
@@ -48,7 +50,8 @@ double *AllocateOppProbs(bool initialize) {
 
 // Called at the root of the tree.  We need to initialize total_card_probs_
 // and sum_opp_probs_ because an open fold is allowed.
-VCFRState::VCFRState(double *opp_probs, int **street_buckets, const HandTree *hand_tree) {
+VCFRState::VCFRState(const shared_ptr<double []> &opp_probs, int **street_buckets,
+		     const HandTree *hand_tree) {
   opp_probs_ = opp_probs;
   street_buckets_ = street_buckets;
   action_sequence_ = "x";
@@ -58,14 +61,13 @@ VCFRState::VCFRState(double *opp_probs, int **street_buckets, const HandTree *ha
   int max_card1 = Game::MaxCard() + 1;
   total_card_probs_ = new double[max_card1];
   const CanonicalCards *hands = hand_tree_->Hands(0, 0);
-  CommonBetResponseCalcs(0, hands, opp_probs_, &sum_opp_probs_,
-			 total_card_probs_);
+  CommonBetResponseCalcs(0, hands, opp_probs_.get(), &sum_opp_probs_, total_card_probs_);
 }
   
 // Called at an internal street-initial node.  We initialize total_card_probs_
 // to nullptr and sum_opp_probs_ to zero because we know we will come
 // across an opp-choice node before we need those members.
-VCFRState::VCFRState(double *opp_probs, const HandTree *hand_tree, int lbd,
+VCFRState::VCFRState(const shared_ptr<double []> &opp_probs, const HandTree *hand_tree, int lbd,
 		     const string &action_sequence, int root_bd, int root_bd_st,
 		     int **street_buckets) {
   opp_probs_ = opp_probs;
@@ -80,9 +82,9 @@ VCFRState::VCFRState(double *opp_probs, const HandTree *hand_tree, int lbd,
 
 // Called at an internal street-initial node.  Unlike the above constructor,
 // we take a total_card_probs parameter and initialize it.
-VCFRState::VCFRState(double *opp_probs, double *total_card_probs, const HandTree *hand_tree, int st,
-		     int lbd, const string &action_sequence, int root_bd, int root_bd_st,
-		     int **street_buckets) {
+VCFRState::VCFRState(const shared_ptr<double []> &opp_probs, double *total_card_probs,
+		     const HandTree *hand_tree, int st, int lbd, const string &action_sequence,
+		     int root_bd, int root_bd_st, int **street_buckets) {
   opp_probs_ = opp_probs;
   total_card_probs_ = total_card_probs;
   hand_tree_ = hand_tree;
@@ -91,8 +93,7 @@ VCFRState::VCFRState(double *opp_probs, double *total_card_probs, const HandTree
   root_bd_st_ = root_bd_st;
   street_buckets_ = street_buckets;
   const CanonicalCards *hands = hand_tree_->Hands(st, lbd);
-  CommonBetResponseCalcs(root_bd_st_, hands, opp_probs_, &sum_opp_probs_,
-			 total_card_probs_);
+  CommonBetResponseCalcs(root_bd_st_, hands, opp_probs_.get(), &sum_opp_probs_, total_card_probs_);
 }
 
 // Create a new VCFRState corresponding to taking an action of ours.
@@ -108,8 +109,9 @@ VCFRState::VCFRState(const VCFRState &pred, Node *node, int s) {
 }
 
 // Create a new VCFRState corresponding to taking an opponent action.
-VCFRState::VCFRState(const VCFRState &pred, Node *node, int s, double *opp_probs,
-		     double sum_opp_probs, double *total_card_probs) {
+VCFRState::VCFRState(const VCFRState &pred, Node *node, int s,
+		     const shared_ptr<double []> &opp_probs, double sum_opp_probs,
+		     double *total_card_probs) {
   opp_probs_ = opp_probs;
   hand_tree_ = pred.GetHandTree();
   action_sequence_ = pred.ActionSequence() + node->ActionName(s);

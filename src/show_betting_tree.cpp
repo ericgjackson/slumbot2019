@@ -1,7 +1,3 @@
-// Tree constructor requires card abstraction because nonterminal IDs are
-// indexed by granularity, and the card abstraction gives the number of
-// bucketings.
-
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -11,8 +7,6 @@
 #include "betting_abstraction.h"
 #include "betting_abstraction_params.h"
 #include "betting_tree.h"
-#include "card_abstraction.h"
-#include "card_abstraction_params.h"
 #include "files.h"
 #include "game.h"
 #include "game_params.h"
@@ -35,8 +29,7 @@ int main(int argc, char *argv[]) {
   Game::Initialize(*game_params);
   unique_ptr<Params> betting_params = CreateBettingAbstractionParams();
   betting_params->ReadFromFile(argv[2]);
-  unique_ptr<BettingAbstraction>
-    betting_abstraction(new BettingAbstraction(*betting_params));
+  unique_ptr<BettingAbstraction> betting_abstraction(new BettingAbstraction(*betting_params));
 
   BettingTree *betting_tree = NULL;
   if (argc == 4) {

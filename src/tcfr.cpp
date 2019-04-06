@@ -470,7 +470,7 @@ void TCFRThread::Run(void) {
       }
     }
   }
-  fprintf(stderr, "Thread %i done; performed %llu iterations\n", thread_index_, it_);
+  // fprintf(stderr, "Thread %i done; performed %llu iterations\n", thread_index_, it_);
   if (thread_index_ == 0) {
     for (int p = 0; p < num_players_; ++p) {
       fprintf(stderr, "Thread %i avg P%u val %f\n", thread_index_, p,
@@ -1828,8 +1828,7 @@ void TCFR::Prepare(void) {
       }
     }
   }
-  unsigned char *end = Prepare(data_, betting_tree_->Root(), Game::BigBlind(),
-			       offsets);
+  unsigned char *end = Prepare(data_, betting_tree_->Root(), Game::BigBlind(), offsets);
   unsigned long long int sz = end - data_;
   if (sz != allocation_size) {
     fprintf(stderr, "Didn't fill expected number of bytes: sz %llu as %llu\n",

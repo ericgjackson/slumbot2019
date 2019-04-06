@@ -1,0 +1,83 @@
+Using soft warmup for both base and resolve with warmup value of 100.
+cfrps_params
+
+ms1f1
+mb1b1
+Base: Exploitability: 2.86 mbb/g
+  Matches slumbot2017
+unsafe: Exploitability: 3.83 mbb/g
+  Basically matches slumbot2017 (3.84)
+  Matches our "redo" below.
+cfrd
+  Raw CVs:      Exploitability: 3.05 mbb/g
+    Matches slumbot2017
+  Zero-sum CVs: Exploitability: 2.95 mbb/g
+    Matches slumbot2017
+combined
+  Zero-sum CVs: Exploitability: 2.92 mbb/g
+    Doesn't match slumbot2017 (2.69)
+    Does match our redo below.
+
+ms1f3
+mb1b1
+Base: Exploitability: 1.43 mbb/g
+  Matches slumbot2017
+unsafe: Exploitability: 1.17 mbb/g
+  A little worse than slumbot2017 (1.12)
+  Maybe that was hard warmup in the resolve
+cfrd
+  Raw CVs:      Exploitability: 1.66 mbb/g
+  Zero-sum CVs: Exploitability: 1.61 mbb/g
+  slumbot2017 had 1.37, but I don't know if that was for raw or zero-sum
+combined
+  Zero-sum CVs: Exploitability: 1.61 mbb/g
+    Doesn't match slumbot2017
+
+
+Redo Slumbot 2017 results.
+solve_all_endgames4
+ms1f1
+mb1b1
+base:                Exploitability: 2.86 mbb/g
+unsafe:              Exploitability: 3.83 mbb/g
+cfrd (zero-sum):     Exploitability: 2.95 mbb/g
+combined (zero-sum): Exploitability: 2.92 mbb/g
+solve_all_endgames
+unsafe:   Exploitability: 3.83 mbb/g (matches)
+cfrd:     Exploitability: 2.95 mbb/g (matches)
+combined: Exploitability: 2.92 mbb/g
+  Matches everything except old slumbot2017 results.  Hmm.
+
+Hypothesis: I've tweaked combined endgame solving in slumbot2017 since those old results were
+obtained.  Results on small games have gotten worse as a consequence.  It's possible that
+results on bigger games have gotten better.
+ms1f3
+mb1b1
+base:                Exploitability: 1.43 mbb/g
+unsafe:              Exploitability: 1.17 mbb/g
+cfrd (zero-sum):     Exploitability: 1.61 mbb/g
+combined (zero-sum): Exploitability: 1.61 mbb/g
+
+Could try cfrps/cfrph
+
+-----------
+
+Redoing Slumbot2017 on ms3f1t1r1h5
+nhs3 abstraction: Uses hs for the river
+Batch 0 in 21m: Exploitability: 1160.50 mbb/g
+Batch 8 in 21m: Exploitability: 1121.14 mbb/g
+Resolves at 8:
+Unsafe:            Exploitability: 671.16 mbb/g
+CFR-D zero-sum:    Exploitability: 397.94 mbb/g
+Combined zero-sum: Exploitability: 311.24 mbb/g
+
+tcfre001
+Explore=0.001
+Batch 0: Exploitability: 1146.93 mbb/g
+Batch 8: Exploitability: 1114.22 mbb/g
+Resolves at 8:
+Unsafe:            Exploitability: 711.56 mbb/g
+CFR-D zero-sum:    Exploitability: 390.17 mbb/g
+Combined zero-sum: Exploitability: 321.24 mbb/g
+
+Exploration usually hurts.

@@ -1,0 +1,4 @@
+# Intended for merged systems where endgame solving was performed with
+# the CFR-D method.
+CFRConfigName cfrpsmd
+Algorithm cfrp

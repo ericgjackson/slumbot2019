@@ -19,6 +19,7 @@
 #include "vcfr_state.h"
 #include "vcfr.h"
 
+using std::shared_ptr;
 using std::string;
 using std::unique_ptr;
 using std::vector;
@@ -340,17 +341,18 @@ double *VCFR::OppChoice(Node *node, int lbd, const VCFRState &state) {
   if (num_hole_cards == 1) num_enc = max_card1;
   else                     num_enc = max_card1 * max_card1;
 
-  double *opp_probs = state.OppProbs();
-  double **succ_opp_probs = new double *[num_succs];
+  const shared_ptr<double []> &opp_probs = state.OppProbs();
+  // double **succ_opp_probs = new double *[num_succs];
+  unique_ptr<shared_ptr<double []> []> succ_opp_probs(new shared_ptr<double []> [num_succs]);
   if (num_succs == 1) {
-    succ_opp_probs[0] = new double[num_enc];
+    succ_opp_probs[0].reset(new double[num_enc]);
     for (int i = 0; i < num_enc; ++i) {
       succ_opp_probs[0][i] = opp_probs[i];
     }
   } else {
     int **street_buckets = state.StreetBuckets();
     for (int s = 0; s < num_succs; ++s) {
-      succ_opp_probs[s] = new double[num_enc];
+      succ_opp_probs[s].reset(new double[num_enc]);
       for (int i = 0; i < num_enc; ++i) succ_opp_probs[s][i] = 0;
     }
 
@@ -387,13 +389,13 @@ double *VCFR::OppChoice(Node *node, int lbd, const VCFRState &state) {
 	exit(-1);
       } else {
 	if (d_sumprob_values) {
-	  ProcessOppProbs(node, lbd, hands, bucketed, street_buckets, opp_probs, succ_opp_probs,
-			  *d_sumprob_values, dsi, it_, soft_warmup_, hard_warmup_,
-			  sumprob_scaling_[st], (CFRStreetValues<int> *)nullptr);
+	  ProcessOppProbs(node, lbd, hands, bucketed, street_buckets, opp_probs.get(),
+			  succ_opp_probs.get(), *d_sumprob_values, dsi, it_, soft_warmup_,
+			  hard_warmup_, sumprob_scaling_[st], (CFRStreetValues<int> *)nullptr);
 	} else if (i_sumprob_values) {
-	  ProcessOppProbs(node, lbd, hands, bucketed, street_buckets, opp_probs, succ_opp_probs,
-			  *i_sumprob_values, dsi, it_, soft_warmup_, hard_warmup_,
-			  sumprob_scaling_[st], (CFRStreetValues<int> *)nullptr);
+	  ProcessOppProbs(node, lbd, hands, bucketed, street_buckets, opp_probs.get(),
+			  succ_opp_probs.get(), *i_sumprob_values, dsi, it_, soft_warmup_,
+			  hard_warmup_, sumprob_scaling_[st], (CFRStreetValues<int> *)nullptr);
 	} else {
 	  fprintf(stderr, "value_calculation_ and ! br_current_ requires sumprobs\n");
 	  exit(-1);
@@ -412,11 +414,13 @@ double *VCFR::OppChoice(Node *node, int lbd, const VCFRState &state) {
       int pa = node->PlayerActing();
       double *current_probs = street_values->AllValues(pa, nt);
       if (d_sumprob_values) {
-	ProcessOppProbs(node, hands, street_buckets, opp_probs, succ_opp_probs, current_probs, it_,
-			soft_warmup_, hard_warmup_, sumprob_scaling_[st], d_sumprob_values);
+	ProcessOppProbs(node, hands, street_buckets, opp_probs.get(), succ_opp_probs.get(),
+			current_probs, it_, soft_warmup_, hard_warmup_, sumprob_scaling_[st],
+			d_sumprob_values);
       } else {
-	ProcessOppProbs(node, hands, street_buckets, opp_probs, succ_opp_probs, current_probs, it_,
-			soft_warmup_, hard_warmup_, sumprob_scaling_[st], i_sumprob_values);
+	ProcessOppProbs(node, hands, street_buckets, opp_probs.get(), succ_opp_probs.get(),
+			current_probs, it_, soft_warmup_, hard_warmup_, sumprob_scaling_[st],
+			i_sumprob_values);
       }
     } else {
       // Such a mess!
@@ -432,15 +436,13 @@ double *VCFR::OppChoice(Node *node, int lbd, const VCFRState &state) {
       if ((d_cs_values =
 	   dynamic_cast<CFRStreetValues<double> *>(cs_values))) {
 	if (d_sumprob_values) {
-	  ProcessOppProbs(node, lbd, hands, bucketed, street_buckets,
-			  opp_probs, succ_opp_probs, *d_cs_values, dsi, it_,
-			  soft_warmup_, hard_warmup_, sumprob_scaling_[st],
-			  d_sumprob_values);
+	  ProcessOppProbs(node, lbd, hands, bucketed, street_buckets, opp_probs.get(),
+			  succ_opp_probs.get(), *d_cs_values, dsi, it_, soft_warmup_, hard_warmup_,
+			  sumprob_scaling_[st], d_sumprob_values);
 	} else {
-	  ProcessOppProbs(node, lbd, hands, bucketed, street_buckets,
-			  opp_probs, succ_opp_probs, *d_cs_values, dsi, it_,
-			  soft_warmup_, hard_warmup_, sumprob_scaling_[st],
-			  i_sumprob_values);
+	  ProcessOppProbs(node, lbd, hands, bucketed, street_buckets, opp_probs.get(),
+			  succ_opp_probs.get(), *d_cs_values, dsi, it_, soft_warmup_, hard_warmup_,
+			  sumprob_scaling_[st], i_sumprob_values);
 	}
       } else {
 	i_cs_values = dynamic_cast<CFRStreetValues<int> *>(cs_values);
@@ -449,15 +451,13 @@ double *VCFR::OppChoice(Node *node, int lbd, const VCFRState &state) {
 	  exit(-1);
 	}
 	if (d_sumprob_values) {
-	  ProcessOppProbs(node, lbd, hands, bucketed, street_buckets,
-			  opp_probs, succ_opp_probs, *i_cs_values, dsi, it_,
-			  soft_warmup_, hard_warmup_, sumprob_scaling_[st],
-			  d_sumprob_values);
+	  ProcessOppProbs(node, lbd, hands, bucketed, street_buckets, opp_probs.get(),
+			  succ_opp_probs.get(), *i_cs_values, dsi, it_, soft_warmup_, hard_warmup_,
+			  sumprob_scaling_[st], d_sumprob_values);
 	} else {
-	  ProcessOppProbs(node, lbd, hands, bucketed, street_buckets,
-			  opp_probs, succ_opp_probs, *i_cs_values, dsi, it_,
-			  soft_warmup_, hard_warmup_, sumprob_scaling_[st],
-			  i_sumprob_values);
+	  ProcessOppProbs(node, lbd, hands, bucketed, street_buckets, opp_probs.get(),
+			  succ_opp_probs.get(), *i_cs_values, dsi, it_, soft_warmup_, hard_warmup_,
+			  sumprob_scaling_[st], i_sumprob_values);
 	}
       }
     }
@@ -467,7 +467,7 @@ double *VCFR::OppChoice(Node *node, int lbd, const VCFRState &state) {
   double succ_sum_opp_probs;
   for (int s = 0; s < num_succs; ++s) {
     double *succ_total_card_probs = new double[max_card1];
-    CommonBetResponseCalcs(st, hands, succ_opp_probs[s], &succ_sum_opp_probs,
+    CommonBetResponseCalcs(st, hands, succ_opp_probs[s].get(), &succ_sum_opp_probs,
 			   succ_total_card_probs);
     if (prune_ && succ_sum_opp_probs == 0) {
       delete [] succ_total_card_probs;
@@ -493,18 +493,20 @@ double *VCFR::OppChoice(Node *node, int lbd, const VCFRState &state) {
     vals = new double[num_hole_card_pairs];
     for (int i = 0; i < num_hole_card_pairs; ++i) vals[i] = 0;
   }
+#if 0
   for (int s = 0; s < num_succs; ++s) {
     delete [] succ_opp_probs[s];
   }
   delete [] succ_opp_probs;
+#endif
 
   return vals;
 }
 
 class VCFRThread {
 public:
-  VCFRThread(VCFR *vcfr, int thread_index, int num_threads,
-	     Node *node, const string &action_sequence, double *opp_probs,
+  VCFRThread(VCFR *vcfr, int thread_index, int num_threads, Node *node,
+	     const string &action_sequence, const shared_ptr<double []> &opp_probs,
 	     const HandTree *hand_tree, int *prev_canons);
   ~VCFRThread(void);
   void Run(void);
@@ -517,7 +519,7 @@ private:
   int num_threads_;
   Node *node_;
   const string &action_sequence_;
-  double *opp_probs_;
+  shared_ptr<double []> opp_probs_;
   const HandTree *hand_tree_;
   int *prev_canons_;
   double *ret_vals_;
@@ -525,7 +527,7 @@ private:
 };
 
 VCFRThread::VCFRThread(VCFR *vcfr, int thread_index, int num_threads, Node *node,
-		       const string &action_sequence, double *opp_probs,
+		       const string &action_sequence, const shared_ptr<double []> &opp_probs,
 		       const HandTree *hand_tree, int *prev_canons) :
   action_sequence_(action_sequence) {
   vcfr_ = vcfr;
@@ -565,8 +567,7 @@ void VCFRThread::Go(void) {
   for (int i = 0; i < num_prev_hole_card_pairs; ++i) ret_vals_[i] = 0;
   for (int bd = thread_index_; bd < num_boards; bd += num_threads_) {
     int **street_buckets = AllocateStreetBuckets();
-    VCFRState state(opp_probs_, hand_tree_, bd, action_sequence_, 0, 0,
-		    street_buckets);
+    VCFRState state(opp_probs_, hand_tree_, bd, action_sequence_, 0, 0, street_buckets);
     // Initialize buckets for this street
     vcfr_->SetStreetBuckets(st, bd, state);
     double *bd_vals = vcfr_->Process(node_, bd, state, st);
@@ -590,7 +591,7 @@ void VCFRThread::Go(void) {
 // the threads, joins them, aggregates the resulting CVs.
 // Only support splitting on the flop for now.
 // Ugly that we pass prev_canons in.
-void VCFR::Split(Node *node, double *opp_probs, const HandTree *hand_tree,
+void VCFR::Split(Node *node, const shared_ptr<double []> &opp_probs, const HandTree *hand_tree,
 		 const string &action_sequence, int *prev_canons, double *vals) {
   int nst = node->Street();
   int pst = nst - 1;
@@ -598,8 +599,8 @@ void VCFR::Split(Node *node, double *opp_probs, const HandTree *hand_tree,
   for (int i = 0; i < prev_num_hole_card_pairs; ++i) vals[i] = 0;
   unique_ptr<VCFRThread * []> threads(new VCFRThread *[num_threads_]);
   for (int t = 0; t < num_threads_; ++t) {
-    threads[t] = new VCFRThread(this, t, num_threads_, node, action_sequence,
-				opp_probs, hand_tree, prev_canons);
+    threads[t] = new VCFRThread(this, t, num_threads_, node, action_sequence, opp_probs, hand_tree,
+				prev_canons);
   }
   for (int t = 1; t < num_threads_; ++t) {
     threads[t]->Run();
@@ -761,13 +762,11 @@ double *VCFR::Process(Node *node, int lbd, const VCFRState &state, int last_st) 
   int st = node->Street();
   if (node->Terminal()) {
     if (node->NumRemaining() == 1) {
-      return Fold(node, p_, state.GetHandTree()->Hands(st, lbd),
-		  state.OppProbs(), state.SumOppProbs(),
-		  state.TotalCardProbs());
+      return Fold(node, p_, state.GetHandTree()->Hands(st, lbd), state.OppProbs().get(),
+		  state.SumOppProbs(), state.TotalCardProbs());
     } else {
-      return Showdown(node, state.GetHandTree()->Hands(st, lbd),
-		      state.OppProbs(), state.SumOppProbs(),
-		      state.TotalCardProbs());
+      return Showdown(node, state.GetHandTree()->Hands(st, lbd), state.OppProbs().get(),
+		      state.SumOppProbs(), state.TotalCardProbs());
     }
   }
   if (st > last_st) {

@@ -129,25 +129,37 @@ static void Indent(int num) {
   for (int i = 0; i < num; ++i) printf(" ");
 }
 
-void Node::PrintTree(int depth, string name,
-		     int last_street) {
-  Indent(2 * depth);
-  int street = Street();
-  if (street > last_street) name += " ";
-  printf("\"%s\" (id %u lbt %u ns %u s %u", name.c_str(), id_, LastBetTo(),
-	 NumSuccs(), street);
-  if (NumSuccs() > 0) {
-    printf(" p%uc", player_acting_);
+void Node::PrintTree(int depth, const string &name, bool ***seen, int last_st) {
+  bool recurse = true;
+  int st = Street();
+  int pa = PlayerActing();
+  if (! Terminal()) {
+    int nt = NonterminalID();
+    if (seen[st][pa][nt]) recurse = false;
+    seen[st][pa][nt] = true;
   }
-  printf(")\n");
+  Indent(2 * depth);
   int num_succs = NumSuccs();
-  for (int s = 0; s < num_succs; ++s) {
-    char c;
-    if (s == CallSuccIndex())      c = 'C';
-    else if (s == FoldSuccIndex()) c = 'F';
-    else                           c = 'B';
-    string new_name = name + c;
-    succs_[s]->PrintTree(depth + 1, new_name, street);
+  printf("\"%s\" (id %u lbt %u ns %u st %u", name.c_str(), id_, LastBetTo(), num_succs, st);
+  if (! Terminal()) {
+    printf(" p%uc", pa);
+  }
+  printf(")");
+  if (! recurse) {
+    printf(" *");
+  }
+  printf("\n");
+  if (recurse) {
+    for (int s = 0; s < num_succs; ++s) {
+      char c;
+      if (s == CallSuccIndex())      c = 'C';
+      else if (s == FoldSuccIndex()) c = 'F';
+      else                           c = 'B';
+      string new_name = name;
+      if (st > last_st) new_name += " ";
+      new_name += c;
+      succs_[s]->PrintTree(depth + 1, new_name, seen, st);
+    }
   }
 }
 
@@ -177,7 +189,27 @@ int Node::DefaultSuccIndex(void) const {
 }
 
 void BettingTree::Display(void) {
-  root_->PrintTree(0, "", initial_street_);
+  int num_players = Game::NumPlayers();
+  int max_street = Game::MaxStreet();
+  bool ***seen = new bool **[max_street + 1];
+  for (int st = 0; st <= max_street; ++st) {
+    seen[st] = new bool *[num_players];
+    for (int p = 0; p < num_players; ++p) {
+      int num_nt = NumNonterminals(p, st);
+      seen[st][p] = new bool[num_nt];
+      for (int i = 0; i < num_nt; ++i) {
+	seen[st][p][i] = false;
+      }
+    }
+  }
+  root_->PrintTree(0, "", seen, initial_street_);
+  for (int st = 0; st <= max_street; ++st) {
+    for (int p = 0; p < num_players; ++p) {
+      delete [] seen[st][p];
+    }
+    delete [] seen[st];
+  }
+  delete [] seen;
 }
 
 void BettingTree::FillTerminalArray(Node *node) {

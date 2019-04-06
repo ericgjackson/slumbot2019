@@ -1,0 +1,74 @@
+h5ms3f1p3
+Six players, five ranks, four streets, one card flop
+null/mb1b1r1/tcfr
+1b in 71m
+Thread 0 avg P0 val -0.609187
+Thread 0 avg P1 val -1.193800
+Thread 0 avg P2 val 0.233472
+Thread 0 avg P3 val 0.323313
+Thread 0 avg P4 val 0.471748
+Thread 0 avg P5 val 0.712634
+2b-5b in 211m
+Thread 0 avg P0 val -0.599735
+Thread 0 avg P1 val -1.181563
+Thread 0 avg P2 val 0.231807
+Thread 0 avg P3 val 0.327873
+Thread 0 avg P4 val 0.479875
+Thread 0 avg P5 val 0.735530
+
+1b vs. 2b: Avg B outcome: 0.009553 (4.8 mbb/g) over 100000000 dup hands
+Avg P0 outcome: -0.607630
+Avg P1 outcome: -1.184129
+Avg P2 outcome: 0.235955
+Avg P3 outcome: 0.329444
+Avg P4 outcome: 0.484384
+Avg P5 outcome: 0.741976
+2b vs 3b: Avg B outcome: 0.005746 (2.9 mbb/g) over 100000000 dup hands
+Avg P0 outcome: -0.609985
+Avg P1 outcome: -1.180775
+Avg P2 outcome: 0.236408
+Avg P3 outcome: 0.328488
+Avg P4 outcome: 0.484854
+Avg P5 outcome: 0.741009
+3b vs 4b: Avg B outcome: 0.006515 (3.3 mbb/g) over 100000000 dup hands
+Avg P0 outcome: -0.606943
+Avg P1 outcome: -1.183837
+Avg P2 outcome: 0.236168
+Avg P3 outcome: 0.326021
+Avg P4 outcome: 0.485882
+Avg P5 outcome: 0.742709
+
+hs3/mb1b1/tcfr
+1b in 79m (0-1)
+Thread 0 avg P0 val -0.653555
+Thread 0 avg P1 val -1.247950
+Thread 0 avg P2 val 0.228920
+Thread 0 avg P3 val 0.307642
+Thread 0 avg P4 val 0.437811
+Thread 0 avg P5 val 0.681832
+1b-2b in 78m (1-2)
+Thread 0 avg P0 val -0.631616
+Thread 0 avg P1 val -1.216083
+Thread 0 avg P2 val 0.244639
+Thread 0 avg P3 val 0.327374
+Thread 0 avg P4 val 0.462434
+Thread 0 avg P5 val 0.719822
+2b-3b in 77m (2-3)
+Thread 0 avg P0 val -0.629294
+Thread 0 avg P1 val -1.210663
+Thread 0 avg P2 val 0.251631
+Thread 0 avg P3 val 0.328964
+Thread 0 avg P4 val 0.460549
+Thread 0 avg P5 val 0.733373
+3b-10b in 526m (3-10)
+Thread 0 avg P0 val -0.622081
+Thread 0 avg P1 val -1.199030
+Thread 0 avg P2 val 0.254676
+Thread 0 avg P3 val 0.342562
+Thread 0 avg P4 val 0.472724
+Thread 0 avg P5 val 0.726042
+
+hs3/mb1b1/0 vs. null/mb1b1r1/0: Avg B outcome: 0.086340 (43.2 mbb/g) over 100000000 dup hands
+hs3/mb1b1/1 vs. null/mb1b1r1/1: Avg B outcome: 0.078361 (39.2 mbb/g) over 100000000 dup hands
+hs3/mb1b1/2 vs. null/mb1b1r1/2: Avg B outcome: 0.074764 (37.4 mbb/g) over 100000000 dup hands
+hs3/mb1b1/9 vs. null/mb1b1r1/3: Avg B outcome: 0.068311 (34.2 mbb/g) over 100000000 dup hands

@@ -3,6 +3,7 @@
 
 #include <semaphore.h>
 
+#include <memory>
 #include <string>
 
 #include "cfrp_subgame.h"
@@ -29,7 +30,8 @@ public:
  protected:
   void WaitForFinalSubgames(void);
   void FloorRegrets(Node *node);
-  void SpawnSubgame(Node *node, int bd, const std::string &action_sequence, double *opp_probs);
+  void SpawnSubgame(Node *node, int bd, const std::string &action_sequence,
+		    const std::shared_ptr<double []> &opp_probs);
   void HalfIteration(int p);
   void Checkpoint(int it);
   void ReadFromCheckpoint(int it);

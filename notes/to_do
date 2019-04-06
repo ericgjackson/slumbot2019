@@ -1,18 +1,53 @@
-Fix nondeterm play
+Measure head-to-head for base and resolved systems for ms3f1t1r1h5 game.  Compare with Slumbot2017.
+Does resolving lead to noticeably superior head-to-head performance?  If so, then maybe I am
+content to measure benefits of resolving in multiplayer with head-to-head results.
+
+Evaluate boosting in the base system with respect to its effect on resolved systems.
+
+Fix determ play
 
 It's a mess that we need to pass around root_bd_st/root_bd and if we get it wrong there are subtle
 errors.
 
 Is there a discrepancy with suited vs. unsuited hands in TCFR?  Can get very different strategies.
 
-Implement sampled_br?  Or just use CFR with n-1 players strategies' fixed?
-
 To copy from macduff:
 Slumbot website code and data
 Settings from .bashrc (e.g., AWS_SECRET_KEY)
 
-Build a system with lots of reentrancy.  Then cluster distinct histories that were pooled by the
-distributions that reach them.  Then retrain with each cluster becoming a distinct node.  Could
-also factor in how often the histories are reached.
+Compare ecfr and tcfr.
 
-Create a new github repository.  Call it slumbot2019.  Check everything in there.
+Experiment with multiplayer and reentrancy.  Evaluate with head-to-head?  Can we use h5;
+i.e., a 20 card deck?  6 hole cards, 5 board cards, 9 unused cards.  I guess so.
+
+Get endgame solving working again.  Unsafe works on simple game now.  What about combined
+and CFR-D?  Does boosting help it?  Seems like CFR-D endgame solving was unimplemented and
+combined endgame solving was incomplete.  Need to support multiplayer betting trees in
+CreateSubtree() in solve_all_subgames.
+
+Build a h5ms3f1p6 system with a non-reentrant tree.  Currently using hs3 buckets, but should
+probably do something better for the river, and bucket the turn as well.
+
+Finish converting unsigned ints to ints everywhere.
+
+Get rid of that ugliness where the opp probs is inside VCFRState but not owned by it.
+shared_ptr?  Also street_buckets.
+
+Should I boost CVs instead of boosting regrets?  Can I boost only at leaf nodes?  I don't want
+to boost at several nonterminals on the way to a river terminal node, do I?  Wouldn't that lead
+to too much boosting?
+
+Boosting at terminal nodes is possibly excessive.  I only want to force players to reach every
+nonterminal.  But maybe it wouldn't hurt too much to do so.
+
+For deeply embedded nodes, I am worried about the boosting becoming very attenuated.  Only
+1/1000 hands may go down the preflop succ.  Then maybe only 1/1000 down a flop succ.  By the
+logic of Targeted CFR, can we do iterations that are forced to go down the boosted succs?
+
+Incorporate more modern C++:
+1) Replace new with unique_ptr everywhere possible
+2) Look into STL multi-dimensional arrays
+3) Use auto wherever possible; e.g., for iterators
+4) Use C++ multithreading primitives
+5) Look into new kind of iteration
+6) Get rid of typedefs

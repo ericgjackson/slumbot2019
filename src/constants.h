@@ -1,7 +1,7 @@
 #ifndef _CONSTANTS_H_
 #define _CONSTANTS_H_
 
-static const unsigned int kMaxUnsignedShort = 65535U;
+static const int kMaxUnsignedShort = 65535U;
 static const int kMaxInt = 2147483647;
 static const int kMinInt = -2147483648;
 static const unsigned int kMaxUnsignedInt = 4294967295U;

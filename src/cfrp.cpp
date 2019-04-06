@@ -39,6 +39,7 @@
 #include "vcfr_state.h"
 #include "vcfr.h"
 
+using std::shared_ptr;
 using std::string;
 using std::unique_ptr;
 
@@ -186,10 +187,11 @@ static void *thread_run(void *v_sg) {
   return NULL;
 }
 
-void CFRP::SpawnSubgame(Node *node, int bd, const string &action_sequence, double *opp_probs) {
+void CFRP::SpawnSubgame(Node *node, int bd, const string &action_sequence,
+			const shared_ptr<double []> &opp_probs) {
   CFRPSubgame *subgame =
-    new CFRPSubgame(card_abstraction_, betting_abstraction_, cfr_config_,
-		    buckets_, node, bd, action_sequence, this);
+    new CFRPSubgame(card_abstraction_, betting_abstraction_, cfr_config_, buckets_, node, bd,
+		    action_sequence, this);
   subgame->SetBestResponseStreets(best_response_streets_);
   subgame->SetBRCurrent(br_current_);
   subgame->SetValueCalculation(value_calculation_);
@@ -277,7 +279,7 @@ void CFRP::HalfIteration(int p) {
   }
 
   if (subgame_street_ >= 0 && subgame_street_ <= Game::MaxStreet()) pre_phase_ = true;
-  double *opp_probs = AllocateOppProbs(true);
+  shared_ptr<double []> opp_probs = AllocateOppProbs(true);
   int **street_buckets = AllocateStreetBuckets();
   VCFRState state(opp_probs, street_buckets, hand_tree_);
   SetStreetBuckets(0, 0, state);
@@ -289,7 +291,6 @@ void CFRP::HalfIteration(int p) {
     vals = Process(betting_tree_->Root(), 0, state, 0);
   }
   DeleteStreetBuckets(street_buckets);
-  delete [] opp_probs;
 #if 0
   int num_hole_card_pairs = Game::NumHoleCardPairs(0);
   for (int i = 0; i < num_hole_card_pairs; ++i) {

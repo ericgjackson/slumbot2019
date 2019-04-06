@@ -1,5 +1,6 @@
-// Do not support imperfect recall abstractions.
+// This is unfinished.  It may not be needed.
 // Why is this better than just running CFR for a while with n-1/n players' strategies fixed?
+// Do not support imperfect recall abstractions.
 
 #include <math.h>
 #include <pthread.h>

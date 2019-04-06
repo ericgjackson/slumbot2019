@@ -1,0 +1,6 @@
+CFRConfigName tcfrf
+Algorithm tcfr
+# 4/5 flop only, 1/5 preflop and flop
+ActiveMod 5
+ActiveConditions 1:0,1,2,3
+CloseThreshold 2000

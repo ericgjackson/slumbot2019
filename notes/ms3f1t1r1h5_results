@@ -1,0 +1,55 @@
+ms3f1t1r1h5
+nhs3_params
+  null for preflop, flop and turn
+  hs for river
+mb1b1
+tcfr
+1b batches
+
+2b: Exploitability: 1157.08 mbb/g
+  Was 1121 in slumbot2017 code base
+3b: Exploitability: 1148.90 mbb/g
+
+Resolve all river subgames with cfrps/200, 2b base
+unsafe: Exploitability: 744.59 mbb/g
+  Was 671 in slumbot2017 code base
+cfrd: Exploitability: 407.53 mbb/g
+  Was 398 in slumbot2017 code base
+combined: Exploitability: 330.84 mbb/g
+  Was 311 in slumbot2017 code base
+
+Close enough to slumbot2017, I guess.  Any discrepancies may be due to the
+base system.  And that discrepancy may just be random noise.
+
+Resolve all river subgames with cfrps/200, 3b base
+combined: Exploitability: 348.34 mbb/g
+  Worse, actually!
+
+Resolve all river subgames with cfrps/200, 1b base
+combined: Exploitability: 312.21 mbb/g
+  Better!
+
+tcfrb001
+BoostThresholds=0.001...
+Resolve all river subgames with cfrps/200, 2b base
+unsafe:   Exploitability: 682.00 mbb/g
+  Was 745: Better!
+cfrd:     Exploitability: 398.68 mbb/g
+  Was 407: Better!
+combined: Exploitability: 306.47 mbb/g
+  Was 330: Better!
+Resolve all river subgames with cfrps/200, 1b base
+combined: Exploitability: 309.42 mbb/g
+Resolve all river subgames with cfrps/200, 3b base
+combined: Exploitability: 307.51 mbb/g
+
+play
+Base@2b vs. unsafe/2b base:   Avg B outcome: 0.169479 (84.7 mbb/g) over 100000000 dup hands
+Base@2b vs. cfrd/2b base:     Avg B outcome: -0.026754 (-13.4 mbb/g) over 100000000 dup hands
+Base@2b vs. combined/2b base: Avg B outcome: 0.098462 (49.2 mbb/g) over 100000000 dup hands
+unsafe/2b base vs. combined/2b base: Avg B outcome: -0.026561 (-13.3 mbb/g) over 100000000 dup hands
+cfrd/2b base vs. combined/2b base:   Avg B outcome: 0.103515 (51.8 mbb/g) over 100000000 dup hands
+unsafe/2b base vs. cfrd/2b base:     Avg B outcome: -0.137261 (-68.6 mbb/g) over 100000000 dup hands
+
+A bit weird that the CFR-D system is so bad in head-to-head play.
+And that the combined system loses to the unsafe system.

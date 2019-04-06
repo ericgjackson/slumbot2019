@@ -44,6 +44,7 @@
 #include "vcfr_state.h"
 #include "vcfr.h"
 
+using std::shared_ptr;
 using std::string;
 using std::unique_ptr;
 
@@ -68,21 +69,19 @@ CFRPSubgame::CFRPSubgame(const CardAbstraction &ca, const BettingAbstraction &ba
   }
 
   hand_tree_ = new HandTree(root_bd_st_, root_bd_, max_street);
-  opp_probs_ = nullptr;
 }
 
 CFRPSubgame::~CFRPSubgame(void) {
   // Do not delete final_vals_; it has been passed to the parent VCFR object
-  delete [] opp_probs_;
   delete [] subtree_streets_;
   delete hand_tree_;
   delete subtree_;
 }
 
-void CFRPSubgame::SetOppProbs(double *opp_probs) {
+void CFRPSubgame::SetOppProbs(const shared_ptr<double []> &opp_probs) {
   int max_card1 = Game::MaxCard() + 1;
   int num_enc = max_card1 * max_card1;
-  opp_probs_ = new double[num_enc];
+  opp_probs_.reset(new double[num_enc]);
   for (int i = 0; i < num_enc; ++i) {
     opp_probs_[i] = opp_probs[i];
   }
@@ -228,8 +227,8 @@ void CFRPSubgame::Go(void) {
   }
   // Should set action sequence
   int **street_buckets = AllocateStreetBuckets();
-  VCFRState state(opp_probs_, hand_tree_, 0, action_sequence_, root_bd_,
-		  root_bd_st_, street_buckets);
+  VCFRState state(opp_probs_, hand_tree_, 0, action_sequence_, root_bd_, root_bd_st_,
+		  street_buckets);
   SetStreetBuckets(root_bd_st_, root_bd_, state);
   final_vals_ = Process(subtree_->Root(), 0, state, subtree_st - 1);
   DeleteStreetBuckets(street_buckets);

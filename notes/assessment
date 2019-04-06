@@ -1,0 +1,11 @@
+How do I want to assess the multiplayer systems I build?
+
+Traditional RGBR impossible.
+
+Run CFR with n-1 positions frozen?
+
+Head-to-head.
+
+Will need play_agents and translation to do many of the head-to-head evaluations that I
+am interested in.  For example, a reentrant system with more bet sizes compared to
+a non-reentrant system with fewer bet sizes.

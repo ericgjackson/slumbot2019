@@ -1,0 +1,4 @@
+Seems like aggressive reentrancy doesn't hurt much, at least as measured by head-to-head.
+
+Boosting seems to lead to more reasonable strategies at nodes that are rarely visited by
+normal CFR.

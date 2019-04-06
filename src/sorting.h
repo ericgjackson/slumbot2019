@@ -33,9 +33,8 @@ struct PDUILowerCompare {
 
 extern PDUILowerCompare g_pdui_lower_compare;
 
-struct PUIUILowerCompare {
-  bool operator()(const std::pair<unsigned int, unsigned int> &p1,
-		  const std::pair<unsigned int, unsigned int> &p2) {
+struct PIILowerCompare {
+  bool operator()(const std::pair<int, int> &p1, const std::pair<int, int> &p2) {
     if (p1.first < p2.first) {
       return true;
     } else {
@@ -44,7 +43,7 @@ struct PUIUILowerCompare {
   }
 };
 
-extern PUIUILowerCompare g_puiui_lower_compare;
+extern PIILowerCompare g_pii_lower_compare;
 
 struct PDSHigherCompare {
   bool operator()(const std::pair<double, std::string> &p1,

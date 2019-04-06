@@ -1,0 +1,38 @@
+ms1f3p3
+null/mb1b1/ecfr
+100m its in 6m11s
+Thread 0 avg P0 val -0.329078
+Thread 0 avg P1 val -0.645008
+Thread 0 avg P2 val 0.562621
+100m-200m in 6m6s
+Thread 0 avg P0 val -0.242935
+Thread 0 avg P1 val -0.546080
+Thread 0 avg P2 val 0.636163
+null/mb1b1r1/ecfr
+100m its in 5m23s
+Thread 0 avg P0 val -0.209630
+Thread 0 avg P1 val -0.619222
+Thread 0 avg P2 val 0.652504
+100m-200m in 5m34s
+Thread 0 avg P0 val -0.188916
+Thread 0 avg P1 val -0.540282
+Thread 0 avg P2 val 0.666205
+
+play mb1b1 vs. mb1b1, 100m vs. 200m
+Avg B outcome: 0.021844 (10.9 mbb/g) over 1000000 dup hands
+
+play mb1b1r1 vs. mb1b1r1, 100m vs. 200m
+Avg B outcome: 0.013844 (6.9 mbb/g) over 1000000 dup hands
+
+
+play mb1b1 vs. mb1b1r1, 100m vs. 100m
+Avg B outcome: 0.000361 (0.2 mbb/g) over 1000000 dup hands
+MBB confidence interval: -2.059493-2.420827
+Avg P0 outcome: -0.136155
+Avg P1 outcome: -0.482072
+Avg P2 outcome: 0.618228
+play mb1b1 vs. mb1b1r1, 200m vs. 200m
+Avg B outcome: -0.006420 (-3.2 mbb/g) over 10000000 dup hands
+play mb1b1 vs. mb1b1r1, 300m vs. 300m
+Avg B outcome: -0.010617 (-5.3 mbb/g) over 10000000 dup hands
+play mb1b1 vs. mb1b1r1, 400m vs. 400m

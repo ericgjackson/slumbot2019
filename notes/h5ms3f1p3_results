@@ -1,0 +1,66 @@
+h5ms3f1p3
+Three players, five ranks, four streets, one card flop
+
+null/mb1b1/tcfr
+1b in 35m
+Thread 0 avg P0 val -0.489776
+Thread 0 avg P1 val -0.587384
+Thread 0 avg P2 val 0.867848
+1b-2b in 33m
+Thread 0 avg P0 val -0.453293
+Thread 0 avg P1 val -0.539716
+Thread 0 avg P2 val 0.919011
+2b-3b in 33m
+Thread 0 avg P0 val -0.445594
+Thread 0 avg P1 val -0.533062
+Thread 0 avg P2 val 0.926445
+3b-4b in 33m
+Thread 0 avg P0 val -0.441964
+Thread 0 avg P1 val -0.527949
+Thread 0 avg P2 val 0.928397
+4b-5b in 33m
+Thread 0 avg P0 val -0.441085
+Thread 0 avg P1 val -0.525871
+Thread 0 avg P2 val 0.931771
+
+null/mb1b1r1/tcfr
+1b in 30m
+Thread 0 avg P0 val -0.416182
+Thread 0 avg P1 val -0.510116
+Thread 0 avg P2 val 0.905451
+1b-2b in 29m
+Thread 0 avg P0 val -0.413840
+Thread 0 avg P1 val -0.507726
+Thread 0 avg P2 val 0.916779
+2b-3b in 30m
+Thread 0 avg P0 val -0.416006
+Thread 0 avg P1 val -0.507703
+Thread 0 avg P2 val 0.920496
+3b-4b in 29m
+Thread 0 avg P0 val -0.413103
+Thread 0 avg P1 val -0.508161
+Thread 0 avg P2 val 0.918792
+4b-5b in 29m
+Thread 0 avg P0 val -0.416397
+Thread 0 avg P1 val -0.504190
+Thread 0 avg P2 val 0.918613
+
+
+
+mb1b1/tcfr/0 vs. mb1b1r1/tcfr/0: Avg B outcome: -0.021506 (-10.8 mbb/g) over 1b dup hands
+Avg P0 outcome: -0.428071
+Avg P1 outcome: -0.510176
+Avg P2 outcome: 0.938247
+mb1b1/tcfr/1 vs. mb1b1r1/tcfr/1: Avg B outcome: -0.031144 (-15.6 mbb/g) over 100m dup hands
+Avg P0 outcome: -0.428744
+Avg P1 outcome: -0.514882
+Avg P2 outcome: 0.943626
+mb1b1/tcfr/2 vs. mb1b1r1/tcfr/2: Avg B outcome: -0.033007 (-16.5 mbb/g) over 100m dup hands
+Avg P0 outcome: -0.429093
+Avg P1 outcome: -0.512880
+Avg P2 outcome: 0.941973
+mb1b1/tcfr/3 vs. mb1b1r1/tcfr/3: Avg B outcome: -0.033439 (-16.7 mbb/g) over 100m dup hands
+Avg P0 outcome: -0.426869
+Avg P1 outcome: -0.513494
+Avg P2 outcome: 0.940364
+mb1b1/tcfr/4 vs. mb1b1r1/tcfr/4: Avg B outcome: -0.034934 (-17.5 mbb/g) over 100m dup hands

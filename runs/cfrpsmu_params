@@ -1,0 +1,4 @@
+# Intended for merged systems where endgame solving was performed with
+# the unsafe method.
+CFRConfigName cfrpsmu
+Algorithm cfrp

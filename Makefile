@@ -1,16 +1,16 @@
 # Note that if any header files are missing when you try to build, things fail
 # in mysterious ways.  You get told there is "No rule to make target obj/foo.o".
 HEADS =	src/fast_hash.h src/rand.h src/constants.h src/files.h src/cards.h src/io.h src/split.h \
-	src/params.h \
-	src/game_params.h src/game.h src/card_abstraction_params.h src/card_abstraction.h \
-	src/betting_abstraction_params.h src/betting_abstraction.h src/cfr_params.h \
-	src/cfr_config.h src/nonterminal_ids.h src/betting_tree.h src/betting_tree_builder.h \
-	src/hand_evaluator.h src/hand_value_tree.h src/sorting.h src/canonical.h \
-	src/canonical_cards.h src/board_tree.h src/buckets.h src/cfr_value_type.h \
+	src/params.h src/game_params.h src/game.h src/card_abstraction_params.h \
+	src/card_abstraction.h src/betting_abstraction_params.h src/betting_abstraction.h \
+	src/cfr_params.h src/cfr_config.h src/nonterminal_ids.h src/betting_tree.h \
+	src/betting_tree_builder.h src/hand_evaluator.h src/hand_value_tree.h src/sorting.h \
+	src/canonical.h src/canonical_cards.h src/board_tree.h src/buckets.h src/cfr_value_type.h \
 	src/cfr_street_values.h src/cfr_values.h src/prob_method.h src/hand_tree.h \
 	src/vcfr_state.h src/vcfr.h src/cfr_utils.h src/cfrp_subgame.h src/cfrp.h src/rgbr.h \
 	src/resolving_method.h src/subgame_utils.h src/dynamic_cbr.h src/eg_cfr.h \
-	src/unsafe_eg_cfr.h src/combined_eg_cfr.h src/regret_compression.h src/tcfr.h
+	src/unsafe_eg_cfr.h src/cfrd_eg_cfr.h src/combined_eg_cfr.h src/regret_compression.h \
+	src/tcfr.h src/rollout.h src/sparse_and_dense.h src/kmeans.h
 
 # -Wl,--no-as-needed fixes my problem of undefined reference to
 # pthread_create (and pthread_join).  Comments I found on the web indicate
@@ -35,8 +35,9 @@ OBJS =	obj/fast_hash.o obj/rand.o obj/files.o obj/cards.o obj/io.o obj/split.o o
 	obj/sorting.o obj/canonical.o obj/canonical_cards.o obj/board_tree.o obj/buckets.o \
 	obj/cfr_street_values.o obj/cfr_values.o obj/hand_tree.o obj/vcfr_state.o obj/cfr_utils.o \
 	obj/vcfr.o obj/cfrp_subgame.o obj/cfrp.o obj/rgbr.o obj/resolving_method.o \
-	obj/subgame_utils.o obj/dynamic_cbr.o obj/eg_cfr.o obj/unsafe_eg_cfr.o \
-	obj/combined_eg_cfr.o obj/regret_compression.o obj/tcfr.o
+	obj/subgame_utils.o obj/dynamic_cbr.o obj/eg_cfr.o obj/unsafe_eg_cfr.o obj/cfrd_eg_cfr.o \
+	obj/combined_eg_cfr.o obj/regret_compression.o obj/tcfr.o obj/rollout.o \
+	obj/sparse_and_dense.o obj/kmeans.o
 
 bin/build_hand_value_tree:	obj/build_hand_value_tree.o $(OBJS) $(HEADS)
 	g++ $(LDFLAGS) $(CFLAGS) -o bin/build_hand_value_tree obj/build_hand_value_tree.o $(OBJS) \
@@ -44,6 +45,10 @@ bin/build_hand_value_tree:	obj/build_hand_value_tree.o $(OBJS) $(HEADS)
 
 bin/build_null_buckets:	obj/build_null_buckets.o $(OBJS) $(HEADS)
 	g++ $(LDFLAGS) $(CFLAGS) -o bin/build_null_buckets obj/build_null_buckets.o $(OBJS) \
+	$(LIBRARIES)
+
+bin/build_kmeans_buckets:	obj/build_kmeans_buckets.o $(OBJS) $(HEADS)
+	g++ $(LDFLAGS) $(CFLAGS) -o bin/build_kmeans_buckets obj/build_kmeans_buckets.o $(OBJS) \
 	$(LIBRARIES)
 
 bin/build_betting_tree:	obj/build_betting_tree.o $(OBJS) $(HEADS)
@@ -88,5 +93,20 @@ bin/play:	obj/play.o $(OBJS) $(HEADS)
 bin/sampled_br:	obj/sampled_br.o $(OBJS) $(HEADS)
 	g++ $(LDFLAGS) $(CFLAGS) -o bin/sampled_br obj/sampled_br.o $(OBJS) $(LIBRARIES)
 
+bin/build_rollout_features:	obj/build_rollout_features.o $(OBJS) $(HEADS)
+	g++ $(LDFLAGS) $(CFLAGS) -o bin/build_rollout_features obj/build_rollout_features.o \
+	$(OBJS) $(LIBRARIES)
+
+bin/build_unique_buckets:	obj/build_unique_buckets.o $(OBJS) $(HEADS)
+	g++ $(LDFLAGS) $(CFLAGS) -o bin/build_unique_buckets obj/build_unique_buckets.o $(OBJS) \
+	$(LIBRARIES)
+
+bin/crossproduct:	obj/crossproduct.o $(OBJS) $(HEADS)
+	g++ $(LDFLAGS) $(CFLAGS) -o bin/crossproduct obj/crossproduct.o $(OBJS) $(LIBRARIES)
+
+bin/prify:	obj/prify.o $(OBJS) $(HEADS)
+	g++ $(LDFLAGS) $(CFLAGS) -o bin/prify obj/prify.o $(OBJS) $(LIBRARIES)
+
 bin/x:	obj/x.o $(OBJS) $(HEADS)
 	g++ $(LDFLAGS) $(CFLAGS) -o bin/x obj/x.o $(OBJS) $(LIBRARIES)
+

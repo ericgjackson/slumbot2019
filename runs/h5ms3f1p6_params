@@ -1,0 +1,12 @@
+# Six players, 5 ranks, max street 3, one card flop
+GameName h5ms3f1p6
+MaxStreet 3
+NumRanks 5
+NumSuits 4
+NumHoleCards 2
+NumFlopCards 1
+Ante 0
+SmallBlind 1
+BigBlind 2
+FirstToAct 2,0,0,0
+NumPlayers 6
