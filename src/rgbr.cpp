@@ -57,10 +57,9 @@ RGBR::~RGBR(void) {
 
 double RGBR::Go(int it, int p) {
   it_ = it;
-  p_ = p;
   // If P0 is the best-responder, then we will want sumprobs generated in
   // the P1 CFR run.
-  target_p_ = p_^1;
+  target_p_ = p^1;
 
   char dir[500];
   sprintf(dir, "%s/%s.%u.%s.%i.%i.%i.%s.%s", Files::OldCFRBase(),
@@ -90,8 +89,8 @@ double RGBR::Go(int it, int p) {
   }
   int num_players = Game::NumPlayers();
   unique_ptr<bool []> players(new bool[num_players]);
-  for (int p = 0; p < num_players; ++p) {
-    players[p] = p != p_ || ! all_streets;
+  for (int p1 = 0; p1 < num_players; ++p1) {
+    players[p1] = p1 != p || ! all_streets;
   }
   if (br_current_) {
     regrets_.reset(new CFRValues(players.get(), streets, 0, 0, buckets_, betting_tree_));
@@ -125,18 +124,14 @@ double RGBR::Go(int it, int p) {
   }
 
   if (subgame_street_ >= 0 && subgame_street_ <= max_street) pre_phase_ = true;
-  shared_ptr<double []> opp_probs = AllocateOppProbs(true);
-  int **street_buckets = AllocateStreetBuckets();
-  VCFRState state(opp_probs, street_buckets, hand_tree_);
+  VCFRState state(p, hand_tree_.get());
   SetStreetBuckets(0, 0, state);
-  double *vals = Process(betting_tree_->Root(), 0, state, 0);
+  shared_ptr<double []> vals = Process(betting_tree_->Root(), 0, state, 0);
   if (subgame_street_ >= 0 && subgame_street_ <= max_street) {
-    delete [] vals;
     WaitForFinalSubgames();
     pre_phase_ = false;
     vals = Process(betting_tree_->Root(), 0, state, 0);
   }
-  DeleteStreetBuckets(street_buckets);
   
   int num_hole_card_pairs = Game::NumHoleCardPairs(0);
 
@@ -163,7 +158,6 @@ double RGBR::Go(int it, int p) {
 #endif
   }
   double overall = sum / (num_hole_card_pairs * num_opp_hole_card_pairs);
-  delete [] vals;
 
   regrets_.reset(nullptr);
   sumprobs_.reset(nullptr);

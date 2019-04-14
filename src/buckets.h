@@ -1,6 +1,8 @@
 #ifndef _BUCKETS_H_
 #define _BUCKETS_H_
 
+#include <memory>
+
 class CardAbstraction;
 
 class Buckets {
@@ -16,13 +18,13 @@ public:
       return int_buckets_[st][h];
     }
   }
-  const int *NumBuckets(void) const {return num_buckets_;}
+  const int *NumBuckets(void) const {return num_buckets_.get();}
   int NumBuckets(int st) const {return num_buckets_[st];}
 private:
-  bool *none_;
+  std::unique_ptr<bool []> none_;
   unsigned short **short_buckets_;
   int **int_buckets_;
-  int *num_buckets_;
+  std::unique_ptr<int []> num_buckets_;
 };
 
 #endif

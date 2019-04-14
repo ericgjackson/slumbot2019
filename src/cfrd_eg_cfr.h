@@ -16,7 +16,7 @@ class CFRDEGCFR : public EGCFR {
 		    const std::string &action_sequence, const HandTree *hand_tree, double *opp_cvs,
 		    int target_p, bool both_players, int num_its);
  protected:
-  void HalfIteration(BettingTree *subtree, int solve_bd, int p, int target_p, VCFRState *state,
+  void HalfIteration(BettingTree *subtree, int solve_bd, int target_p, VCFRState *state,
 		     double *opp_cvs);
   
   std::unique_ptr<double []> cfrd_regrets_;

@@ -14,78 +14,69 @@ using std::string;
 using std::vector;
 
 static void ParseBetSizes(const string &param_value,
-			  vector<vector<vector<double> *> *> **bet_sizes) {
+			  vector<vector<vector<double> > > *bet_sizes) {
   vector<string> v1;
   Split(param_value.c_str(), '|', true, &v1);
   int v1sz = v1.size();
-  *bet_sizes = new vector<vector<vector<double> *> *>(v1sz);
+  bet_sizes->resize(v1sz);
   for (int st = 0; st < v1sz; ++st) {
     const string &s2 = v1[st];
-    if (s2 == "") {
-      // No bets whatsoever allowed on this street
-      (**bet_sizes)[st] = new vector<vector<double> *>(0);
-    } else {
+    if (s2 != "") {
       vector<string> v2;
       Split(s2.c_str(), ';', false, &v2);
       int v2sz = v2.size();
-      (**bet_sizes)[st] = new vector<vector<double> *>(v2sz);
+      (*bet_sizes)[st].resize(v2sz);
       for (int i = 0; i < v2sz; ++i) {
 	const string &s3 = v2[i];
 	vector<string> v3;
 	Split(s3.c_str(), ',', false, &v3);
 	int v3sz = v3.size();
-	(*(**bet_sizes)[st])[i] = new vector<double>(v3sz);
+	(*bet_sizes)[st][i].resize(v3sz);
 	for (int j = 0; j < v3sz; ++j) {
 	  double frac;
 	  if (sscanf(v3[j].c_str(), "%lf", &frac) != 1) {
-	    fprintf(stderr, "Couldn't parse bet sizes: %s\n",
-		    param_value.c_str());
+	    fprintf(stderr, "Couldn't parse bet sizes: %s\n", param_value.c_str());
 	    exit(-1);
 	  }
-	  (*(*(**bet_sizes)[st])[i])[j] = frac;
+	  (*bet_sizes)[st][i][j] = frac;
 	}
       }
     }
   }
 }
 
-static void ParseMultipliers(const string &param_value,
-			     vector<vector<double> *> **multipliers) {
+static void ParseMultipliers(const string &param_value, vector<vector<double> > *multipliers) {
   vector<string> v1;
   Split(param_value.c_str(), '|', true, &v1);
   int v1sz = v1.size();
-  *multipliers = new vector<vector<double> *>(v1sz);
+  multipliers->resize(v1sz);
   for (int st = 0; st < v1sz; ++st) {
     const string &s2 = v1[st];
-    if (s2 == "") {
-      // No bets whatsoever allowed on this street
-      (**multipliers)[st] = new vector<double>(0);
-    } else {
+    if (s2 != "") {
       vector<string> v2;
       Split(s2.c_str(), ';', false, &v2);
       int v2sz = v2.size();
-      (**multipliers)[st] = new vector<double>(v2sz);
+      (*multipliers)[st].resize(v2sz);
       for (int i = 0; i < v2sz; ++i) {
 	double m;
 	if (sscanf(v2[i].c_str(), "%lf", &m) != 1) {
-	  fprintf(stderr, "Couldn't parse multipliers: %s\n",
-		  param_value.c_str());
+	  fprintf(stderr, "Couldn't parse multipliers: %s\n", param_value.c_str());
 	  exit(-1);
 	}
-	(*(**multipliers)[st])[i] = m;
+	(*multipliers)[st][i] = m;
       }
     }
   }
 }
 
-static int *ParseMaxBets(const Params &params, const string &param) {
+static void ParseMaxBets(const Params &params, const string &param, vector<int> *max_bets) {
   if (! params.IsSet(param.c_str())) {
     fprintf(stderr, "%s must be set\n", param.c_str());
     exit(-1);
   }
   const string &pv = params.GetStringValue(param.c_str());
   int max_street = Game::MaxStreet();
-  int *max_bets = new int[max_street + 1];
+  max_bets->resize(max_street + 1);
   vector<int> v;
   ParseInts(pv, &v);
   int num = v.size();
@@ -94,28 +85,24 @@ static int *ParseMaxBets(const Params &params, const string &param) {
     exit(-1);
   }
   for (int st = 0; st <= max_street; ++st) {
-    max_bets[st] = v[st];
+    (*max_bets)[st] = v[st];
   }
-  return max_bets;
 }
 
-bool **BettingAbstraction::ParseMinBets(const string &value) {
+void BettingAbstraction::ParseMinBets(const string &value, vector< vector<bool> > *min_bets) {
   int max_street = Game::MaxStreet();
   vector<string> v1;
   Split(value.c_str(), ';', true, &v1);
   if ((int)v1.size() != max_street + 1) {
-    fprintf(stderr, "ParseMinBets: expected %u street values\n",
-	    max_street + 1);
+    fprintf(stderr, "ParseMinBets: expected %i street values\n", max_street + 1);
     exit(-1);
   }
-  bool **min_bets = new bool *[max_street + 1];
+  min_bets->resize(max_street + 1);
   for (int st = 0; st <= max_street; ++st) {
     int max_bets = max_bets_[st];
-    min_bets[st] = new bool[max_bets];
+    (*min_bets)[st].resize(max_bets);
     // Default
-    for (int b = 0; b < max_bets; ++b) {
-      min_bets[st][b] = false;
-    }
+    for (int b = 0; b < max_bets; ++b) (*min_bets)[st][b] = false;
     const string &sv = v1[st];
     vector<string> v2;
     Split(sv.c_str(), ',', false, &v2);
@@ -123,7 +110,7 @@ bool **BettingAbstraction::ParseMinBets(const string &value) {
     for (int i = 0; i < num; ++i) {
       const string &sv2 = v2[i];
       int nb;
-      if (sscanf(sv2.c_str(), "%u", &nb) != 1) {
+      if (sscanf(sv2.c_str(), "%i", &nb) != 1) {
 	fprintf(stderr, "ParseMinBets: couldn't parse %s\n", value.c_str());
 	exit(-1);
       }
@@ -131,13 +118,12 @@ bool **BettingAbstraction::ParseMinBets(const string &value) {
 	fprintf(stderr, "ParseMinBets: OOB value %u\n", nb);
 	exit(-1);
       }
-      min_bets[st][nb] = true;
+      (*min_bets)[st][nb] = true;
     }
   }
-  return min_bets;
 }
 
-static int **ParseMergeRules(const string &value) {
+static void ParseMergeRules(const string &value, vector< vector<int> > *merge_rules) {
   int max_street = Game::MaxStreet();
   int num_players = Game::NumPlayers();
   vector<string> v1;
@@ -147,17 +133,16 @@ static int **ParseMergeRules(const string &value) {
 	    max_street + 1);
     exit(-1);
   }
-  int **merge_rules = new int *[max_street + 1];
+  merge_rules->resize(max_street + 1);
   for (int st = 0; st <= max_street; ++st) {
     const string &sv = v1[st];
     vector<string> v2;
     Split(sv.c_str(), ',', false, &v2);
     if ((int)v2.size() != num_players + 1) {
-      fprintf(stderr,
-	      "ParseMergeRules: expected v2 size to be num players + 1\n");
+      fprintf(stderr, "ParseMergeRules: expected v2 size to be num players + 1\n");
       exit(-1);
     }
-    merge_rules[st] = new int[num_players + 1];
+    (*merge_rules)[st].resize(num_players + 1);
     for (int p = 0; p <= num_players; ++p) {
       const string &str = v2[p];
       int nb;
@@ -165,10 +150,9 @@ static int **ParseMergeRules(const string &value) {
 	fprintf(stderr, "ParseMergeRules: couldn't parse %s\n", value.c_str());
 	exit(-1);
       }
-      merge_rules[st][p] = nb;
+      (*merge_rules)[st][p] = nb;
     }
   }
-  return merge_rules;
 }
 
 BettingAbstraction::BettingAbstraction(const Params &params) {
@@ -177,7 +161,7 @@ BettingAbstraction::BettingAbstraction(const Params &params) {
   stack_size_ = params.GetIntValue("StackSize");
   min_bet_ = params.GetIntValue("MinBet");
   int max_street = Game::MaxStreet();
-  all_bet_sizes_ = new bool[max_street + 1];
+  all_bet_sizes_.reset(new bool[max_street + 1]);
   for (int st = 0; st <= max_street; ++st) {
     // Default
     all_bet_sizes_[st] = false;
@@ -190,7 +174,7 @@ BettingAbstraction::BettingAbstraction(const Params &params) {
       all_bet_sizes_[v[i]] = true;
     }
   }
-  all_even_bet_sizes_ = new bool[max_street + 1];
+  all_even_bet_sizes_.reset(new bool[max_street + 1]);
   for (int st = 0; st <= max_street; ++st) {
     // Default
     all_even_bet_sizes_[st] = false;
@@ -208,14 +192,11 @@ BettingAbstraction::BettingAbstraction(const Params &params) {
 
   no_limit_tree_type_ = params.GetIntValue("NoLimitTreeType");
 
-  max_bets_ = nullptr;
-  our_max_bets_ = nullptr;
-  opp_max_bets_ = nullptr;
   if (asymmetric_) {
-    our_max_bets_ = ParseMaxBets(params, "OurMaxBets");
-    opp_max_bets_ = ParseMaxBets(params, "OppMaxBets");
+    ParseMaxBets(params, "OurMaxBets", &our_max_bets_);
+    ParseMaxBets(params, "OppMaxBets", &opp_max_bets_);
   } else {
-    max_bets_ = ParseMaxBets(params, "MaxBets");
+    ParseMaxBets(params, "MaxBets", &max_bets_);
   }
 
   bool need_bet_sizes = false;
@@ -226,9 +207,6 @@ BettingAbstraction::BettingAbstraction(const Params &params) {
     }
   }
   
-  bet_sizes_ = nullptr;
-  our_bet_sizes_ = nullptr;
-  opp_bet_sizes_ = nullptr;
   if (no_limit_tree_type_ == 3) {
   } else {
     if (need_bet_sizes) {
@@ -244,14 +222,14 @@ BettingAbstraction::BettingAbstraction(const Params &params) {
 	}
 	ParseBetSizes(params.GetStringValue("OurBetSizes"), &our_bet_sizes_);
 	for (int st = 0; st <= max_street; ++st) {
-	  if ((int)(*our_bet_sizes_)[st]->size() != our_max_bets_[st]) {
+	  if ((int)our_bet_sizes_[st].size() != our_max_bets_[st]) {
 	    fprintf(stderr, "Max bets mismatch\n");
 	    exit(-1);
 	  }
 	}
 	ParseBetSizes(params.GetStringValue("OppBetSizes"), &opp_bet_sizes_);
 	for (int st = 0; st <= max_street; ++st) {
-	  if ((int)(*opp_bet_sizes_)[st]->size() != opp_max_bets_[st]) {
+	  if ((int)opp_bet_sizes_[st].size() != opp_max_bets_[st]) {
 	    fprintf(stderr, "Max bets mismatch\n");
 	    exit(-1);
 	  }
@@ -263,7 +241,7 @@ BettingAbstraction::BettingAbstraction(const Params &params) {
 	}
 	ParseBetSizes(params.GetStringValue("BetSizes"), &bet_sizes_);
 	for (int st = 0; st <= max_street; ++st) {
-	  if ((int)(*bet_sizes_)[st]->size() != max_bets_[st]) {
+	  if ((int)bet_sizes_[st].size() != max_bets_[st]) {
 	    fprintf(stderr, "Max bets mismatch\n");
 	    exit(-1);
 	  }
@@ -276,17 +254,14 @@ BettingAbstraction::BettingAbstraction(const Params &params) {
   our_always_all_in_ = params.GetBooleanValue("OurAlwaysAllIn");
   opp_always_all_in_ = params.GetBooleanValue("OppAlwaysAllIn");
 
-  always_min_bet_ = nullptr;
-  our_always_min_bet_ = nullptr;
-  opp_always_min_bet_ = nullptr;
   if (params.IsSet("MinBets")) {
-    always_min_bet_ = ParseMinBets(params.GetStringValue("MinBets"));
+    ParseMinBets(params.GetStringValue("MinBets"), &always_min_bet_);
   }
   if (params.IsSet("OurMinBets")) {
-    our_always_min_bet_ = ParseMinBets(params.GetStringValue("OurMinBets"));
+    ParseMinBets(params.GetStringValue("OurMinBets"), &our_always_min_bet_);
   }
   if (params.IsSet("OppMinBets")) {
-    opp_always_min_bet_ = ParseMinBets(params.GetStringValue("OppMinBets"));
+    ParseMinBets(params.GetStringValue("OppMinBets"), &opp_always_min_bet_);
   }
   
   min_all_in_pot_ = params.GetIntValue("MinAllInPot");
@@ -330,16 +305,10 @@ BettingAbstraction::BettingAbstraction(const Params &params) {
   opp_geometric_type_ = params.GetIntValue("OppGeometricType");
   close_to_all_in_frac_ = params.GetDoubleValue("CloseToAllInFrac");
   if (params.IsSet("OurBetSizeMultipliers")) {
-    ParseMultipliers(params.GetStringValue("OurBetSizeMultipliers"),
-		     &our_bet_size_multipliers_);
-  } else {
-    our_bet_size_multipliers_ = nullptr;
+    ParseMultipliers(params.GetStringValue("OurBetSizeMultipliers"), &our_bet_size_multipliers_);
   }
   if (params.IsSet("OppBetSizeMultipliers")) {
-    ParseMultipliers(params.GetStringValue("OppBetSizeMultipliers"),
-		     &opp_bet_size_multipliers_);
-  } else {
-    opp_bet_size_multipliers_ = nullptr;
+    ParseMultipliers(params.GetStringValue("OppBetSizeMultipliers"), &opp_bet_size_multipliers_);
   }
   reentrant_streets_.reset(new bool[max_street + 1]);
   for (int st = 0; st <= max_street; ++st) {
@@ -369,9 +338,7 @@ BettingAbstraction::BettingAbstraction(const Params &params) {
   }
   min_reentrant_pot_ = params.GetIntValue("MinReentrantPot");
   if (params.IsSet("MergeRules")) {
-    merge_rules_ = ParseMergeRules(params.GetStringValue("MergeRules"));
-  } else {
-    merge_rules_ = nullptr;
+    ParseMergeRules(params.GetStringValue("MergeRules"), &merge_rules_);
   }
   if (params.IsSet("AllowableBetTos")) {
     vector<int> v;
@@ -394,18 +361,3 @@ BettingAbstraction::BettingAbstraction(const Params &params) {
   }
   last_aggressor_key_ = params.GetBooleanValue("LastAggressorKey");
 }
-
-BettingAbstraction::~BettingAbstraction(void) {
-  delete [] all_bet_sizes_;
-  delete [] max_bets_;
-  delete [] our_max_bets_;
-  delete [] opp_max_bets_;
-  if (merge_rules_) {
-    int max_street = Game::MaxStreet();
-    for (int st = 0; st <= max_street; ++st) {
-      delete [] merge_rules_[st];
-    }
-    delete [] merge_rules_;
-  }
-}
-

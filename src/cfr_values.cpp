@@ -1,9 +1,7 @@
-// Constructor is currently hard-coded to create int-valued
-// street values.  Need to fix.
-
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <memory>
 #include <string>
 
 #include "betting_tree.h"
@@ -17,6 +15,7 @@
 #include "nonterminal_ids.h"
 
 using std::string;
+using std::unique_ptr;
 
 CFRValues::CFRValues(const bool *players, const bool *streets, int root_bd, int root_bd_st,
 		     const Buckets &buckets, const BettingTree *betting_tree) {
@@ -50,30 +49,26 @@ CFRValues::CFRValues(const bool *players, const bool *streets, int root_bd, int 
     }
   }
 
-  num_nonterminals_ = new int *[num_players];
+  int num = num_players * (max_street + 1);
+  num_nonterminals_.reset(new int[num]);
   for (int p = 0; p < num_players; ++p) {
-    num_nonterminals_[p] = new int[max_street + 1];
     for (int st = 0; st <= max_street; ++st) {
+      int index = p * (max_street + 1) + st;
       if (players_[p] && (streets == nullptr || streets[st])) {
-	num_nonterminals_[p][st] = betting_tree->NumNonterminals(p, st);
+	num_nonterminals_[index] = betting_tree->NumNonterminals(p, st);
       } else {
-	num_nonterminals_[p][st] = 0;
+	num_nonterminals_[index] = 0;
       }
     }
   }
 
-  street_values_ = new AbstractCFRStreetValues *[max_street + 1];
-  for (int st = 0; st <= max_street; ++st) {
-    street_values_[st] = nullptr;
-  }
+  street_values_.reset(new AbstractCFRStreetValues *[max_street + 1]);
+  for (int st = 0; st <= max_street; ++st) street_values_[st] = nullptr;
 }
 
 CFRValues::~CFRValues(void) {
   int max_street = Game::MaxStreet();
-  for (int st = 0; st <= max_street; ++st) {
-    delete street_values_[st];
-  }
-  delete [] street_values_;
+  for (int st = 0; st <= max_street; ++st) delete street_values_[st];
 }
 
 // Shouldn't we respect only_p?
@@ -83,7 +78,7 @@ void CFRValues::AllocateAndClearInts(Node *node, int only_p) {
     if (streets_[st]) {
       int num_holdings = num_holdings_[st];
       street_values_[st] = new CFRStreetValues<int>(st, players_.get(), num_holdings,
-						    num_nonterminals_);
+						    num_nonterminals_.get());
       street_values_[st]->AllocateAndClear(node);
     }
   }
@@ -95,9 +90,8 @@ void CFRValues::AllocateAndClearDoubles(Node *node, int only_p) {
   for (int st = 0; st <= max_street; ++st) {
     if (streets_[st]) {
       int num_holdings = num_holdings_[st];
-      street_values_[st] = new CFRStreetValues<double>(st, players_.get(),
-						       num_holdings,
-						       num_nonterminals_);
+      street_values_[st] = new CFRStreetValues<double>(st, players_.get(), num_holdings,
+						       num_nonterminals_.get());
       street_values_[st]->AllocateAndClear(node);
     }
   }
@@ -108,17 +102,17 @@ void CFRValues::CreateStreetValues(int st, CFRValueType value_type) {
     if (value_type == CFR_CHAR) {
       street_values_[st] =
 	new CFRStreetValues<unsigned char>(st, players_.get(), num_holdings_[st],
-					   num_nonterminals_);
+					   num_nonterminals_.get());
     } else if (value_type == CFR_SHORT) {
       street_values_[st] =
 	new CFRStreetValues<unsigned short>(st, players_.get(), num_holdings_[st],
-					    num_nonterminals_);
+					    num_nonterminals_.get());
     } else if (value_type == CFR_INT) {
       street_values_[st] = new CFRStreetValues<int>(st, players_.get(), num_holdings_[st],
-						    num_nonterminals_);
+						    num_nonterminals_.get());
     } else if (value_type == CFR_DOUBLE) {
       street_values_[st] = new CFRStreetValues<double>(st, players_.get(), num_holdings_[st],
-						       num_nonterminals_);
+						       num_nonterminals_.get());
     } else {
       fprintf(stderr, "Unknown value type\n");
       exit(-1);
@@ -137,9 +131,7 @@ void CFRValues::Read(Node *node, Reader ***readers, void ***decompressors, int o
       fprintf(stderr, "CFRValues::Read(): p %u st %u missing file?\n", p, st);
       exit(-1);
     }
-    street_values_[st]->ReadNode(node, reader,
-				 decompressors ?
-				 decompressors[p][st] : nullptr);
+    street_values_[st]->ReadNode(node, reader, decompressors ? decompressors[p][st] : nullptr);
   }
   for (int s = 0; s < num_succs; ++s) {
     Read(node->IthSucc(s), readers, decompressors, only_p);
@@ -324,11 +316,13 @@ void CFRValues::Write(const char *dir, int it, Node *root, const string &action_
   int num_players = Game::NumPlayers();
   bool ***seen = new bool **[max_street + 1];
   int root_st = root->Street();
-  int **num_nonterminals = CountNumNonterminals(root);
+  unique_ptr<int []> num_nonterminals(new int[num_players * (max_street + 1)]);
+  CountNumNonterminals(root, num_nonterminals.get());
   for (int st = root_st; st <= max_street; ++st) {
     seen[st] = new bool *[num_players];
     for (int p = 0; p < num_players; ++p) {
-      int num_nt = num_nonterminals[p][st];
+      int index = p * (max_street + 1) + st;
+      int num_nt = num_nonterminals[index];
       seen[st][p] = new bool[num_nt];
       for (int i = 0; i < num_nt; ++i) {
 	seen[st][p][i] = false;
@@ -346,10 +340,6 @@ void CFRValues::Write(const char *dir, int it, Node *root, const string &action_
     delete [] seen[st];
   }
   delete [] seen;
-  for (int p = 0; p < num_players; ++p) {
-    delete [] num_nonterminals[p];
-  }
-  delete [] num_nonterminals;
 }
 
 void CFRValues::MergeInto(Node *full_node, Node *subgame_node, int root_bd_st, int root_bd,
@@ -360,14 +350,13 @@ void CFRValues::MergeInto(Node *full_node, Node *subgame_node, int root_bd_st, i
   if (st > final_st) return;
   int num_succs = full_node->NumSuccs();
   int p = full_node->PlayerActing();
-  if (players_[p] && subgame_values.players_[p] && num_succs > 1 &&
-      streets_[st]) {
+  if (players_[p] && subgame_values.players_[p] && num_succs > 1 && streets_[st]) {
     street_values_[st]->MergeInto(full_node, subgame_node, root_bd_st, root_bd,
 				  subgame_values.StreetValues(st), buckets);
   }
   for (int s = 0; s < num_succs; ++s) {
-    MergeInto(full_node->IthSucc(s), subgame_node->IthSucc(s),
-	      root_bd_st, root_bd, subgame_values, buckets, final_st);
+    MergeInto(full_node->IthSucc(s), subgame_node->IthSucc(s), root_bd_st, root_bd, subgame_values,
+	      buckets, final_st);
   }
 }
 

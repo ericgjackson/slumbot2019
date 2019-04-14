@@ -25,16 +25,16 @@ using std::string;
 using std::unique_ptr;
 using std::vector;
 
-double *Showdown(Node *node, const CanonicalCards *hands, double *opp_probs, double sum_opp_probs,
-		 double *total_card_probs) {
+shared_ptr<double []> Showdown(Node *node, const CanonicalCards *hands, double *opp_probs,
+			       double sum_opp_probs, double *total_card_probs) {
   int max_card1 = Game::MaxCard() + 1;
   double cum_prob = 0;
   double cum_card_probs[52];
   for (Card c = 0; c < max_card1; ++c) cum_card_probs[c] = 0;
   int num_hole_card_pairs = hands->NumRaw();
-  double *win_probs = new double[num_hole_card_pairs];
+  unique_ptr<double []> win_probs(new double[num_hole_card_pairs]);
   double half_pot = node->LastBetTo();
-  double *vals = new double[num_hole_card_pairs];
+  shared_ptr<double []> vals(new double[num_hole_card_pairs]);
 
   int j = 0;
   while (j < num_hole_card_pairs) {
@@ -77,13 +77,11 @@ double *Showdown(Node *node, const CanonicalCards *hands, double *opp_probs, dou
     }
   }
 
-  delete [] win_probs;
-
   return vals;
 }
 
-double *Fold(Node *node, int p, const CanonicalCards *hands, double *opp_probs,
-	     double sum_opp_probs, double *total_card_probs) {
+shared_ptr<double []> Fold(Node *node, int p, const CanonicalCards *hands, double *opp_probs,
+			   double sum_opp_probs, double *total_card_probs) {
   int max_card1 = Game::MaxCard() + 1;
   // Sign of half_pot reflects who wins the pot
   double half_pot;
@@ -95,7 +93,7 @@ double *Fold(Node *node, int p, const CanonicalCards *hands, double *opp_probs,
     half_pot = -(double)node->LastBetTo();
   }
   int num_hole_card_pairs = hands->NumRaw();
-  double *vals = new double[num_hole_card_pairs];
+  shared_ptr<double []> vals(new double[num_hole_card_pairs]);
 
   for (int i = 0; i < num_hole_card_pairs; ++i) {
     const Card *cards = hands->Cards(i);
@@ -199,7 +197,7 @@ static void UpdateSumprobsAndSuccOppProbs(int enc, int num_succs, double reach_p
 // them directly.  The second version below uses regret matching to get the
 // current probs.
 template <typename T>
-void ProcessOppProbs(Node *node, const CanonicalCards *hands, int **street_buckets,
+void ProcessOppProbs(Node *node, const CanonicalCards *hands, int *street_buckets,
 		     double *opp_probs, shared_ptr<double []> *succ_opp_probs,
 		     double *current_probs, int it, int soft_warmup, int hard_warmup,
 		     double sumprob_scaling, CFRStreetValues<T> *sumprobs) {
@@ -228,7 +226,7 @@ void ProcessOppProbs(Node *node, const CanonicalCards *hands, int **street_bucke
     } else {
       double *my_current_probs;
       T *my_sumprobs = nullptr;
-      int b = street_buckets[st][i];
+      int b = street_buckets[i];
       int offset = b * num_succs;
       my_current_probs = current_probs + offset;
       if (sumprobs) my_sumprobs = sumprobs->AllValues(pa, nt) + offset;
@@ -239,19 +237,19 @@ void ProcessOppProbs(Node *node, const CanonicalCards *hands, int **street_bucke
 }
 
 // Instantiate
-template void ProcessOppProbs<int>(Node *node, const CanonicalCards *hands, int **street_buckets,
+template void ProcessOppProbs<int>(Node *node, const CanonicalCards *hands, int *street_buckets,
 				   double *opp_probs, shared_ptr<double []> *succ_opp_probs,
 				   double *current_probs, int it, int soft_warmup, int hard_warmup,
 				   double sumprob_scaling, CFRStreetValues<int> *sumprobs);
 template void ProcessOppProbs<double>(Node *node, const CanonicalCards *hands,
-				      int **street_buckets, double *opp_probs,
+				      int *street_buckets, double *opp_probs,
 				      shared_ptr<double []> *succ_opp_probs, double *current_probs,
 				      int it, int soft_warmup, int hard_warmup,
 				      double sumprob_scaling, CFRStreetValues<double> *sumprobs);
 
 template <typename T1, typename T2>
 void ProcessOppProbs(Node *node, int lbd, const CanonicalCards *hands, bool bucketed,
-		     int **street_buckets, double *opp_probs, shared_ptr<double []> *succ_opp_probs,
+		     int *street_buckets, double *opp_probs, shared_ptr<double []> *succ_opp_probs,
 		     const CFRStreetValues<T1> &cs_vals, int dsi, int it, int soft_warmup,
 		     int hard_warmup, double sumprob_scaling, CFRStreetValues<T2> *sumprobs) {
   int st = node->Street();
@@ -282,7 +280,7 @@ void ProcessOppProbs(Node *node, int lbd, const CanonicalCards *hands, bool buck
     } else {
       int offset;
       if (bucketed) {
-	offset = street_buckets[st][i] * num_succs;
+	offset = street_buckets[i] * num_succs;
       } else {
 	offset = lbd * num_hole_card_pairs * num_succs + i * num_succs;
       }
@@ -298,28 +296,28 @@ void ProcessOppProbs(Node *node, int lbd, const CanonicalCards *hands, bool buck
 // Instantiate
 template void
 ProcessOppProbs<int, int>(Node *node, int lbd, const CanonicalCards *hands, bool bucketed,
-			  int **street_buckets, double *opp_probs,
+			  int *street_buckets, double *opp_probs,
 			  shared_ptr<double []> *succ_opp_probs,
 			  const CFRStreetValues<int> &cs_vals, int dsi, int it,
 			  int soft_warmup, int hard_warmup, double sumprob_scaling,
 			  CFRStreetValues<int> *sumprobs);
 template void
 ProcessOppProbs<double, double>(Node *node, int lbd, const CanonicalCards *hands,
-				bool bucketed, int **street_buckets, double *opp_probs,
+				bool bucketed, int *street_buckets, double *opp_probs,
 				shared_ptr<double []> *succ_opp_probs,
 				const CFRStreetValues<double> &cs_vals, int dsi, int it,
 				int soft_warmup, int hard_warmup, double sumprob_scaling,
 				CFRStreetValues<double> *sumprobs);
 template void
 ProcessOppProbs<int, double>(Node *node, int lbd, const CanonicalCards *hands,
-			     bool bucketed, int **street_buckets, double *opp_probs,
+			     bool bucketed, int *street_buckets, double *opp_probs,
 			     shared_ptr<double []> *succ_opp_probs,
 			     const CFRStreetValues<int> &cs_vals, int dsi, int it, int soft_warmup,
 			     int hard_warmup, double sumprob_scaling,
 			     CFRStreetValues<double> *sumprobs);
 template void
 ProcessOppProbs<double, int>(Node *node, int lbd, const CanonicalCards *hands,
-			     bool bucketed, int **street_buckets, double *opp_probs,
+			     bool bucketed, int *street_buckets, double *opp_probs,
 			     shared_ptr<double []> *succ_opp_probs,
 			     const CFRStreetValues<double> &cs_vals, int dsi, int it,
 			     int soft_warmup, int hard_warmup, double sumprob_scaling,
@@ -410,11 +408,10 @@ void VCFR::UpdateRegretsBucketed(Node *node, int **street_buckets, double *vals,
 void DeleteOldFiles(const CardAbstraction &ca, const BettingAbstraction &ba, const CFRConfig &cc,
 		    int it) {
   char dir[500];
-  sprintf(dir, "%s/%s.%u.%s.%i.%i.%i.%s.%s", Files::NewCFRBase(),
-	  Game::GameName().c_str(), Game::NumPlayers(),
-	  ca.CardAbstractionName().c_str(), Game::NumRanks(),
-	  Game::NumSuits(), Game::MaxStreet(),
-	  ba.BettingAbstractionName().c_str(), cc.CFRConfigName().c_str());
+  sprintf(dir, "%s/%s.%u.%s.%i.%i.%i.%s.%s", Files::NewCFRBase(), Game::GameName().c_str(),
+	  Game::NumPlayers(), ca.CardAbstractionName().c_str(), Game::NumRanks(),
+	  Game::NumSuits(), Game::MaxStreet(), ba.BettingAbstractionName().c_str(),
+	  cc.CFRConfigName().c_str());
 
   if (! FileExists(dir)) return;
   

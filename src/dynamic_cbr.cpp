@@ -39,28 +39,24 @@ DynamicCBR::~DynamicCBR(void) {
 // If so, they will be for the subgame rooted at root_bd_st and root_bd.
 // So we must map our global board index gbd into a local board index lbd
 // whenever we access hand_tree or the probabilities inside sumprobs.
-double *DynamicCBR::Compute(Node *node, int p, const shared_ptr<double []> &opp_probs, int gbd,
-			    HandTree *hand_tree, int root_bd_st, int root_bd) {
+shared_ptr<double []> DynamicCBR::Compute(Node *node, int p, const shared_ptr<double []> &opp_probs,
+					  int gbd, HandTree *hand_tree, int root_bd_st,
+					  int root_bd) {
   int st = node->Street();
   // time_t start_t = time(NULL);
   int num_hole_card_pairs = Game::NumHoleCardPairs(st);
-  double *total_card_probs = new double[num_hole_card_pairs];
   int lbd = BoardTree::LocalIndex(root_bd_st, root_bd, st, gbd);
   const CanonicalCards *hands = hand_tree->Hands(st, lbd);
-  int **street_buckets = AllocateStreetBuckets();
   // Should set this appropriately
   string action_sequence = "x";
-  VCFRState state(opp_probs, hand_tree, 0, action_sequence, root_bd, root_bd_st, street_buckets);
+  VCFRState state(p, opp_probs, hand_tree, 0, action_sequence, root_bd, root_bd_st);
   SetStreetBuckets(st, gbd, state);
-  p_ = p;
-  double *vals = Process(node, lbd, state, st);
-  DeleteStreetBuckets(street_buckets);
+  shared_ptr<double []> vals = Process(node, lbd, state, st);
   // Temporary?  Make our T values like T values constructed by build_cbrs,
   // by casting to float.
   for (int i = 0; i < num_hole_card_pairs; ++i) {
     vals[i] = (float)vals[i];
   }
-  delete [] total_card_probs;
 #if 0
   // EVs for our hands are summed over all opponent hole card pairs.  To
   // compute properly normalized EV, need to divide by that number.
@@ -80,7 +76,7 @@ double *DynamicCBR::Compute(Node *node, int p, const shared_ptr<double []> &opp_
   double ev = sum / num_hole_card_pairs;
 #endif
 
-  FloorCVs(node, opp_probs.get(), hands, vals);
+  FloorCVs(node, opp_probs.get(), hands, vals.get());
   return vals;
 }
 
@@ -89,9 +85,10 @@ double *DynamicCBR::Compute(Node *node, int p, const shared_ptr<double []> &opp_
 // solving for P0.  We might say cfr_target_p is 0.  Then I want T-values for
 // P1.  So I pass in 1 to Compute(). We'll need the reach probs of P1's
 // opponent, who is P0.
-double *DynamicCBR::Compute(Node *node, shared_ptr<double []> *reach_probs, int gbd,
-			    HandTree *hand_tree, int root_bd_st, int root_bd, int target_p,
-			    bool cfrs, bool zero_sum, bool current, bool purify_opp) {
+shared_ptr<double []> DynamicCBR::Compute(Node *node, shared_ptr<double []> *reach_probs, int gbd,
+					  HandTree *hand_tree, int root_bd_st, int root_bd,
+					  int target_p, bool cfrs, bool zero_sum, bool current,
+					  bool purify_opp) {
   cfrs_ = cfrs;
   br_current_ = current;
   if (purify_opp) {
@@ -104,22 +101,19 @@ double *DynamicCBR::Compute(Node *node, shared_ptr<double []> *reach_probs, int 
     prob_method_ = ProbMethod::REGRET_MATCHING;
   }
   if (zero_sum) {
-    double *p0_cvs = Compute(node, 0, reach_probs[1], gbd, hand_tree, root_bd_st, root_bd);
-    double *p1_cvs = Compute(node, 1, reach_probs[0], gbd, hand_tree, root_bd_st, root_bd);
+    shared_ptr<double []> p0_cvs = Compute(node, 0, reach_probs[1], gbd, hand_tree, root_bd_st,
+					   root_bd);
+    shared_ptr<double []> p1_cvs = Compute(node, 1, reach_probs[0], gbd, hand_tree, root_bd_st,
+					   root_bd);
     int st = node->Street();
     int num_hole_card_pairs = Game::NumHoleCardPairs(st);
     // Don't pass in bd.  This is a local hand tree specific to the current
     // board.
     int lbd = BoardTree::LocalIndex(root_bd_st, root_bd, st, gbd);
     const CanonicalCards *hands = hand_tree->Hands(st, lbd);
-    ZeroSumCVs(p0_cvs, p1_cvs, num_hole_card_pairs, reach_probs, hands);
-    if (target_p == 1) {
-      delete [] p0_cvs;
-      return p1_cvs;
-    } else {
-      delete [] p1_cvs;
-      return p0_cvs;
-    }
+    ZeroSumCVs(p0_cvs.get(), p1_cvs.get(), num_hole_card_pairs, reach_probs, hands);
+    if (target_p == 1) return p1_cvs;
+    else               return p0_cvs;
   } else {
     return Compute(node, target_p, reach_probs[target_p^1], gbd, hand_tree, root_bd_st, root_bd);
   }

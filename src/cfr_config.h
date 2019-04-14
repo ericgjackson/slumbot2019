@@ -10,6 +10,7 @@ class Params;
 class CFRConfig {
 public:
   CFRConfig(const Params &params);
+  ~CFRConfig(void) {}
   const std::string &CFRConfigName(void) const {return cfr_config_name_;}
   const std::string &Algorithm(void) const {return algorithm_;}
   bool NNR(void) const {return nnr_;}
@@ -43,18 +44,10 @@ public:
   bool ScaledStreet(int st) const {return scaled_streets_[st];}
   int ActiveMod(void) const {return active_mod_;}
   int NumActiveConditions(void) const {return num_active_conditions_;}
-  int NumActiveStreets(int c) const {
-    return active_streets_[c].size();
-  }
-  int ActiveStreet(int c, int i) const {
-    return active_streets_[c][i];
-  }
-  int NumActiveRems(int c) const {
-    return active_rems_[c].size();
-  }
-  int ActiveRem(int c, int i) const {
-    return active_rems_[c][i];
-  }
+  int NumActiveStreets(int c) const {return active_streets_[c].size();}
+  int ActiveStreet(int c, int i) const {return active_streets_[c][i];}
+  int NumActiveRems(int c) const {return active_rems_[c].size();}
+  int ActiveRem(int c, int i) const {return active_rems_[c][i];}
   int BatchSize(void) const {return batch_size_;}
   int SaveInterval(void) const {return save_interval_;}
   bool DoubleRegrets(void) const {return double_regrets_;}
@@ -92,8 +85,8 @@ public:
   std::unique_ptr<bool []> scaled_streets_;
   int active_mod_;
   int num_active_conditions_;
-  std::vector<int> *active_streets_;
-  std::vector<int> *active_rems_;
+  std::unique_ptr<std::vector<int> []> active_streets_;
+  std::unique_ptr<std::vector<int> []> active_rems_;
   int batch_size_;
   int save_interval_;
   bool double_regrets_;

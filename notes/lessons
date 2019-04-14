@@ -2,3 +2,11 @@ Seems like aggressive reentrancy doesn't hurt much, at least as measured by head
 
 Boosting seems to lead to more reasonable strategies at nodes that are rarely visited by
 normal CFR.
+
+Unsafe resolved system outperforms combined head-to-head.  Both when measuring against
+each other, and when measuring each against the base.  But the combined system has lower
+exploitability.  It might be that the unsafe system has "overfit" to the base abstraction.
+Still holds when comparing head-to-head to a system solved to a low exploitability with no
+abstraction.
+
+Boosting doesn't seem to improve resolved results (heads-up).

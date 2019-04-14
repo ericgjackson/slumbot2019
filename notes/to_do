@@ -1,28 +1,19 @@
-Measure head-to-head for base and resolved systems for ms3f1t1r1h5 game.  Compare with Slumbot2017.
-Does resolving lead to noticeably superior head-to-head performance?  If so, then maybe I am
-content to measure benefits of resolving in multiplayer with head-to-head results.
+Switch to mb2b2ai as testbed.  May need more actions for tcfr to outperform ecfr.  May need
+more actions for boosting to help resolving.  May need more actions for combined resolved systems
+to outperform unsafe resolved systems.
 
-Evaluate boosting in the base system with respect to its effect on resolved systems.
+Build a card abstraction that is bigger than nhs and smaller than nxhs3.  Maybe should use
+abstraction on the turn.
 
-Fix determ play
+Resolving all endgames for holdem5/mb2b2ai will take more than 24 hours.  Also ran out of
+inodes.
 
-It's a mess that we need to pass around root_bd_st/root_bd and if we get it wrong there are subtle
-errors.
-
-Is there a discrepancy with suited vs. unsuited hands in TCFR?  Can get very different strategies.
-
-To copy from macduff:
-Slumbot website code and data
-Settings from .bashrc (e.g., AWS_SECRET_KEY)
-
-Compare ecfr and tcfr.
+Experiment with MCTS as a tool for approximate best-response calculations.
 
 Experiment with multiplayer and reentrancy.  Evaluate with head-to-head?  Can we use h5;
 i.e., a 20 card deck?  6 hole cards, 5 board cards, 9 unused cards.  I guess so.
 
-Get endgame solving working again.  Unsafe works on simple game now.  What about combined
-and CFR-D?  Does boosting help it?  Seems like CFR-D endgame solving was unimplemented and
-combined endgame solving was incomplete.  Need to support multiplayer betting trees in
+Support multiplayer in endgame solving.  Need to support multiplayer betting trees in
 CreateSubtree() in solve_all_subgames.
 
 Build a h5ms3f1p6 system with a non-reentrant tree.  Currently using hs3 buckets, but should
@@ -31,7 +22,9 @@ probably do something better for the river, and bucket the turn as well.
 Finish converting unsigned ints to ints everywhere.
 
 Get rid of that ugliness where the opp probs is inside VCFRState but not owned by it.
-shared_ptr?  Also street_buckets.
+shared_ptr?  Also street_buckets.  Shouldn't need to create outside.
+
+Get rid of cast to float of cbr values in dynamic_cbr.cpp.
 
 Should I boost CVs instead of boosting regrets?  Can I boost only at leaf nodes?  I don't want
 to boost at several nonterminals on the way to a river terminal node, do I?  Wouldn't that lead
@@ -44,10 +37,25 @@ For deeply embedded nodes, I am worried about the boosting becoming very attenua
 1/1000 hands may go down the preflop succ.  Then maybe only 1/1000 down a flop succ.  By the
 logic of Targeted CFR, can we do iterations that are forced to go down the boosted succs?
 
+Use newer FileReader and FileWriter classes in slumbot2019
+
+Can we clean up templated code.  Or abandon that approach even?  OppChoice() is a bit of a
+mess.  Try to clean that up if nothing else.
+
 Incorporate more modern C++:
 1) Replace new with unique_ptr everywhere possible
-2) Look into STL multi-dimensional arrays
+2) Look into std::array and other container we might want to use
 3) Use auto wherever possible; e.g., for iterators
 4) Use C++ multithreading primitives
 5) Look into new kind of iteration
-6) Get rid of typedefs
+6) Look into constructors that assign initial values
+7) Get rid of typedefs
+8) CFRValues should not take pointer to betting tree
+9) Replace NULL with nullptr everywhere possible
+
+Fix determ play
+
+It's a mess that we need to pass around root_bd_st/root_bd and if we get it wrong there are subtle
+errors.
+
+Is there a discrepancy with suited vs. unsuited hands in TCFR?  Can get very different strategies.

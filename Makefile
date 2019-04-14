@@ -37,7 +37,7 @@ OBJS =	obj/fast_hash.o obj/rand.o obj/files.o obj/cards.o obj/io.o obj/split.o o
 	obj/vcfr.o obj/cfrp_subgame.o obj/cfrp.o obj/rgbr.o obj/resolving_method.o \
 	obj/subgame_utils.o obj/dynamic_cbr.o obj/eg_cfr.o obj/unsafe_eg_cfr.o obj/cfrd_eg_cfr.o \
 	obj/combined_eg_cfr.o obj/regret_compression.o obj/tcfr.o obj/rollout.o \
-	obj/sparse_and_dense.o obj/kmeans.o
+	obj/sparse_and_dense.o obj/kmeans.o obj/mcts.o
 
 bin/build_hand_value_tree:	obj/build_hand_value_tree.o $(OBJS) $(HEADS)
 	g++ $(LDFLAGS) $(CFLAGS) -o bin/build_hand_value_tree obj/build_hand_value_tree.o $(OBJS) \

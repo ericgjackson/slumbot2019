@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <unordered_map>
+#include <vector>
 
 #include "betting_abstraction.h"
 #include "betting_tree.h"
@@ -13,6 +14,7 @@
 
 using std::shared_ptr;
 using std::unordered_map;
+using std::vector;
 
 void BettingTreeBuilder::Build(void) {
   int terminal_id = 0;
@@ -41,14 +43,15 @@ void BettingTreeBuilder::Build(void) {
 // we still write out the properties of the node (ID, flags, pot size, etc.).
 // But we prevent ourselves from redundantly writing out the subtree below
 // the node more than once.
-void BettingTreeBuilder::Write(Node *node, int **num_nonterminals, Writer *writer) {
+void BettingTreeBuilder::Write(Node *node, vector< vector<int> > *num_nonterminals,
+			       Writer *writer) {
   int st = node->Street();
   int id = node->ID();
   int pa = node->PlayerActing();
   bool nt_first_seen = (id == -1);
   // Assign IDs during writing
   if (nt_first_seen) {
-    id = num_nonterminals[pa][st]++;
+    id = (*num_nonterminals)[pa][st]++;
     node->SetNonterminalID(id);
   }
   writer->WriteUnsignedInt(id);
@@ -82,16 +85,16 @@ void BettingTreeBuilder::Write(void) {
   
   int max_street = Game::MaxStreet();
   int num_players = Game::NumPlayers();
-  int **num_nonterminals = new int *[num_players];
+  vector< vector<int> > num_nonterminals(num_players);
   for (int pa = 0; pa < num_players; ++pa) {
-    num_nonterminals[pa] = new int[max_street + 1];
+    num_nonterminals[pa].resize(max_street + 1);
     for (int st = 0; st <= max_street; ++st) {
       num_nonterminals[pa][st] = 0;
     }
   }
   
   Writer writer(buf);
-  Write(root_.get(), num_nonterminals, &writer);
+  Write(root_.get(), &num_nonterminals, &writer);
   for (int st = 0; st <= max_street; ++st) {
     int sum = 0;
     for (int pa = 0; pa < num_players; ++pa) {
@@ -99,10 +102,6 @@ void BettingTreeBuilder::Write(void) {
     }
     fprintf(stderr, "St %u num nonterminals %u\n", st, sum);
   }
-  for (int pa = 0; pa < num_players; ++pa) {
-    delete [] num_nonterminals[pa];
-  }
-  delete [] num_nonterminals;
 }
 
 
@@ -112,7 +111,6 @@ void BettingTreeBuilder::Initialize(void) {
   all_in_pot_size_ = 2 * stack_size_;
   min_bet_ = betting_abstraction_.MinBet();
 
-  // pool_ = new Pool();
   root_ = NULL;
   num_terminals_ = 0;
 }

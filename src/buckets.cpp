@@ -11,7 +11,7 @@
 Buckets::Buckets(const CardAbstraction &ca, bool numb_only) {
   BoardTree::Create();
   int max_street = Game::MaxStreet();
-  none_ = new bool[max_street + 1];
+  none_.reset(new bool[max_street + 1]);
   short_buckets_ = new unsigned short *[max_street + 1];
   int_buckets_ = new int *[max_street + 1];
   for (int st = 0; st <= max_street; ++st) {
@@ -19,7 +19,7 @@ Buckets::Buckets(const CardAbstraction &ca, bool numb_only) {
     int_buckets_[st] = nullptr;
   }
   char buf[500];
-  num_buckets_ = new int[max_street + 1];
+  num_buckets_.reset(new int[max_street + 1]);
   for (int st = 0; st <= max_street; ++st) {
     if (ca.Bucketing(st) == "none") {
       none_[st] = true;
@@ -27,9 +27,8 @@ Buckets::Buckets(const CardAbstraction &ca, bool numb_only) {
       continue;
     }
     none_[st] = false;
-    sprintf(buf, "%s/num_buckets.%s.%i.%i.%i.%s.%i", Files::StaticBase(),
-	    Game::GameName().c_str(), Game::NumRanks(), Game::NumSuits(),
-	    max_street, ca.Bucketing(st).c_str(), st);
+    sprintf(buf, "%s/num_buckets.%s.%i.%i.%i.%s.%i", Files::StaticBase(), Game::GameName().c_str(),
+	    Game::NumRanks(), Game::NumSuits(), max_street, ca.Bucketing(st).c_str(), st);
     Reader reader(buf);
     num_buckets_[st] = reader.ReadIntOrDie();
   }
@@ -80,6 +79,4 @@ Buckets::~Buckets(void) {
     }
     delete [] int_buckets_;
   }
-  delete [] none_;
-  delete [] num_buckets_;
 }

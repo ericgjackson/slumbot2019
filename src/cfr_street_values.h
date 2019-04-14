@@ -28,7 +28,7 @@ class AbstractCFRStreetValues {
 template <typename T>
 class CFRStreetValues : public AbstractCFRStreetValues {
 public:
-  CFRStreetValues(int st, const bool *players, int num_holdings, int **num_nonterminals);
+  CFRStreetValues(int st, const bool *players, int num_holdings, int *num_nonterminals);
   virtual ~CFRStreetValues(void);
   CFRValueType MyType(void) const;
   bool Players(int p) const {return players_[p];}

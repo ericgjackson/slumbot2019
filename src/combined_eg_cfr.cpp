@@ -47,9 +47,10 @@ static void RegretsToProbs(double *regrets, int num_succs, int dsi, double *prob
 // Simulate dummy root node with two succs.  Succ 0 corresponds to playing to
 // the subgame.  Succ 1 corresponds to taking the T value.
 // Use "villain" to mean the player who is not the target player.
-void CombinedEGCFR::HalfIteration(BettingTree *subtree, int solve_bd, int p, int target_p,
+void CombinedEGCFR::HalfIteration(BettingTree *subtree, int solve_bd, int target_p,
 				  VCFRState *state, shared_ptr<double []> *reach_probs,
 				  double *opp_cvs) {
+  int p = state->P();
   const HandTree *hand_tree = state->GetHandTree();
   shared_ptr<double []> villain_reach_probs = reach_probs[target_p^1];
   int subtree_st = subtree->Root()->Street();
@@ -157,12 +158,11 @@ void CombinedEGCFR::HalfIteration(BettingTree *subtree, int solve_bd, int p, int
 
   if (p == target_p) {
     state->SetOppProbs(villain_probs);
-    double *vals = EGCFR::HalfIteration(subtree, solve_bd, p, *state);
-    delete [] vals;
+    EGCFR::HalfIteration(subtree, solve_bd, *state);
   } else {
     // Opponent phase.  The target player plays his fixed range to the subgame.  The target
     // player's fixed range is embedded in the opp_probs in state.
-    double *vals = EGCFR::HalfIteration(subtree, solve_bd, p, *state);
+    shared_ptr<double []> vals = EGCFR::HalfIteration(subtree, solve_bd, *state);
     for (int i = 0; i < num_hole_card_pairs; ++i) {
       double *regrets = &combined_regrets_[i * 2];
       const Card *cards = hands->Cards(i);
@@ -189,7 +189,6 @@ void CombinedEGCFR::HalfIteration(BettingTree *subtree, int solve_bd, int p, int
       if (regrets[0] < 0) regrets[0] = 0;
       if (regrets[1] < 0) regrets[1] = 0;
     }
-    delete [] vals;
   }
 }
 
@@ -227,16 +226,15 @@ void CombinedEGCFR::SolveSubgame(BettingTree *subtree, int solve_bd,
   }
   
   VCFRState **initial_states = new VCFRState *[num_players];
-  int **street_buckets = AllocateStreetBuckets();
   for (int p = 0; p < num_players; ++p) {
-    initial_states[p] = new VCFRState(reach_probs[p^1], hand_tree, 0, action_sequence, solve_bd,
-				      subtree_st, street_buckets);
+    initial_states[p] = new VCFRState(p, reach_probs[p^1], hand_tree, 0, action_sequence, solve_bd,
+				      subtree_st);
+    SetStreetBuckets(subtree_st, solve_bd, *initial_states[p]);
   }
-  SetStreetBuckets(subtree_st, solve_bd, *initial_states[0]);
   for (it_ = 1; it_ <= num_its; ++it_) {
     // Go from high to low to mimic slumbot2017 code
     for (int p = (int)num_players - 1; p >= 0; --p) {
-      HalfIteration(subtree, solve_bd, p, target_p, initial_states[p], reach_probs, opp_cvs);
+      HalfIteration(subtree, solve_bd, target_p, initial_states[p], reach_probs, opp_cvs);
     }
   }
 
@@ -244,6 +242,5 @@ void CombinedEGCFR::SolveSubgame(BettingTree *subtree, int solve_bd,
     delete initial_states[p];
   }
   delete [] initial_states;
-  DeleteStreetBuckets(street_buckets);
 }
 

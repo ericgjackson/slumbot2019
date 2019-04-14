@@ -16,9 +16,7 @@ class CFRValues {
   CFRValues(const bool *players, const bool *streets, int root_bd, int root_bd_st,
 	    const Buckets &buckets, const BettingTree *betting_tree);
   virtual ~CFRValues(void);
-  AbstractCFRStreetValues *StreetValues(int st) const {
-    return street_values_[st];
-  }
+  AbstractCFRStreetValues *StreetValues(int st) const {return street_values_[st];}
   void AllocateAndClearInts(Node *node, int only_p);
   void AllocateAndClearDoubles(Node *node, int only_p);
   void CreateStreetValues(int st, CFRValueType value_type);
@@ -53,13 +51,13 @@ class CFRValues {
   void MergeInto(Node *full_node, Node *subgame_node, int root_bd_st, int root_bd,
 		 const CFRValues &subgame_values, const Buckets &buckets, int final_st);
   
-  AbstractCFRStreetValues **street_values_;
+  std::unique_ptr<AbstractCFRStreetValues * []> street_values_;
   std::unique_ptr<bool []> players_;
   std::unique_ptr<bool []> streets_;
   int root_bd_;
   int root_bd_st_;
   std::unique_ptr<int []> num_holdings_;
-  int **num_nonterminals_;
+  std::unique_ptr<int []> num_nonterminals_;
 };
 
 #endif

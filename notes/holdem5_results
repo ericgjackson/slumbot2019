@@ -5,3 +5,46 @@ null/mb1b1/ecfr
 1b its in 105m
 Thread 0 avg P0 val -0.852390
 Thread 0 avg P1 val 0.325125
+
+cfrps/none
+200 (6m27s): Exploitability: 29.47 mbb/g
+
+nxhs3/mb1b1/tcfr
+1b in 42m: Exploitability: 242.34 mbb/g
+2b in 39m: Exploitability: 198.91 mbb/g
+3b in 39m: Exploitability: 180.29 mbb/g
+4b-10b in 272m
+9b:        Exploitability: 156.43 mbb/g
+10b:       Exploitability: 155.65 mbb/g (392m)
+
+Resolve all river subgames at 10b with cfrps/200
+unsafe:   Exploitability: 79.74 mbb/g
+combined: Exploitability: 45.64 mbb/g
+
+play
+unsafe vs. combined: Avg B outcome: -0.007569 (-3.8 mbb/g) over 100000000 dup hands
+
+nxhs3/mb1b1/ecfr
+1b in 99m: Exploitability: 174.42 mbb/g
+2b in 92m: Exploitability: 159.92 mbb/g
+3b-5b in 277m
+3b:        Exploitability: 154.67 mbb/g (283m)
+4b:        Exploitability: 152.08 mbb/g (376m)
+5b:        Exploitability: 150.41 mbb/g (468m)
+
+nhs3
+291m for 10 batches
+1b:  Exploitability: 1096.86 mbb/g
+10b: Exploitability: 1119.66 mbb/g
+
+
+Resolve all river subgames at 10b with cfrps/200
+unsafe:   Exploitability: 667.59 mbb/g
+cfrd:     Exploitability: 461.91 mbb/g
+combined: Exploitability: 396.98 mbb/g
+Resolve all river subgames at 10b with cfrps/400
+unsafe:   Exploitability: 666.36 mbb/g
+combined: Exploitability: 396.15 mbb/g
+
+play
+unsafe vs. combined: Avg B outcome: -0.000393 (-0.2 mbb/g) over 100000000 dup hands

@@ -4,9 +4,9 @@
 class BettingTree;
 class Node;
 
-void AssignNonterminalIDs(Node *root, int ***ret_num_nonterminals);
-void AssignNonterminalIDs(BettingTree *betting_tree, int ***ret_num_nonterminals);
-int **CountNumNonterminals(Node *root);
-int **CountNumNonterminals(BettingTree *betting_tree);
+void AssignNonterminalIDs(Node *root, int * num_nonterminals);
+void AssignNonterminalIDs(BettingTree *betting_tree, int *num_nonterminals);
+void CountNumNonterminals(Node *root, int *num_nonterminals);
+void CountNumNonterminals(BettingTree *betting_tree, int *num_nonterminals);
 
 #endif

@@ -17,12 +17,13 @@ public:
 	     const Buckets &buckets, const BettingTree *betting_tree, int num_threads);
   DynamicCBR(void);
   ~DynamicCBR(void);
-  double *Compute(Node *node, std::shared_ptr<double []> *reach_probs, int gbd, HandTree *hand_tree,
-		  int root_bd_st, int root_bd, int target_p, bool cfrs, bool zero_sum, bool current,
-		  bool purify_opp);
+  std::shared_ptr<double []> Compute(Node *node, std::shared_ptr<double []> *reach_probs, int gbd,
+				     HandTree *hand_tree, int root_bd_st, int root_bd,
+				     int target_p, bool cfrs, bool zero_sum, bool current,
+				     bool purify_opp);
 private:
-  double *Compute(Node *node, int p, const std::shared_ptr<double []> &opp_probs, int gbd,
-		  HandTree *hand_tree, int root_bd_st, int root_bd);
+  std::shared_ptr<double []> Compute(Node *node, int p, const std::shared_ptr<double []> &opp_probs,
+				     int gbd, HandTree *hand_tree, int root_bd_st, int root_bd);
 
   bool cfrs_;
 };

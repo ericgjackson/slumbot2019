@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -15,6 +16,7 @@
 #include "split.h"
 
 using std::string;
+using std::unique_ptr;
 using std::vector;
 
 CardAbstraction::CardAbstraction(const Params &params) {
@@ -26,7 +28,7 @@ CardAbstraction::CardAbstraction(const Params &params) {
     fprintf(stderr, "Expected at least %i bucketings\n", max_street + 1);
     exit(-1);
   }
-  bucket_thresholds_ = new int[max_street + 1];
+  bucket_thresholds_.reset(new int[max_street + 1]);
   if (params.IsSet("BucketThresholds")) {
     vector<int> v;
     ParseInts(params.GetStringValue("BucketThresholds"), &v);
@@ -43,7 +45,4 @@ CardAbstraction::CardAbstraction(const Params &params) {
       bucket_thresholds_[st] = kMaxInt;
     }
   }
-}
-
-CardAbstraction::~CardAbstraction(void) {
 }

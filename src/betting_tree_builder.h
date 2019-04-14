@@ -87,7 +87,7 @@ private:
   void GetNewPotSizes(int old_pot_size, const std::vector<int> &bet_amounts, int player_acting,
 		      int target_player, std::vector<int> *new_pot_sizes);
   void Initialize(void);
-  void Write(Node *node, int **num_nonterminals, Writer *writer);
+  void Write(Node *node, std::vector< std::vector<int> > *num_nonterminals, Writer *writer);
 
   const BettingAbstraction &betting_abstraction_;
   bool asymmetric_;

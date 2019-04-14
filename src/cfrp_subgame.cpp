@@ -49,9 +49,9 @@ using std::string;
 using std::unique_ptr;
 
 CFRPSubgame::CFRPSubgame(const CardAbstraction &ca, const BettingAbstraction &ba,
-			 const CFRConfig &cc, const Buckets &buckets, Node *root,
-			 int root_bd, const string &action_sequence, CFRP *cfr) :
-  VCFR(ca, ba, cc, buckets, 1), action_sequence_(action_sequence) {
+			 const CFRConfig &cc, const Buckets &buckets, Node *root, int root_bd,
+			 const string &action_sequence, int p, CFRP *cfr) :
+  VCFR(ca, ba, cc, buckets, 1), action_sequence_(action_sequence), p_(p) {
   // subgame_ = true;
   root_ = root;
   root_bd_ = root_bd;
@@ -60,7 +60,7 @@ CFRPSubgame::CFRPSubgame(const CardAbstraction &ca, const BettingAbstraction &ba
   
   int max_street = Game::MaxStreet();
 
-  subtree_ = BettingTree::BuildSubtree(root);
+  subtree_.reset(new BettingTree(root));
   
   int subtree_st = root->Street();
   subtree_streets_ = new bool[max_street + 1];
@@ -72,10 +72,8 @@ CFRPSubgame::CFRPSubgame(const CardAbstraction &ca, const BettingAbstraction &ba
 }
 
 CFRPSubgame::~CFRPSubgame(void) {
-  // Do not delete final_vals_; it has been passed to the parent VCFR object
   delete [] subtree_streets_;
   delete hand_tree_;
-  delete subtree_;
 }
 
 void CFRPSubgame::SetOppProbs(const shared_ptr<double []> &opp_probs) {
@@ -84,6 +82,13 @@ void CFRPSubgame::SetOppProbs(const shared_ptr<double []> &opp_probs) {
   opp_probs_.reset(new double[num_enc]);
   for (int i = 0; i < num_enc; ++i) {
     opp_probs_[i] = opp_probs[i];
+  }
+}
+
+void CFRPSubgame::SetBestResponseStreets(const bool *sts) {
+  int max_street = Game::MaxStreet();
+  for (int st = 0; st <= max_street; ++st) {
+    best_response_streets_[st] = sts[st];
   }
 }
 
@@ -97,8 +102,7 @@ void CFRPSubgame::DeleteOldFiles(int it) {
   if (delete_it == last_checkpoint_it_) return;
   
   char dir[500], buf[500];
-  sprintf(dir, "%s/%s.%s.%u.%u.%u.%s.%s", Files::OldCFRBase(),
-	  Game::GameName().c_str(),
+  sprintf(dir, "%s/%s.%s.%i.%i.%i.%s.%s", Files::OldCFRBase(), Game::GameName().c_str(),
 	  card_abstraction_.CardAbstractionName().c_str(), Game::NumRanks(),
 	  Game::NumSuits(), Game::MaxStreet(),
 	  betting_abstraction_.BettingAbstractionName().c_str(),
@@ -111,9 +115,8 @@ void CFRPSubgame::DeleteOldFiles(int it) {
   for (int st = 0; st <= max_street; ++st) {
     if (! subtree_streets_[st]) continue;
     // Remove the regret file created for the current player two iterations ago
-    sprintf(buf, "%s/regrets.%s.%u.%u.%u.%u.p%u.i", dir,
-	    action_sequence_.c_str(), root_bd_st_, root_bd_, st, delete_it,
-	    p_);
+    sprintf(buf, "%s/regrets.%s.%i.%i.%i.%i.p%u.i", dir, action_sequence_.c_str(), root_bd_st_,
+	    root_bd_, st, delete_it, p_);
 #if 0
     if (! FileExists(buf)) {
       // It should exist.  Test for debugging purposes.
@@ -138,9 +141,8 @@ void CFRPSubgame::DeleteOldFiles(int it) {
       last_it = it - 1;
     }
 #endif
-    sprintf(buf, "%s/sumprobs.%s.%u.%u.%u.%u.p%u.i", dir,
-	    action_sequence_.c_str(), root_bd_st_, root_bd_, st, delete_it,
-	    p_^1);
+    sprintf(buf, "%s/sumprobs.%s.%i.%i.%i.%i.p%i.i", dir, action_sequence_.c_str(), root_bd_st_,
+	    root_bd_, st, delete_it, p_^1);
 #if 0
     if (! FileExists(buf)) {
       // It should exist.  Test for debugging purposes.
@@ -178,17 +180,16 @@ void CFRPSubgame::Go(void) {
   }
   if (value_calculation_) {
     // Only need the opponent's sumprobs
-    sumprobs_.reset(new CFRValues(sp_players.get(), subtree_streets_,
-				   root_bd_, root_bd_st_, buckets_,
-				   subtree_));
+    sumprobs_.reset(new CFRValues(sp_players.get(), subtree_streets_, root_bd_, root_bd_st_,
+				  buckets_, subtree_.get()));
     sumprobs_->Read(dir, it_, subtree_->Root(), action_sequence_, -1, true);
   } else {
     // Need both players regrets
-    regrets_.reset(new CFRValues(nullptr, subtree_streets_, root_bd_,
-				 root_bd_st_, buckets_, subtree_));
+    regrets_.reset(new CFRValues(nullptr, subtree_streets_, root_bd_, root_bd_st_, buckets_,
+				 subtree_.get()));
     // Only need the opponent's sumprobs
-    sumprobs_.reset(new CFRValues(sp_players.get(), subtree_streets_,
-				  root_bd_, root_bd_st_, buckets_, subtree_));
+    sumprobs_.reset(new CFRValues(sp_players.get(), subtree_streets_, root_bd_, root_bd_st_,
+				  buckets_, subtree_.get()));
 
     if (it_ == 1) {
       if (p_ == 1) {
@@ -196,21 +197,18 @@ void CFRPSubgame::Go(void) {
 	regrets_->AllocateAndClearInts(subtree_->Root(), -1);
       } else {
 	// It 1 P0 phase: read P1 regrets from disk; initialize P0 regrets
-	regrets_->Read(dir, it_, subtree_->Root(), action_sequence_, 1,
-		       false);
+	regrets_->Read(dir, it_, subtree_->Root(), action_sequence_, 1, false);
 	regrets_->AllocateAndClearInts(subtree_->Root(), 0);
       }
     } else {
       if (p_ == 1) {
 	// Read regrets for both players from previous iteration
-	regrets_->Read(dir, it_ - 1, subtree_->Root(), action_sequence_,
-		       -1, false);
+	regrets_->Read(dir, it_ - 1, subtree_->Root(), action_sequence_, -1, false);
       } else {
 	// Read P1 regrets from current iteration
 	// Read P0 regrets from previous iteration
 	regrets_->Read(dir, it_, subtree_->Root(), action_sequence_, 1, false);
-	regrets_->Read(dir, it_ - 1, subtree_->Root(), action_sequence_, 0,
-		       false);
+	regrets_->Read(dir, it_ - 1, subtree_->Root(), action_sequence_, 0, false);
       }
     }
     if (it_ == 1) {
@@ -226,13 +224,9 @@ void CFRPSubgame::Go(void) {
     exit(-1);
   }
   // Should set action sequence
-  int **street_buckets = AllocateStreetBuckets();
-  VCFRState state(opp_probs_, hand_tree_, 0, action_sequence_, root_bd_, root_bd_st_,
-		  street_buckets);
+  VCFRState state(p_, opp_probs_, hand_tree_, 0, action_sequence_, root_bd_, root_bd_st_);
   SetStreetBuckets(root_bd_st_, root_bd_, state);
   final_vals_ = Process(subtree_->Root(), 0, state, subtree_st - 1);
-  DeleteStreetBuckets(street_buckets);
-
 
   if (! value_calculation_) {
     Mkdir(dir);

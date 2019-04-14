@@ -1,8 +1,11 @@
+// Compute a pseudo-best-response using Monte-Carlo Tree Search.
+
 #include <stdio.h>
 #include <stdlib.h>
 
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "betting_abstraction.h"
 #include "betting_abstraction_params.h"
@@ -12,20 +15,21 @@
 #include "card_abstraction_params.h"
 #include "cfr_config.h"
 #include "cfr_params.h"
-#include "cfrp.h"
-#include "constants.h"
 #include "files.h"
 #include "game.h"
 #include "game_params.h"
 #include "io.h"
 #include "params.h"
+#include "rgbr.h"
+#include "split.h"
 
 using std::string;
 using std::unique_ptr;
+using std::vector;
 
 static void Usage(const char *prog_name) {
   fprintf(stderr, "USAGE: %s <game params> <card params> <betting params> "
-	  "<CFR params> <num threads> <start it> <end it> ([p0|p1])\n",
+	  "<CFR params> <num threads> <it> [current|avg] (<streets>)\n",
 	  prog_name);
   exit(-1);
 }
@@ -47,39 +51,33 @@ int main(int argc, char *argv[]) {
   unique_ptr<Params> cfr_params = CreateCFRParams();
   cfr_params->ReadFromFile(argv[4]);
   unique_ptr<CFRConfig> cfr_config(new CFRConfig(*cfr_params));
-  unsigned int num_threads, start_it, end_it;
+  unsigned int num_threads, it;
   if (sscanf(argv[5], "%u", &num_threads) != 1) Usage(argv[0]);
-  if (sscanf(argv[6], "%u", &start_it) != 1)    Usage(argv[0]);
-  if (sscanf(argv[7], "%u", &end_it) != 1)      Usage(argv[0]);
-  unsigned int target_p = -1;
+  if (sscanf(argv[6], "%u", &it) != 1)          Usage(argv[0]);
+  string carg = argv[7];
+  bool current;
+  if (carg == "current")  current = true;
+  else if (carg == "avg") current = false;
+  else                    Usage(argv[0]);
+  unsigned int max_street = Game::MaxStreet();
+  unique_ptr<bool []> streets(new bool[max_street + 1]);
   if (argc == 9) {
-    if (! betting_abstraction->Asymmetric()) {
-      fprintf(stderr, "Don't specify p0/p1 when using symmetric betting "
-	      "abstraction\n");
-      exit(-1);
+    for (unsigned int st = 0; st <= max_street; ++st) {
+      streets[st] = false;
     }
-    string p_arg = argv[8];
-    if (p_arg == "p0")      target_p = 0;
-    else if (p_arg == "p1") target_p = 1;
-    else                    Usage(argv[0]);
+    vector<string> comps;
+    Split(argv[8], ',', false, &comps);
+    unsigned int num = comps.size();
+    for (unsigned int i = 0; i < num; ++i) {
+      unsigned int st;
+      if (sscanf(comps[i].c_str(), "%u", &st) != 1) Usage(argv[0]);
+      if (st > max_street) Usage(argv[0]);
+      streets[st] = true;
+    }
+  } else {
+    for (unsigned int st = 0; st <= max_street; ++st) {
+      streets[st] = true;
+    }
   }
   Buckets buckets(*card_abstraction, false);
-
-  unique_ptr<BettingTree> betting_tree;
-  if (betting_abstraction->Asymmetric()) {
-    betting_tree.reset(new BettingTree(*betting_abstraction, target_p));
-  } else {
-    betting_tree.reset(new BettingTree(*betting_abstraction));
-  }
-
-  if (cfr_config->Algorithm() == "cfrp") {
-    CFRP cfr(*card_abstraction, *betting_abstraction, *cfr_config, buckets, betting_tree.get(),
-	     num_threads, target_p);
-    cfr.Initialize();
-    cfr.Run(start_it, end_it);
-  } else {
-    fprintf(stderr, "Unknown algorithm: %s\n",
-	    cfr_config->Algorithm().c_str());
-    exit(-1);
-  }
 }

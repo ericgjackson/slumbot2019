@@ -38,14 +38,15 @@ using std::unique_ptr;
 // CBR computation.
 // Actually: for normal subgame solving, I think I only need both players'
 // strategies if we are zero-summing.
-CFRValues *ReadBaseSubgameStrategy(const CardAbstraction &base_card_abstraction,
-				   const BettingAbstraction &base_betting_abstraction,
-				   const CFRConfig &base_cfr_config,
-				   const BettingTree *base_betting_tree,
-				   const Buckets &base_buckets, const Buckets &subgame_buckets,
-				   int base_it, Node *base_node, int gbd,
-				   const string &action_sequence, double **reach_probs,
-				   BettingTree *subtree, bool current, int asym_p) {
+unique_ptr<CFRValues> ReadBaseSubgameStrategy(const CardAbstraction &base_card_abstraction,
+					      const BettingAbstraction &base_betting_abstraction,
+					      const CFRConfig &base_cfr_config,
+					      const BettingTree *base_betting_tree,
+					      const Buckets &base_buckets,
+					      const Buckets &subgame_buckets, int base_it,
+					      Node *base_node, int gbd,
+					      const string &action_sequence, double **reach_probs,
+					      BettingTree *subtree, bool current, int asym_p) {
 
   // We need probs for subgame streets only
   int max_street = Game::MaxStreet();
@@ -53,9 +54,9 @@ CFRValues *ReadBaseSubgameStrategy(const CardAbstraction &base_card_abstraction,
   for (int st = 0; st <= max_street; ++st) {
     subgame_streets[st] = st >= base_node->Street();
   }
-  CFRValues *strategy = new CFRValues(nullptr, subgame_streets.get(),
-				      gbd, base_node->Street(), base_buckets,
-				      base_betting_tree);
+  unique_ptr<CFRValues> strategy(new CFRValues(nullptr, subgame_streets.get(),
+					       gbd, base_node->Street(), base_buckets,
+					       base_betting_tree));
 
   char dir[500];
   sprintf(dir, "%s/%s.%u.%s.%i.%i.%i.%s.%s", Files::OldCFRBase(),
@@ -71,8 +72,7 @@ CFRValues *ReadBaseSubgameStrategy(const CardAbstraction &base_card_abstraction,
     strcat(dir, buf);
   }
 
-  unique_ptr<int []>
-    num_full_holdings(new int[max_street + 1]);
+  unique_ptr<int []> num_full_holdings(new int[max_street + 1]);
   for (int st = 0; st <= max_street; ++st) {
     if (subgame_buckets.None(st)) {
       num_full_holdings[st] =
@@ -262,14 +262,15 @@ static void ReadSubgame(Node *node, const string &action_sequence, int gbd,
 // probabilities for both players in case we are performing nested subgame
 // solving.  In addition, as long as we are zero-summing the T-values, we
 // need the strategy for both players for the CBR computation.
-CFRValues *ReadSubgame(const string &action_sequence, BettingTree *subtree, int gbd,
-		       const CardAbstraction &base_card_abstraction,
-		       const CardAbstraction &subgame_card_abstraction,
-		       const BettingAbstraction &base_betting_abstraction,
-		       const BettingAbstraction &subgame_betting_abstraction,
-		       const CFRConfig &base_cfr_config, const CFRConfig &subgame_cfr_config,
-		       const Buckets &subgame_buckets, ResolvingMethod method, int root_bd_st,
-		       int root_bd, int asym_p) {
+unique_ptr<CFRValues> ReadSubgame(const string &action_sequence, BettingTree *subtree, int gbd,
+				  const CardAbstraction &base_card_abstraction,
+				  const CardAbstraction &subgame_card_abstraction,
+				  const BettingAbstraction &base_betting_abstraction,
+				  const BettingAbstraction &subgame_betting_abstraction,
+				  const CFRConfig &base_cfr_config,
+				  const CFRConfig &subgame_cfr_config,
+				  const Buckets &subgame_buckets, ResolvingMethod method,
+				  int root_bd_st, int root_bd, int asym_p) {
   int max_street = Game::MaxStreet();
   unique_ptr<bool []> subgame_streets(new bool[max_street + 1]);
   for (int st = 0; st <= max_street; ++st) {
@@ -278,9 +279,9 @@ CFRValues *ReadSubgame(const string &action_sequence, BettingTree *subtree, int 
 
   // Buckets needed for num buckets and for knowing what streets are
   // bucketed.
-  CFRValues *sumprobs = new CFRValues(nullptr, subgame_streets.get(),
-				      gbd, subtree->Root()->Street(),
-				      subgame_buckets, subtree);
+  unique_ptr<CFRValues> sumprobs(new CFRValues(nullptr, subgame_streets.get(),
+					       gbd, subtree->Root()->Street(),
+					       subgame_buckets, subtree));
   // Assume doubles
   for (int st = 0; st <= max_street; ++st) {
     if (subgame_streets[st]) sumprobs->CreateStreetValues(st, CFR_DOUBLE);
@@ -290,13 +291,14 @@ CFRValues *ReadSubgame(const string &action_sequence, BettingTree *subtree, int 
     ReadSubgame(subtree->Root(), action_sequence, gbd, base_card_abstraction,
 		subgame_card_abstraction, base_betting_abstraction,
 		subgame_betting_abstraction, base_cfr_config,
-		subgame_cfr_config, method, sumprobs, root_bd_st, root_bd,
+		subgame_cfr_config, method, sumprobs.get(), root_bd_st, root_bd,
 		asym_p, target_pa, subtree->Root()->Street());
   }
   
   return sumprobs;
 }
 
+// Hard-coded for heads-up
 shared_ptr<double []> **GetSuccReachProbs(Node *node, int gbd, HandTree *hand_tree,
 					  const Buckets &buckets, const CFRValues *sumprobs,
 					  shared_ptr<double []> *reach_probs, int root_bd_st,
@@ -305,19 +307,32 @@ shared_ptr<double []> **GetSuccReachProbs(Node *node, int gbd, HandTree *hand_tr
   shared_ptr<double []> **succ_reach_probs = new shared_ptr<double []> *[num_succs];
   int max_card1 = Game::MaxCard() + 1;
   int num_enc = max_card1 * max_card1;
+  int st = node->Street();
+  int num_hole_card_pairs = Game::NumHoleCardPairs(st);
+  int lbd = BoardTree::LocalIndex(root_bd_st, root_bd, st, gbd);
+  const CanonicalCards *hands = hand_tree->Hands(st, lbd);
   for (int s = 0; s < num_succs; ++s) {
     succ_reach_probs[s] = new shared_ptr<double []>[2];
     for (int p = 0; p < 2; ++p) {
       succ_reach_probs[s][p].reset(new double[num_enc]);
     }
   }
-  int st = node->Street();
-  int num_hole_card_pairs = Game::NumHoleCardPairs(st);
+  // Can happen when we are all-in.  Only succ is check.
+  if (num_succs == 1) {
+    for (int i = 0; i < num_hole_card_pairs; ++i) {
+      const Card *cards = hands->Cards(i);
+      Card hi = cards[0];
+      Card lo = cards[1];
+      int enc = hi * max_card1 + lo;
+      for (int p = 0; p <= 1; ++p) {
+	succ_reach_probs[0][p][enc] = reach_probs[p][enc];
+      }
+    }
+    return succ_reach_probs;
+  }
   int pa = node->PlayerActing();
   int nt = node->NonterminalID();
   int dsi = node->DefaultSuccIndex();
-  int lbd = BoardTree::LocalIndex(root_bd_st, root_bd, st, gbd);
-  const CanonicalCards *hands = hand_tree->Hands(st, lbd);
   unique_ptr<double []> probs(new double[num_succs]);
   for (int i = 0; i < num_hole_card_pairs; ++i) {
     const Card *cards = hands->Cards(i);

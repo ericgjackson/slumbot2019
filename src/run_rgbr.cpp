@@ -90,14 +90,13 @@ int main(int argc, char *argv[]) {
       exit(-1);
     }
     for (unsigned int target_p = 0; target_p < num_players; ++target_p) {
-      betting_tree.reset(BettingTree::BuildAsymmetricTree(*betting_abstraction,
-							  target_p));
+      betting_tree.reset(new BettingTree(*betting_abstraction, target_p));
       RGBR rgbr(*card_abstraction, *betting_abstraction, *cfr_config, buckets,
 		betting_tree.get(), current, num_threads, streets.get());
       evs[target_p^1] = rgbr.Go(it, target_p^1);
     }
   } else {
-    betting_tree.reset(BettingTree::BuildTree(*betting_abstraction));
+    betting_tree.reset(new BettingTree(*betting_abstraction));
     RGBR rgbr(*card_abstraction, *betting_abstraction, *cfr_config, buckets,
 	      betting_tree.get(), current, num_threads, streets.get());
     for (unsigned int p = 0; p < num_players; ++p) {

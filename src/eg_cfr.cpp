@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <memory>
+
 #include "betting_tree.h"
 #include "board_tree.h"
 #include "eg_cfr.h"
@@ -9,13 +11,13 @@
 #include "vcfr_state.h"
 #include "vcfr.h"
 
-// Can we skip this if no opp hands reach
-double *EGCFR::HalfIteration(BettingTree *subtree, int solve_bd, int p, const VCFRState &state) {
-  p_ = p;
-  Node *subtree_root = subtree->Root();
-  double *vals = Process(subtree_root, 0, state, subtree_root->Street());
+using std::shared_ptr;
 
-  return vals;
+// Can we skip this if no opp hands reach
+shared_ptr<double []> EGCFR::HalfIteration(BettingTree *subtree, int solve_bd, 
+					   const VCFRState &state) {
+  Node *subtree_root = subtree->Root();
+  return Process(subtree_root, 0, state, subtree_root->Street());
 }
 
 EGCFR::EGCFR(const CardAbstraction &ca, const CardAbstraction &base_ca,

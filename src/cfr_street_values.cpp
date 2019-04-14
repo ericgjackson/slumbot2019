@@ -13,9 +13,8 @@
 
 using std::unique_ptr;
 
-void AbstractCFRStreetValues::MergeInto(Node *full_node, Node *subgame_node,
-					int root_bd_st, int root_bd,
-					const AbstractCFRStreetValues *subgame_values,
+void AbstractCFRStreetValues::MergeInto(Node *full_node, Node *subgame_node, int root_bd_st,
+					int root_bd, const AbstractCFRStreetValues *subgame_values,
 					const Buckets &buckets) {
   CFRValueType vtype = MyType();
   if (vtype == CFR_CHAR) {
@@ -52,7 +51,7 @@ void AbstractCFRStreetValues::MergeInto(Node *full_node, Node *subgame_node,
 
 template <typename T>
 CFRStreetValues<T>::CFRStreetValues(int st, const bool *players, int num_holdings,
-				    int **num_nonterminals) {
+				    int *num_nonterminals) {
   st_ = st;
   int num_players = Game::NumPlayers();
   players_.reset(new bool[num_players]);
@@ -63,7 +62,7 @@ CFRStreetValues<T>::CFRStreetValues(int st, const bool *players, int num_holding
   num_nonterminals_.reset(new int[num_players]);
   for (int p = 0; p < num_players; ++p) {
     if (players_[p]) {
-      num_nonterminals_[p] = num_nonterminals[p][st_];
+      num_nonterminals_[p] = num_nonterminals[p * (Game::MaxStreet() + 1) + st_];
     } else {
       num_nonterminals_[p] = 0;
     }
@@ -324,8 +323,7 @@ void CFRStreetValues<T>::MergeInto(Node *full_node, Node *subgame_node, int root
       }
     } else {
       if (num_holdings_ != subgame_num_holdings) {
-	fprintf(stderr,
-		"CFRStreetValues::MergeInto(): Mismatched num. of buckets\n");
+	fprintf(stderr, "CFRStreetValues::MergeInto(): Mismatched num. of buckets\n");
 	exit(-1);
       }
       int num_actions = num_holdings_ * num_succs;

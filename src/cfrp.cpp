@@ -7,6 +7,8 @@
 //       also write out 0/1 for each flop board for reachability.  What does
 //       Alberta do?
 // TODO: skip river if no opp hands reach.  How does Alberta do it?
+//
+// Where does final_vals_ get constructed?  Is all the subgame stuff unfinished?
 
 #include <math.h>
 #include <stdio.h>
@@ -44,15 +46,15 @@ using std::string;
 using std::unique_ptr;
 
 void CFRP::Initialize(void) {
-  bool *streets = nullptr;
+  unique_ptr<bool []> streets;
   int max_street = Game::MaxStreet();
   if (subgame_street_ >= 0 && subgame_street_ <= max_street) {
-    streets = new bool[max_street + 1];
+    streets.reset(new bool[max_street + 1]);
     for (int st = 0; st <= max_street; ++st) {
       streets[st] = st < subgame_street_;
     }
   }
-  regrets_.reset(new CFRValues(nullptr, streets, 0, 0, buckets_, betting_tree_));
+  regrets_.reset(new CFRValues(nullptr, streets.get(), 0, 0, buckets_, betting_tree_));
   
   // Should honor sumprobs_streets_
   if (betting_abstraction_.Asymmetric()) {
@@ -60,9 +62,9 @@ void CFRP::Initialize(void) {
     unique_ptr<bool []> players(new bool [num_players]);
     for (int p = 0; p < num_players; ++p) players[p] = false;
     players[target_p_] = true;
-    sumprobs_.reset(new CFRValues(players.get(), streets, 0, 0, buckets_, betting_tree_));
+    sumprobs_.reset(new CFRValues(players.get(), streets.get(), 0, 0, buckets_, betting_tree_));
   } else {
-    sumprobs_.reset(new CFRValues(nullptr, streets, 0, 0, buckets_, betting_tree_));
+    sumprobs_.reset(new CFRValues(nullptr, streets.get(), 0, 0, buckets_, betting_tree_));
   }
 
   unique_ptr<bool []> bucketed_streets(new bool[max_street + 1]);
@@ -73,14 +75,11 @@ void CFRP::Initialize(void) {
   }
   if (bucketed_) {
     // Hmm, we only want to allocate this for the streets that need it
-    current_strategy_.reset(new CFRValues(nullptr, bucketed_streets.get(),
-					  0, 0, buckets_, betting_tree_));
+    current_strategy_.reset(new CFRValues(nullptr, bucketed_streets.get(), 0, 0, buckets_,
+					  betting_tree_));
   } else {
     current_strategy_.reset(nullptr);
   }
-  
-  delete [] streets;
-
 }
 
 CFRP::CFRP(const CardAbstraction &ca, const BettingAbstraction &ba, const CFRConfig &cc,
@@ -97,7 +96,7 @@ CFRP::CFRP(const CardAbstraction &ca, const BettingAbstraction &ba, const CFRCon
   HandValueTree::Create();
 
   int max_street = Game::MaxStreet();
-  hand_tree_ = new HandTree(0, 0, max_street);
+  hand_tree_.reset(new HandTree(0, 0, max_street));
 
   it_ = 0;
   if (subgame_street_ >= 0 && subgame_street_ <= max_street) {
@@ -111,10 +110,6 @@ CFRP::CFRP(const CardAbstraction &ca, const BettingAbstraction &ba, const CFRCon
     // is not reached on iteration N+1.
     prune_ = false;
   }
-}
-
-CFRP::~CFRP(void) {
-  delete hand_tree_;
 }
 
 void CFRP::Post(int t) {
@@ -187,12 +182,12 @@ static void *thread_run(void *v_sg) {
   return NULL;
 }
 
-void CFRP::SpawnSubgame(Node *node, int bd, const string &action_sequence,
+void CFRP::SpawnSubgame(Node *node, int bd, const string &action_sequence, int p,
 			const shared_ptr<double []> &opp_probs) {
   CFRPSubgame *subgame =
     new CFRPSubgame(card_abstraction_, betting_abstraction_, cfr_config_, buckets_, node, bd,
-		    action_sequence, this);
-  subgame->SetBestResponseStreets(best_response_streets_);
+		    action_sequence, p, this);
+  subgame->SetBestResponseStreets(best_response_streets_.get());
   subgame->SetBRCurrent(br_current_);
   subgame->SetValueCalculation(value_calculation_);
   // Wait for thread to be available
@@ -228,7 +223,6 @@ void CFRP::SpawnSubgame(Node *node, int bd, const string &action_sequence,
   subgame_running_[t] = true;
   active_subgames_[t] = subgame;
   // I could pass these into the constructor, no?
-  subgame->SetP(p_);
   subgame->SetTargetP(target_p_);
   subgame->SetIt(it_);
   subgame->SetOppProbs(opp_probs);
@@ -243,25 +237,24 @@ void CFRP::SpawnSubgame(Node *node, int bd, const string &action_sequence,
 }
 
 
-void CFRP::FloorRegrets(Node *node) {
+void CFRP::FloorRegrets(Node *node, int p) {
   if (node->Terminal()) return;
   int st = node->Street();
   int num_succs = node->NumSuccs();
-  if (node->PlayerActing() == p_ && ! buckets_.None(st) && num_succs > 1) {
+  if (node->PlayerActing() == p && ! buckets_.None(st) && num_succs > 1) {
     int nt = node->NonterminalID();
     if (nn_regrets_ && regret_floors_[st] >= 0) {
-      regrets_->StreetValues(st)->Floor(p_, nt, num_succs, regret_floors_[st]);
+      regrets_->StreetValues(st)->Floor(p, nt, num_succs, regret_floors_[st]);
     }
   }
   for (int s = 0; s < num_succs; ++s) {
-    FloorRegrets(node->IthSucc(s));
+    FloorRegrets(node->IthSucc(s), p);
   }
 }
 
 // Do trunk in main thread
 void CFRP::HalfIteration(int p) {
-  p_ = p;
-  fprintf(stderr, "P%u half iteration\n", p_);
+  fprintf(stderr, "P%u half iteration\n", p);
   if (current_strategy_.get() != nullptr) {
     SetCurrentStrategy(betting_tree_->Root());
   }
@@ -279,18 +272,14 @@ void CFRP::HalfIteration(int p) {
   }
 
   if (subgame_street_ >= 0 && subgame_street_ <= Game::MaxStreet()) pre_phase_ = true;
-  shared_ptr<double []> opp_probs = AllocateOppProbs(true);
-  int **street_buckets = AllocateStreetBuckets();
-  VCFRState state(opp_probs, street_buckets, hand_tree_);
+  VCFRState state(p, hand_tree_.get());
   SetStreetBuckets(0, 0, state);
-  double *vals = Process(betting_tree_->Root(), 0, state, 0);
+  shared_ptr<double []> vals = Process(betting_tree_->Root(), 0, state, 0);
   if (subgame_street_ >= 0 && subgame_street_ <= Game::MaxStreet()) {
-    delete [] vals;
     WaitForFinalSubgames();
     pre_phase_ = false;
     vals = Process(betting_tree_->Root(), 0, state, 0);
   }
-  DeleteStreetBuckets(street_buckets);
 #if 0
   int num_hole_card_pairs = Game::NumHoleCardPairs(0);
   for (int i = 0; i < num_hole_card_pairs; ++i) {
@@ -309,10 +298,8 @@ void CFRP::HalfIteration(int p) {
   fprintf(stderr, "%s avg val %f\n", p1 ? "P1" : "P2", avg_val);
 #endif
 
-  delete [] vals;
-
   if (nn_regrets_ && bucketed_) {
-    FloorRegrets(betting_tree_->Root());
+    FloorRegrets(betting_tree_->Root(), p);
   }
 }
 

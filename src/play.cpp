@@ -508,10 +508,10 @@ Player::Player(const BettingAbstraction &a_ba, const BettingAbstraction &b_ba,
     fprintf(stderr, "Asymmetric not supported yet\n");
     exit(-1);
     for (int asym_p = 0; asym_p < num_players_; ++asym_p) {
-      a_betting_trees_[asym_p] = BettingTree::BuildAsymmetricTree(a_ba, asym_p);
+      a_betting_trees_[asym_p] = new BettingTree(a_ba, asym_p);
     }
   } else {
-    a_betting_trees_[0] = BettingTree::BuildTree(a_ba);
+    a_betting_trees_[0] = new BettingTree(a_ba);
     for (int asym_p = 1; asym_p < num_players_; ++asym_p) {
       a_betting_trees_[asym_p] = a_betting_trees_[0];
     }
@@ -520,10 +520,10 @@ Player::Player(const BettingAbstraction &a_ba, const BettingAbstraction &b_ba,
     fprintf(stderr, "Asymmetric not supported yet\n");
     exit(-1);
     for (int asym_p = 0; asym_p < num_players_; ++asym_p) {
-      b_betting_trees_[asym_p] = BettingTree::BuildAsymmetricTree(b_ba, asym_p);
+      b_betting_trees_[asym_p] = new BettingTree(b_ba, asym_p);
     }
   } else {
-    b_betting_trees_[0] = BettingTree::BuildTree(b_ba);
+    b_betting_trees_[0] = new BettingTree(b_ba);
     for (int asym_p = 1; asym_p < num_players_; ++asym_p) {
       b_betting_trees_[asym_p] = b_betting_trees_[0];
     }

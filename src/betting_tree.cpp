@@ -18,6 +18,7 @@
 
 using std::shared_ptr;
 using std::string;
+using std::unique_ptr;
 using std::unordered_map;
 using std::vector;
 
@@ -36,10 +37,8 @@ Node::Node(int id, int street, int player_acting, const shared_ptr<Node> &call_s
     num_bet_succs = bet_succs->size();
     num_succs += num_bet_succs;
   }
-  if (num_succs == 0) {
-    succs_ = NULL;
-  } else {
-    succs_ = new shared_ptr<Node>[num_succs];
+  if (num_succs > 0) {
+    succs_.reset(new shared_ptr<Node>[num_succs]);
     int i = 0;
     if (call_succ) succs_[i++] = call_succ;
     if (fold_succ) succs_[i++] = fold_succ;
@@ -68,10 +67,8 @@ Node::Node(int id, int street, int player_acting, const shared_ptr<Node> &call_s
 
 Node::Node(Node *src) {
   int num_succs = src->NumSuccs();
-  if (num_succs == 0) {
-    succs_ = NULL;
-  } else {
-    succs_ = new shared_ptr<Node>[num_succs];
+  if (num_succs > 0) {
+    succs_.reset(new shared_ptr<Node>[num_succs]);
   }
   for (int s = 0; s < num_succs; ++s) succs_[s] = NULL;
   id_ = src->id_;
@@ -87,19 +84,13 @@ Node::Node(int id, int last_bet_to, int num_succs, unsigned short flags,
   id_ = id;
   last_bet_to_ = last_bet_to;
   num_succs_ = num_succs;
-  if (num_succs == 0) {
-    succs_ = nullptr;
-  } else {
-    succs_ = new shared_ptr<Node>[num_succs];
+  if (num_succs > 0) {
+    succs_.reset(new shared_ptr<Node>[num_succs]);
   }
   for (int s = 0; s < num_succs; ++s) succs_[s] = nullptr;
   flags_ = flags;
   player_acting_ = player_acting;
   num_remaining_ = num_remaining;
-}
-
-Node::~Node(void) {
-  delete [] succs_;
 }
 
 string Node::ActionName(int s) {
@@ -129,14 +120,15 @@ static void Indent(int num) {
   for (int i = 0; i < num; ++i) printf(" ");
 }
 
-void Node::PrintTree(int depth, const string &name, bool ***seen, int last_st) {
+void Node::PrintTree(int depth, const string &name, vector< vector< vector<bool> > > *seen,
+		     int last_st) {
   bool recurse = true;
   int st = Street();
   int pa = PlayerActing();
   if (! Terminal()) {
     int nt = NonterminalID();
-    if (seen[st][pa][nt]) recurse = false;
-    seen[st][pa][nt] = true;
+    if ((*seen)[st][pa][nt]) recurse = false;
+    (*seen)[st][pa][nt] = true;
   }
   Indent(2 * depth);
   int num_succs = NumSuccs();
@@ -180,36 +172,32 @@ int Node::FoldSuccIndex(void) const {
   }
 }
 
-// Typically this will be the call succ.  In the unusual case where there is
-// no call succ, we will use the first succ, whatever it is.  In trees
-// where open-limping is prohibited, the fold succ will be the default succ.
-// Note that we are dependent on the ordering of the succs
+// Typically this will be the call succ.  In the unusual case where there is no call succ, we will
+// use the first succ, whatever it is.  In trees where open-limping is prohibited, the fold succ
+// will be the default succ.  Note that we are dependent on the ordering of the succs
 int Node::DefaultSuccIndex(void) const {
   return 0;
+}
+
+int BettingTree::NumNonterminals(int p, int st) const {
+  return num_nonterminals_[p * (Game::MaxStreet() + 1) + st];
 }
 
 void BettingTree::Display(void) {
   int num_players = Game::NumPlayers();
   int max_street = Game::MaxStreet();
-  bool ***seen = new bool **[max_street + 1];
+  vector< vector< vector<bool> > > seen(max_street + 1);
   for (int st = 0; st <= max_street; ++st) {
-    seen[st] = new bool *[num_players];
+    seen[st].resize(num_players);
     for (int p = 0; p < num_players; ++p) {
       int num_nt = NumNonterminals(p, st);
-      seen[st][p] = new bool[num_nt];
+      seen[st][p].resize(num_nt);
       for (int i = 0; i < num_nt; ++i) {
 	seen[st][p][i] = false;
       }
     }
   }
-  root_->PrintTree(0, "", seen, initial_street_);
-  for (int st = 0; st <= max_street; ++st) {
-    for (int p = 0; p < num_players; ++p) {
-      delete [] seen[st][p];
-    }
-    delete [] seen[st];
-  }
-  delete [] seen;
+  root_->PrintTree(0, "", &seen, initial_street_);
 }
 
 void BettingTree::FillTerminalArray(Node *node) {
@@ -229,7 +217,7 @@ void BettingTree::FillTerminalArray(Node *node) {
 }
 
 void BettingTree::FillTerminalArray(void) {
-  terminals_ = new Node *[num_terminals_];
+  terminals_.reset(new Node *[num_terminals_]);
   if (root_.get()) FillTerminalArray(root_.get());
 }
 
@@ -398,6 +386,8 @@ Node *BettingTree::GetNodeFromName(const char *str) {
 
 // Used by the subtree constructor
 // This doesn't preserve the reentrancy of the source tree
+// It appears we inherit the nonterminal IDs of the source tree, although they may get
+// changed by the caller.
 shared_ptr<Node> BettingTree::Clone(Node *old_n, int *num_terminals) {
   shared_ptr<Node> new_n(new Node(old_n));
   if (new_n->Terminal()) {
@@ -413,33 +403,28 @@ shared_ptr<Node> BettingTree::Clone(Node *old_n, int *num_terminals) {
   return new_n;
 }
 
-shared_ptr<Node>
-BettingTree::Read(Reader *reader,
-		  unordered_map< int, shared_ptr<Node> > ***maps) {
+shared_ptr<Node> BettingTree::Read(Reader *reader, unordered_map< int, shared_ptr<Node> > *maps) {
   int id = reader->ReadUnsignedIntOrDie();
   unsigned short last_bet_to = reader->ReadUnsignedShortOrDie();
   unsigned short num_succs = reader->ReadUnsignedShortOrDie();
   unsigned short flags = reader->ReadUnsignedShortOrDie();
   unsigned char pa = reader->ReadUnsignedCharOrDie();
   unsigned char num_remaining = reader->ReadUnsignedCharOrDie();
+  int st = (int)((flags & Node::kStreetMask) >> Node::kStreetShift);
+  int map_index = st * Game::NumPlayers() + pa;
+  unordered_map< int, shared_ptr<Node> > *m = &maps[map_index];
   if (num_succs > 0) {
-    // Check if node already seen.  For now assume reentrancy only at
-    // nonterminal nodes.
+    // Check if node already seen.  For now assume reentrancy only at nonterminal nodes.
     unordered_map< int, shared_ptr<Node> >::iterator it;
-    int st = (int)((flags & Node::kStreetMask) >> Node::kStreetShift);
-    it = maps[st][pa]->find(id);
-    if (it != maps[st][pa]->end()) {
-      return it->second;
-    }
+    it = m->find(id);
+    if (it != m->end()) return it->second;
   }
-  shared_ptr<Node>
-    node(new Node(id, last_bet_to, num_succs, flags, pa, num_remaining));
+  shared_ptr<Node> node(new Node(id, last_bet_to, num_succs, flags, pa, num_remaining));
   if (num_succs == 0) {
     ++num_terminals_;
     return node;
   }
-  int st = node->Street();
-  (*maps[st][pa])[id] = node;
+  (*m)[id] = node;
   for (int s = 0; s < num_succs; ++s) {
     shared_ptr<Node> succ(Read(reader, maps));
     node->SetIthSucc(s, succ);
@@ -448,8 +433,7 @@ BettingTree::Read(Reader *reader,
 }
 
 // Maintain a map from ids to shared pointers to nodes.
-void BettingTree::Initialize(int target_player,
-			     const BettingAbstraction &ba) {
+void BettingTree::Initialize(int target_player, const BettingAbstraction &ba) {
   char buf[500];
   if (ba.Asymmetric()) {
     sprintf(buf, "%s/betting_tree.%s.%u.%s.%u", Files::StaticBase(),
@@ -462,71 +446,45 @@ void BettingTree::Initialize(int target_player,
   }
   Reader reader(buf);
   initial_street_ = ba.InitialStreet();
-  root_ = NULL;
-  terminals_ = NULL;
+  root_ = nullptr;
   num_terminals_ = 0;
   int max_street = Game::MaxStreet();
   int num_players = Game::NumPlayers();
-  unordered_map< int, shared_ptr<Node> > ***maps =
-    new unordered_map< int, shared_ptr<Node> > **[max_street + 1];
-  for (int st = 0; st <= max_street; ++st) {
-    maps[st] =
-      new unordered_map< int, shared_ptr<Node> > *[num_players];
-    for (int pa = 0; pa < num_players; ++pa) {
-      maps[st][pa] = new unordered_map< int, shared_ptr<Node> >;
-    }
-  }
-  root_ = Read(&reader, maps);
-  for (int st = 0; st <= max_street; ++st) {
-    for (int pa = 0; pa < num_players; ++pa) {
-      delete maps[st][pa];
-    }
-    delete [] maps[st];
-  }
-  delete [] maps;
+  int num_maps = (max_street + 1) * num_players;
+  unique_ptr<unordered_map< int, shared_ptr<Node> > []>
+    maps(new unordered_map< int, shared_ptr<Node> > [num_maps]);
+  root_ = Read(&reader, maps.get());
   FillTerminalArray();
-  num_nonterminals_ = CountNumNonterminals(this);
+  num_nonterminals_.reset(new int[num_players * (max_street + 1)]);
+  CountNumNonterminals(this, num_nonterminals_.get());
 }
 
-BettingTree::BettingTree(void) : root_(nullptr) {
+BettingTree::BettingTree(const BettingAbstraction &ba) {
+  Initialize(0, ba);
 }
 
-BettingTree *BettingTree::BuildTree(const BettingAbstraction &ba) {
-  BettingTree *tree = new BettingTree();
-  tree->Initialize(true, ba);
-  return tree;
-}
-
-BettingTree *BettingTree::BuildAsymmetricTree(const BettingAbstraction &ba,
-					      int target_player) {
-  BettingTree *tree = new BettingTree();
-  tree->Initialize(target_player, ba);
-  return tree;
+BettingTree::BettingTree(const BettingAbstraction &ba, int target_player) {
+  Initialize(target_player, ba);
 }
 
 // A subtree constructor
-BettingTree *BettingTree::BuildSubtree(Node *subtree_root) {
-  BettingTree *tree = new BettingTree();
+// This doesn't preserve the reentrancy of the source tree
+BettingTree::BettingTree(Node *subtree_root) {
   int subtree_street = subtree_root->Street();
-  tree->initial_street_ = subtree_street;
-  tree->num_terminals_ = 0;
-  tree->root_ = tree->Clone(subtree_root, &tree->num_terminals_);
-  tree->FillTerminalArray();
-  AssignNonterminalIDs(tree, &tree->num_nonterminals_);
-  return tree;
-}
-
-BettingTree::~BettingTree(void) {
-  delete [] terminals_;
+  initial_street_ = subtree_street;
+  num_terminals_ = 0;
+  root_ = Clone(subtree_root, &num_terminals_);
+  FillTerminalArray();
   int num_players = Game::NumPlayers();
-  for (int p = 0; p < num_players; ++p) {
-    delete [] num_nonterminals_[p];
-  }
-  delete [] num_nonterminals_;
+  int max_street = Game::MaxStreet();
+  num_nonterminals_.reset(new int[num_players * (max_street + 1)]);
+  // AssignNonterminalIDs() doesn't handle reentrancy yet.  We currently do not preserve the
+  // reentrancy of the source tree inside of Clone().  But if we did, then we would need to
+  // modify AssignNonterminalIDs() accordingly.
+  AssignNonterminalIDs(this, num_nonterminals_.get());
 }
 
-void BettingTree::GetStreetInitialNodes(Node *node, int street,
-					vector<Node *> *nodes) {
+void BettingTree::GetStreetInitialNodes(Node *node, int street,	vector<Node *> *nodes) {
   if (node->Street() == street) {
     nodes->push_back(node);
     return;

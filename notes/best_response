@@ -30,3 +30,10 @@ If freeze is true, might want to check that we have sumprobs for all opponents o
 P0 does not really improve against ms0p6 trained for 100m its
 But it does improve against ms0p6 trained for 1m its
 Makes sense.
+
+Monte Carlo Tree Search (MCTS) leads to clairvoyance problem, no?  We learn to bet the flush
+draw on the turn if we know the river card is going to complete the flush.
+
+Can we implement MCTS on recurrent trees?  I think we will gradually build up a non-recurrent
+tree in the process of doing MCTS.  Will that expanded tree be too big?  I guess the
+responder could use a card abstraction.

@@ -45,26 +45,17 @@ void UnsafeEGCFR::SolveSubgame(BettingTree *subtree, int solve_bd,
 				subtree_st, buckets_, subtree));
   sumprobs_->AllocateAndClearDoubles(subtree->Root(), -1);
 
-  VCFRState **initial_states = new VCFRState *[num_players];
-  int **street_buckets = AllocateStreetBuckets();
+  unique_ptr< unique_ptr<VCFRState> [] > initial_states(new unique_ptr<VCFRState> [num_players]);
   for (int p = 0; p < num_players; ++p) {
-    initial_states[p] = new VCFRState(reach_probs[p^1], hand_tree, 0,
-				      action_sequence, solve_bd, subtree_st,
-				      street_buckets);
+    initial_states[p].reset(new VCFRState(p, reach_probs[p^1], hand_tree, 0, action_sequence,
+					  solve_bd, subtree_st));
+    SetStreetBuckets(subtree_st, solve_bd, *initial_states[p]);
   }
-  SetStreetBuckets(subtree_st, solve_bd, *initial_states[0]);
   for (it_ = 1; it_ <= num_its; ++it_) {
     // Go from high to low to mimic slumbot2017 code
     for (int p = (int)num_players - 1; p >= 0; --p) {
-      double *vals = HalfIteration(subtree, solve_bd, p, *initial_states[p]);
-      delete [] vals;
+      HalfIteration(subtree, solve_bd, *initial_states[p]);
     }
   }
-
-  for (int p = 0; p < num_players; ++p) {
-    delete initial_states[p];
-  }
-  delete [] initial_states;
-  DeleteStreetBuckets(street_buckets);
 }
 

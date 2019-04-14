@@ -1,0 +1,11 @@
+holdem5/mb2b2ai
+nhs3
+
+tcfr
+1b in 121m:   Exploitability: 1609.67 mbb/g
+1b-8b in 619m 
+8b:           Exploitability: 1578.35 mbb/g
+
+Resolving all river subgames: base 8b resolve cfrps/200
+Unsafe:
+Crashed.  Is it due to multithreading?

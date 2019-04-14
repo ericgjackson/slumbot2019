@@ -53,3 +53,42 @@ unsafe/2b base vs. cfrd/2b base:     Avg B outcome: -0.137261 (-68.6 mbb/g) over
 
 A bit weird that the CFR-D system is so bad in head-to-head play.
 And that the combined system loses to the unsafe system.
+
+nxhs3 abstraction
+null through turn
+tcfrb001
+River bucketing is hs with memory of turn (null) bucket
+1b: Exploitability: 206.49 mbb/g
+2b: Exploitability: 197.33 mbb/g
+6b: Exploitability: 190.13 mbb/g
+7b: Exploitability: 189.74 mbb/g
+
+Resolve all river subgames with cfrps/200, 2b base
+unsafe: Exploitability: 132.65 mbb/g
+Resolve all river subgames with cfrps/200, 7b base
+unsafe:   Exploitability: 135.38 mbb/g
+cfrd:     Exploitability: 106.22 mbb/g
+combined: Exploitability: 53.69 mbb/g
+
+play
+unsafe/7b base vs. combined/7b base: Avg B outcome: -0.012657 (-6.3 mbb/g) over 100m
+base@7b vs. combined/7b base: Avg B outcome: 0.018297 (9.1 mbb/g) over 100m
+base@7b vs. unsafe/7b base:   Avg B outcome: 0.036434 (18.2 mbb/g) over 100m
+cfrps/none/400 vs. combined/7b base: Avg B outcome: -0.013786 (-6.9 mbb/g) over 100m
+cfrps/none/400 vs. unsafe/7b base:   Avg B outcome: -0.004947 (-2.5 mbb/g) over 100m
+
+cfrps/none
+200:  Exploitability: 32.21 mbb/g
+400:  Exploitability: 10.70 mbb/g
+1000: Exploitability: 2.76 mbb/g
+
+tcfr
+7b: Exploitability: 189.58 mbb/g
+Resolve all river subgames with cfrps/200, 7b base
+unsafe:   Exploitability: 137.45 mbb/g
+  Compare 135.38 for tcfrb001 base
+cfrd:     Exploitability: 106.91 mbb/g
+  Compare 106.22 for tcfrb001 base
+combined: Exploitability: 54.19 mbb/g
+  Compare 53.69 for tcfrb001 base
+Boosting didn't do much.

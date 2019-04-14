@@ -1956,10 +1956,9 @@ TCFR::TCFR(const CardAbstraction &ca, const BettingAbstraction &ba, const CFRCon
   }
 
   if (betting_abstraction_.Asymmetric()) {
-    betting_tree_.reset(BettingTree::BuildAsymmetricTree(betting_abstraction_,
-							 target_player_));
+    betting_tree_.reset(new BettingTree(betting_abstraction_, target_player_));
   } else {
-    betting_tree_.reset(BettingTree::BuildTree(betting_abstraction_));
+    betting_tree_.reset(new BettingTree(betting_abstraction_));
   }
 
   BoardTree::BuildBoardCounts();

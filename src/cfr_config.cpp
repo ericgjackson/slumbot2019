@@ -100,8 +100,8 @@ CFRConfig::CFRConfig(const Params &params) {
 	&conditions);
   num_active_conditions_ = conditions.size();
   if (num_active_conditions_ > 0) {
-    active_streets_ = new vector<int>[num_active_conditions_];
-    active_rems_ = new vector<int>[num_active_conditions_];
+    active_streets_.reset(new vector<int>[num_active_conditions_]);
+    active_rems_.reset(new vector<int>[num_active_conditions_]);
     for (int c = 0; c < num_active_conditions_; ++c) {
       vector<string> comps, streets, rems;
       Split(conditions[c].c_str(), ':', false, &comps);

@@ -129,7 +129,7 @@ SubgameSolver::SubgameSolver(const CardAbstraction &base_card_abstraction,
   num_subgame_its_ = num_subgame_its;
   num_threads_ = num_threads;
 
-  base_betting_tree_.reset(BettingTree::BuildTree(base_betting_abstraction_));
+  base_betting_tree_.reset(new BettingTree(base_betting_abstraction_));
 
   // We need probs for both players
   int max_street = Game::MaxStreet();
@@ -233,7 +233,7 @@ BettingTree *SubgameSolver::CreateSubtree(Node *node, int target_p, bool base) {
 					      player_acting, target_p, &num_terminals);
   // Delete the nodes under subtree_root?  Or does garbage collection
   // automatically take care of it because they are shared pointers.
-  return BettingTree::BuildSubtree(subtree_root.get());
+  return new BettingTree(subtree_root.get());
 }
 
 class SSThread {
@@ -294,6 +294,7 @@ void SSThread::Join(void) {
 
 void SubgameSolver::Split(Node *node, const string &action_sequence, int pgbd,
 			  shared_ptr<double []> *reach_probs) {
+  fprintf(stderr, "Split\n");
   unique_ptr<SSThread * []> threads(new SSThread *[num_threads_]);
   for (int t = 0; t < num_threads_; ++t) {
     threads[t] = new SSThread(node, action_sequence, pgbd, reach_probs, this, t, num_threads_);
@@ -351,11 +352,11 @@ void SubgameSolver::ResolveUnsafe(Node *node, int gbd, const string &action_sequ
       base_subtree = CreateSubtree(node, asym_p, true);
       // The action sequence passed in should specify the root of the system
       // we are reading (the base system).
-      unique_ptr<CFRValues> base_subgame_strategy(
+      unique_ptr<CFRValues> base_subgame_strategy =
 	    ReadBaseSubgameStrategy(base_card_abstraction_, base_betting_abstraction_,
 				    base_cfr_config_, base_betting_tree_.get(), base_buckets_,
 				    subgame_buckets_, base_it_, node,  gbd, "x", reach_probs,
-				    base_subtree, current_, asym_p));
+				    base_subtree, current_, asym_p);
       // We are calculating CBRs from the *base* strategy, not the resolved
       // endgame strategy.  So pass in base_card_abstraction_, etc.
       dynamic_cbr_.reset(new DynamicCBR2(base_card_abstraction_, base_betting_abstraction_,
@@ -384,22 +385,20 @@ void SubgameSolver::ResolveUnsafe(Node *node, int gbd, const string &action_sequ
 	  fprintf(stderr, "DynamicCBR cannot compute bucket-level CVs\n");
 	  exit(-1);
 	}
-	unique_ptr<double []> t_vals;
-	if (method_ == ResolvingMethod::UNSAFE) {
-	  t_vals.reset(nullptr);
-	} else {
+	shared_ptr<double []> t_vals;
+	if (method_ != ResolvingMethod::UNSAFE) {
 	  if (base_mem_) {
 	    // When base_mem_ is true, we use a global betting tree, a global
 	    // hand tree and have a global base strategy.
 	    // We assume that pure_streets_[st] tells us whether to purify
 	    // for the entire endgame.
-	    t_vals.reset(dynamic_cbr_->Compute(node, reach_probs, gbd, trunk_hand_tree_.get(), 0, 0,
-					       solve_p^1, cfrs_, zero_sum_, current_,
-					       pure_streets_[st]));
+	    t_vals = dynamic_cbr_->Compute(node, reach_probs, gbd, trunk_hand_tree_.get(), 0, 0,
+					   solve_p^1, cfrs_, zero_sum_, current_,
+					   pure_streets_[st]);
 	  } else {
-	    t_vals.reset(dynamic_cbr_->Compute(base_subtree->Root(), reach_probs, gbd, &hand_tree,
-					       st, gbd, solve_p^1, cfrs_, zero_sum_, current_,
-					       pure_streets_[st]));
+	    t_vals = dynamic_cbr_->Compute(base_subtree->Root(), reach_probs, gbd, &hand_tree,
+					   st, gbd, solve_p^1, cfrs_, zero_sum_, current_,
+					   pure_streets_[st]);
 	  }
 	}
 
@@ -449,28 +448,28 @@ void SubgameSolver::ResolveSafe(Node *node, int gbd, const string &action_sequen
       fprintf(stderr, "DynamicCBR cannot compute bucket-level CVs\n");
       exit(-1);
     }
-    unique_ptr<double []> t_vals;
+    shared_ptr<double []> t_vals;
     if (base_mem_) {
       // When base_mem_ is true, we use a global betting tree, a global
       // hand tree and have a global base strategy.
       // We assume that pure_streets_[st] tells us whether to purify
       // for the entire endgame.
-      t_vals.reset(dynamic_cbr_->Compute(node, reach_probs, gbd, trunk_hand_tree_.get(), 0, 0,
-					 solve_p^1, cfrs_, zero_sum_, current_, pure_streets_[st]));
+      t_vals = dynamic_cbr_->Compute(node, reach_probs, gbd, trunk_hand_tree_.get(), 0, 0,
+				     solve_p^1, cfrs_, zero_sum_, current_, pure_streets_[st]);
     } else {
       fprintf(stderr, "base_mem_ false not supported yet\n");
       exit(-1);
 #if 0
-      t_vals.reset(dynamic_cbr_->Compute(base_subtree->Root(), reach_probs, gbd, &hand_tree,
-					 st, gbd, solve_p^1, cfrs_, zero_sum_, current_,
-					 pure_streets_[st]));
+      t_vals = dynamic_cbr_->Compute(base_subtree->Root(), reach_probs, gbd, &hand_tree,
+				     st, gbd, solve_p^1, cfrs_, zero_sum_, current_,
+				     pure_streets_[st]);
 #endif
     }
     // Pass in false for both_players.  I am doing separate solves for
     // each player.
     eg_cfr->SolveSubgame(subgame_subtree.get(), gbd, reach_probs, action_sequence, &hand_tree,
 			 t_vals.get(), solve_p, false, num_subgame_its_);
-    
+
     WriteSubgame(subgame_subtree->Root(), action_sequence, action_sequence, gbd,
 		 base_card_abstraction_, subgame_card_abstraction_, base_betting_abstraction_,
 		 subgame_betting_abstraction_, base_cfr_config_, subgame_cfr_config_, method_,
@@ -496,7 +495,7 @@ void SubgameSolver::Walk(Node *node, const string &action_sequence, int gbd,
     }
     return;
   }
-  
+
   Node *new_node = node;
   
   const CFRValues *sumprobs;

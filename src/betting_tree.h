@@ -20,7 +20,7 @@ public:
   Node(Node *node);
   Node(int id, int last_bet_to, int num_succs, unsigned short flags, unsigned char player_acting,
        unsigned char num_remaining);
-  ~Node(void);
+  ~Node(void) {}
 
   int PlayerActing(void) const {return player_acting_;}
   bool Terminal(void) const {return NumSuccs() == 0;}
@@ -38,7 +38,8 @@ public:
   int FoldSuccIndex(void) const;
   int DefaultSuccIndex(void) const;
   std::string ActionName(int s);
-  void PrintTree(int depth, const std::string &name, bool ***seen, int last_street);
+  void PrintTree(int depth, const std::string &name,
+		 std::vector< std::vector< std::vector<bool> > > *seen, int last_street);
   bool HasCallSucc(void) const {return (bool)(flags_ & kHasCallSuccFlag);}
   bool HasFoldSucc(void) const {return (bool)(flags_ & kHasFoldSuccFlag);}
   int ID(void) const {return id_;}
@@ -63,7 +64,7 @@ public:
   static const int kStreetShift = 3;
 
  private:
-  std::shared_ptr<Node> *succs_;
+  std::unique_ptr<std::shared_ptr<Node> []> succs_;
   int id_;
   short last_bet_to_;
   short num_succs_;
@@ -74,40 +75,37 @@ public:
 
 class BettingTree {
  public:
-  ~BettingTree(void);
+  // Normal constructor
+  BettingTree(const BettingAbstraction &ba);
+  // For asymmetric betting abstractions
+  BettingTree(const BettingAbstraction &ba, int target_player);
+  // For cloning a (sub)tree
+  BettingTree(Node *subtree_root);
+  virtual ~BettingTree(void) {}
   void Display(void);
   void GetStreetInitialNodes(int street, std::vector<Node *> *nodes);
   Node *Root(void) const {return root_.get();}
   int NumTerminals(void) const {return num_terminals_;}
   Node *Terminal(int i) const {return terminals_[i];}
-  int NumNonterminals(int p, int st) const {
-    return num_nonterminals_[p][st];
-  }
-  int **NumNonterminals(void) const {return num_nonterminals_;}
+  int NumNonterminals(int p, int st) const;
+  // int **NumNonterminals(void) const {return num_nonterminals_;}
   int InitialStreet(void) const {return initial_street_;}
 
-  static BettingTree *BuildTree(const BettingAbstraction &ba);
-  static BettingTree *BuildAsymmetricTree(const BettingAbstraction &ba,
-					  int target_player);
-  static BettingTree *BuildSubtree(Node *subtree_root);
-
  private:
-  BettingTree(void);
-
   void FillTerminalArray(void);
   void FillTerminalArray(Node *node);
   void GetStreetInitialNodes(Node *node, int street,
 			     std::vector<Node *> *nodes);
   std::shared_ptr<Node> Clone(Node *old_n, int *num_terminals);
   void Initialize(int target_player, const BettingAbstraction &ba);
-  std::shared_ptr<Node>
-    Read(Reader *reader, std::unordered_map< int, std::shared_ptr<Node> > ***maps);
+  std::shared_ptr<Node> Read(Reader *reader,
+			     std::unordered_map< int, std::shared_ptr<Node> > *maps);
 
   std::shared_ptr<Node> root_;
   int initial_street_;
   int num_terminals_;
-  Node **terminals_;
-  int **num_nonterminals_;
+  std::unique_ptr<Node * []> terminals_;
+  std::unique_ptr<int []> num_nonterminals_;
 };
 
 bool TwoSuccsCorrespond(Node *node1, int s1, Node *node2, int s2);

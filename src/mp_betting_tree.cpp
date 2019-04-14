@@ -338,11 +338,9 @@ void BettingTreeBuilder::CreateMPSuccs(int street, int last_bet_size,
   }
   
   if (num_street_bets < betting_abstraction_.MaxBets(street, our_bet)) {
-    const vector<double> *pot_fracs =
-      betting_abstraction_.BetSizes(street, num_street_bets, our_bet,
-				    player_acting);
-    GetNewBetTos(bet_to, last_bet_size, *pot_fracs, player_acting,
-		 target_player, bet_to_seen);
+    const vector<double> &pot_fracs =
+      betting_abstraction_.BetSizes(street, num_street_bets, our_bet, player_acting);
+    GetNewBetTos(bet_to, last_bet_size, pot_fracs, player_acting, target_player, bet_to_seen);
   }
   vector<int> new_bet_tos;
   for (int bt = 0; bt <= all_in_bet_to; ++bt) {
@@ -354,9 +352,9 @@ void BettingTreeBuilder::CreateMPSuccs(int street, int last_bet_size,
 
   int num_bet_tos = new_bet_tos.size();
   for (int i = 0; i < num_bet_tos; ++i) {
-    MPHandleBet(street, last_bet_size, bet_to, new_bet_tos[i], num_street_bets,
-		num_bets, player_acting, num_players_to_act, folded,
-		target_player, key, terminal_id, bet_succs);
+    MPHandleBet(street, last_bet_size, bet_to, new_bet_tos[i], num_street_bets, num_bets,
+		player_acting, num_players_to_act, folded, target_player, key, terminal_id,
+		bet_succs);
   }
 }
 
