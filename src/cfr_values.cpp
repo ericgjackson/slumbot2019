@@ -40,8 +40,7 @@ CFRValues::CFRValues(const bool *players, const bool *streets, int root_bd, int 
       continue;
     }
     if (buckets.None(st)) {
-      int num_local_boards =
-	BoardTree::NumLocalBoards(root_bd_st_, root_bd_, st);
+      int num_local_boards = BoardTree::NumLocalBoards(root_bd_st_, root_bd_, st);
       int num_hole_card_pairs = Game::NumHoleCardPairs(st);
       num_holdings_[st] = num_local_boards * num_hole_card_pairs;
     } else {

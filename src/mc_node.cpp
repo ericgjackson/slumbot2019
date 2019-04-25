@@ -1,14 +1,4 @@
-// Assesses head-to-head performance between two strategies using "play"; i.e., sampling hands
-// and sampling a betting sequence according to the players' strategies.
-//
-// Handles multiplayer.  Handles reentrant betting trees.
-//
-// There are two players (computed strategies) given to the program, named A and B.  There are
-// N positions where N may be more than 2.  It can get confusing keeping track of what's a player
-// and what's a position.
-//
-// In 3-player, position 0 is the small blind, position 1 is the big blind and position 2 is the
-// button.
+// Evaluate the EV to P1 at a node through Monte Carlo simulation (i.e., "play").
 //
 // In each "duplicate" hand, we play N hands where strategy B is assigned to each of the N
 // positions one-by-one.
@@ -45,7 +35,6 @@
 #include "hand_value_tree.h"
 #include "io.h"
 #include "params.h"
-#include "rand.h"
 #include "sorting.h"
 
 using std::string;
@@ -57,13 +46,15 @@ public:
 	 const CardAbstraction &a_ca, const CardAbstraction &b_ca, const CFRConfig &a_cc,
 	 const CFRConfig &b_cc, int a_it, int b_it);
   ~Player(void);
-  void Go(unsigned long long int num_duplicate_hands);
+  void Go(long long int num_duplicate_hands, const string &target_action_sequence);
 private:
   void DealNCards(Card *cards, int n);
   void SetHCPsAndBoards(Card **raw_hole_cards, const Card *raw_board);
   void Play(Node **nodes, int b_pos, int *contributions, int last_bet_to, bool *folded,
-	    int num_remaining, int last_player_acting, int last_st, double *outcomes);
-  void PlayDuplicateHand(unsigned long long int h, const Card *cards, double *a_sum, double *b_sum);
+	    int num_remaining, int last_player_acting, const string &action_sequence,
+	    const string &target_action_sequence, int last_st);
+  void PlayDuplicateHand(unsigned long long int h, const Card *cards,
+			 const string &target_action_sequence);
 
   int num_players_;
   bool a_asymmetric_;
@@ -79,25 +70,27 @@ private:
   unique_ptr<int []> hvs_;
   unique_ptr<bool []> winners_;
   unsigned short **sorted_hcps_;
-  unique_ptr<double []> sum_pos_outcomes_;
   struct drand48_data rand_buf_;
+  double sum_target_p1_outcomes_;
+  long long int num_target_p1_outcomes_;
 };
 
 void Player::Play(Node **nodes, int b_pos, int *contributions, int last_bet_to, bool *folded,
-		  int num_remaining, int last_player_acting, int last_st, double *outcomes) {
+		  int num_remaining, int last_player_acting, const string &action_sequence,
+		  const string &target_action_sequence, int last_st) {
+  if (action_sequence == target_action_sequence) {
+    ++num_target_p1_outcomes_;
+  }
   Node *p0_node = nodes[0];
   if (p0_node->Terminal()) {
+    double p1_outcome;
     if (num_remaining == 1) {
-      int sum_other_contributions = 0;
-      int remaining_p = -1;
-      for (int p = 0; p < num_players_; ++p) {
-	if (folded[p]) {
-	  sum_other_contributions += contributions[p];
-	} else {
-	  remaining_p = p;
-	}
+      // Assume two player
+      if (folded[1]) {
+	p1_outcome = -contributions[1];
+      } else {
+	p1_outcome = contributions[0];
       }
-      outcomes[remaining_p] = sum_other_contributions;
     } else {
       // Showdown
       // Temporary?
@@ -135,14 +128,16 @@ void Player::Play(Node **nodes, int b_pos, int *contributions, int last_bet_to, 
 	  winners_[p] = false;
 	}
       }
-      
-      for (int p = 0; p < num_players_; ++p) {
-	if (winners_[p]) {
-	  outcomes[p] = ((double)(pot_size - winner_contributions)) / ((double)num_winners);
-	} else if (! folded[p]) {
-	  outcomes[p] = -(int)contributions[p];
-	}
+
+      // Assume two players
+      if (winners_[1]) {
+	p1_outcome = ((double)(pot_size - winner_contributions)) / ((double)num_winners);
+      } else {
+	p1_outcome = -contributions[1];
       }
+    }
+    if (action_sequence == target_action_sequence) {
+      sum_target_p1_outcomes_ += p1_outcome;
     }
     return;
   } else {
@@ -192,63 +187,65 @@ void Player::Play(Node **nodes, int b_pos, int *contributions, int last_bet_to, 
     }
     if (b_buckets_->None(st)) {
       // Don't support full hold'em with no buckets.  Would get int overflow if we tried to do that.
-      int hcp;
-      hcp = st == Game::MaxStreet() ? sorted_hcps_[bd][raw_hcp] : raw_hcp;
+      int hcp = st == Game::MaxStreet() ? sorted_hcps_[bd][raw_hcp] : raw_hcp;
       b_offset = bd * num_hole_card_pairs * num_succs + hcp * num_succs;
     } else {
       unsigned int h = ((unsigned int)bd) * ((unsigned int)num_hole_card_pairs) + raw_hcp;
       int b = b_buckets_->Bucket(st, h);
       b_offset = b * num_succs;
     }
-    int s;
-    if (num_succs == 1) {
-      s = 0;
-    } else {
-      double r;
-      drand48_r(&rand_buf_, &r);
+    double r;
+    // r = RandZeroToOne();
+    drand48_r(&rand_buf_, &r);
     
-      double cum = 0;
-      unique_ptr<double []> probs(new double[num_succs]);
-      // The *actual* player acting may be different from the player acting value of the current
-      // node because of reentrant betting trees.  We need the *actual* player acting to determine
-      // whether A or B is acting here.  We need the node's player acting value to query the
-      // probabilities for the appropriate information set.
-      int nt = nodes[actual_pa]->NonterminalID();
-      int node_pa = nodes[actual_pa]->PlayerActing();
-      if (actual_pa == b_pos) {
-	b_probs_->RMProbs(st, node_pa, nt, b_offset, num_succs, dsi, probs.get());
-      } else {
-	a_probs_->RMProbs(st, node_pa, nt, a_offset, num_succs, dsi, probs.get());
-      }
-      for (s = 0; s < num_succs - 1; ++s) {
-	double prob = probs[s];
-	cum += prob;
-	if (r < cum) break;
-      }
+    double cum = 0;
+    unique_ptr<double []> probs(new double[num_succs]);
+    // The *actual* player acting may be different from the player acting value of the current
+    // node because of reentrant betting trees.  We need the *actual* player acting to determine
+    // whether A or B is acting here.  Be need the node's player acting value to query the
+    // probabilities for the appropriate information set.
+    int nt = nodes[actual_pa]->NonterminalID();
+    int node_pa = nodes[actual_pa]->PlayerActing();
+    if (actual_pa == b_pos) {
+      b_probs_->RMProbs(st, node_pa, nt, b_offset, num_succs, dsi, probs.get());
+    } else {
+      a_probs_->RMProbs(st, node_pa, nt, a_offset, num_succs, dsi, probs.get());
+    }
+    int s;
+    for (s = 0; s < num_succs - 1; ++s) {
+      double prob = probs[s];
+      cum += prob;
+      if (r < cum) break;
     }
     if (s == nodes[actual_pa]->CallSuccIndex()) {
       unique_ptr<Node * []> succ_nodes(new Node *[num_players_]);
+      string action;
       for (int p = 0; p < num_players_; ++p) {
 	int csi = nodes[p]->CallSuccIndex();
 	succ_nodes[p] = nodes[p]->IthSucc(csi);
+	if (p == 0) action = nodes[p]->ActionName(csi);
       }
       contributions[actual_pa] = last_bet_to;
+      string new_action_sequence = action_sequence + action;
       Play(succ_nodes.get(), b_pos, contributions, last_bet_to, folded, num_remaining, actual_pa,
-	   st, outcomes);
+	   new_action_sequence, target_action_sequence, st);
     } else if (s == nodes[actual_pa]->FoldSuccIndex()) {
       unique_ptr<Node * []> succ_nodes(new Node *[num_players_]);
+      string action;
       for (int p = 0; p < num_players_; ++p) {
 	int fsi = nodes[p]->FoldSuccIndex();
 	succ_nodes[p] = nodes[p]->IthSucc(fsi);
+	if (p == 0) action = nodes[p]->ActionName(fsi);
       }
       folded[actual_pa] = true;
-      outcomes[actual_pa] = -(int)contributions[actual_pa];
+      string new_action_sequence = action_sequence + action;
       Play(succ_nodes.get(), b_pos, contributions, last_bet_to, folded, num_remaining - 1,
-	   actual_pa, st, outcomes);
+	   actual_pa, new_action_sequence, target_action_sequence, st);
     } else {
       Node *my_succ = nodes[actual_pa]->IthSucc(s);
       int new_bet_to = my_succ->LastBetTo();
       unique_ptr<Node * []> succ_nodes(new Node *[num_players_]);
+      string action;
       for (int p = 0; p < num_players_; ++p) {
 	int ps;
 	Node *p_node = nodes[p];
@@ -264,10 +261,12 @@ void Player::Play(Node **nodes, int b_pos, int *contributions, int last_bet_to, 
 	  exit(-1);
 	}
 	succ_nodes[p] = nodes[p]->IthSucc(ps);
+	if (p == 0) action = nodes[p]->ActionName(ps);
       }
       contributions[actual_pa] = new_bet_to;
+      string new_action_sequence = action_sequence + action;
       Play(succ_nodes.get(), b_pos, contributions, new_bet_to, folded, num_remaining, actual_pa,
-	   st, outcomes);
+	   new_action_sequence, target_action_sequence, st);
     }
   }
 }
@@ -279,17 +278,14 @@ static int PrecedingPlayer(int p) {
 
 // Play one hand of duplicate, which is a pair of regular hands.  Return
 // outcome from A's perspective.
-void Player::PlayDuplicateHand(unsigned long long int h, const Card *cards, double *a_sum,
-			       double *b_sum) {
-  unique_ptr<double []> outcomes(new double[num_players_]);
+void Player::PlayDuplicateHand(unsigned long long int h, const Card *cards,
+			       const string &target_action_sequence) {
   unique_ptr<int []> contributions(new int[num_players_]);
   unique_ptr<bool []> folded(new bool[num_players_]);
   // Assume the big blind is last to act preflop
   // Assume the small blind is prior to the big blind
   int big_blind_p = PrecedingPlayer(Game::FirstToAct(0));
   int small_blind_p = PrecedingPlayer(big_blind_p);
-  *a_sum = 0;
-  *b_sum = 0;
   for (int b_pos = 0; b_pos < num_players_; ++b_pos) {
     for (int p = 0; p < num_players_; ++p) {
       folded[p] = false;
@@ -307,12 +303,7 @@ void Player::PlayDuplicateHand(unsigned long long int h, const Card *cards, doub
       else            nodes[p] = a_betting_trees_[p]->Root();
     }
     Play(nodes.get(), b_pos, contributions.get(), Game::BigBlind(), folded.get(), num_players_,
-	 1000, -1, outcomes.get());
-    for (int p = 0; p < num_players_; ++p) {
-      if (p == b_pos) *b_sum += outcomes[p];
-      else            *a_sum += outcomes[p];
-      sum_pos_outcomes_[p] += outcomes[p];
-    }
+	 1000, "", target_action_sequence, -1);
   }
 }
 
@@ -367,9 +358,9 @@ void Player::SetHCPsAndBoards(Card **raw_hole_cards, const Card *raw_board) {
   }
 }
 
-void Player::Go(unsigned long long int num_duplicate_hands) {
-  double sum_a_outcomes = 0, sum_b_outcomes = 0;
-  double sum_sqd_a_outcomes = 0, sum_sqd_b_outcomes = 0;
+void Player::Go(long long int num_duplicate_hands, const string &target_action_sequence) {
+  sum_target_p1_outcomes_ = 0;
+  num_target_p1_outcomes_ = 0;
   int max_street = Game::MaxStreet();
   int num_board_cards = Game::NumBoardCards(max_street);
   Card cards[100], hand_cards[7];
@@ -377,21 +368,9 @@ void Player::Go(unsigned long long int num_duplicate_hands) {
   for (int p = 0; p < num_players_; ++p) {
     hole_cards[p] = new Card[2];
   }
-  for (int p = 0; p < num_players_; ++p) {
-    srand48_r(p, &rand_buf_);
-  }
-  for (unsigned long long int h = 0; h < num_duplicate_hands; ++h) {
+  for (long long int h = 0; h < num_duplicate_hands; ++h) {
     // Assume 2 hole cards
     DealNCards(cards, num_board_cards + 2 * num_players_);
-#if 0
-    OutputNCards(cards + 2 * num_players_, num_board_cards);
-    printf("\n");
-    OutputTwoCards(cards);
-    printf("\n");
-    OutputTwoCards(cards + 2);
-    printf("\n");
-    fflush(stdout);
-#endif
     for (int p = 0; p < num_players_; ++p) {
       SortCards(cards + 2 * p, 2);
     }
@@ -416,49 +395,18 @@ void Player::Go(unsigned long long int num_duplicate_hands) {
 
     // PlayDuplicateHand() returns the result of a duplicate hand (which is
     // N hands if N is the number of players)
-    double a_outcome, b_outcome;
-    PlayDuplicateHand(h, cards, &a_outcome, &b_outcome);
-    sum_a_outcomes += a_outcome;
-    sum_b_outcomes += b_outcome;
-    sum_sqd_a_outcomes += a_outcome * a_outcome;
-    sum_sqd_b_outcomes += b_outcome * b_outcome;
+    PlayDuplicateHand(h, cards, target_action_sequence);
   }
   for (int p = 0; p < num_players_; ++p) {
     delete [] hole_cards[p];
   }
   delete [] hole_cards;
-#if 0
-  unsigned long long int num_a_hands =
-    (num_players_ - 1) * num_players_ * num_duplicate_hands;
-  double mean_a_outcome = sum_a_outcomes / (double)num_a_hands;
-#endif
-  // Divide by num_players because we evaluate B that many times (once for
-  // each position).
-  unsigned long long int num_b_hands = num_duplicate_hands * num_players_;
-  double mean_b_outcome = sum_b_outcomes / (double)num_b_hands;
-  // Need to divide by two to convert from small blind units to big blind units
-  // Multiply by 1000 to go from big blinds to milli-big-blinds
-  double b_mbb_g = (mean_b_outcome / 2.0) * 1000.0;
-  fprintf(stderr, "Avg B outcome: %f (%.1f mbb/g) over %llu dup hands\n", mean_b_outcome, b_mbb_g,
-	  num_duplicate_hands);
-  // Variance is the mean of the squares minus the square of the means
-  double var_b =
-    (sum_sqd_b_outcomes / ((double)num_b_hands)) -
-    (mean_b_outcome * mean_b_outcome);
-  double stddev_b = sqrt(var_b);
-  double match_stddev = stddev_b * sqrt(num_b_hands);
-  double match_lower = sum_b_outcomes - 1.96 * match_stddev;
-  double match_upper = sum_b_outcomes + 1.96 * match_stddev;
-  double mbb_lower =
-    ((match_lower / (num_b_hands)) / 2.0) * 1000.0;
-  double mbb_upper =
-    ((match_upper / (num_b_hands)) / 2.0) * 1000.0;
-  fprintf(stderr, "MBB confidence interval: %f-%f\n", mbb_lower, mbb_upper);
-
-  for (int p = 0; p < num_players_; ++p) {
-    double avg_outcome =
-      sum_pos_outcomes_[p] / (double)(num_players_ * num_duplicate_hands);
-    fprintf(stderr, "Avg P%u outcome: %f\n", p, avg_outcome);
+  if (num_target_p1_outcomes_ > 0) {
+    double avg = sum_target_p1_outcomes_ / (double)num_target_p1_outcomes_;
+    printf("Avg P1 target outcome: %f (%lli)\n", avg, num_target_p1_outcomes_);
+    printf("P1 target reach: %f (%lli/%lli)\n",
+	   num_target_p1_outcomes_ / (double)(2.0 * num_duplicate_hands),
+	   num_target_p1_outcomes_, num_duplicate_hands);
   }
 }
 
@@ -474,7 +422,6 @@ Player::Player(const BettingAbstraction &a_ba, const BettingAbstraction &b_ba,
   num_players_ = Game::NumPlayers();
   hvs_.reset(new int[num_players_]);
   winners_.reset(new bool[num_players_]);
-  sum_pos_outcomes_.reset(new double[num_players_]);
   BoardTree::Create();
   BoardTree::CreateLookup();
 
@@ -584,9 +531,7 @@ Player::Player(const BettingAbstraction &a_ba, const BettingAbstraction &b_ba,
     fprintf(stderr, "Not creating sorted_hcps_\n");
   }
 
-  for (int p = 0; p < num_players_; ++p) {
-    sum_pos_outcomes_[p] = 0;
-  }
+  srand48_r(time(0), &rand_buf_);
 }
 
 Player::~Player(void) {
@@ -626,12 +571,12 @@ Player::~Player(void) {
 static void Usage(const char *prog_name) {
   fprintf(stderr, "USAGE: %s <game params> <A card params> <B card params> "
 	  "<A betting abstraction params> <B betting abstraction params> <A CFR params> "
-	  "<B CFR params> <A it> <B it> <num duplicate hands>\n", prog_name);
+	  "<B CFR params> <A it> <B it> <num duplicate hands> <action sequence>\n", prog_name);
   exit(-1);
 }
 
 int main(int argc, char *argv[]) {
-  if (argc != 11) Usage(argv[0]);
+  if (argc != 12) Usage(argv[0]);
   Files::Init();
   unique_ptr<Params> game_params = CreateGameParams();
   game_params->ReadFromFile(argv[1]);
@@ -664,14 +609,12 @@ int main(int argc, char *argv[]) {
   int a_it, b_it;
   if (sscanf(argv[8], "%i", &a_it) != 1) Usage(argv[0]);
   if (sscanf(argv[9], "%i", &b_it) != 1) Usage(argv[0]);
-  unsigned long long int num_duplicate_hands;
-  if (sscanf(argv[10], "%llu", &num_duplicate_hands) != 1) Usage(argv[0]);
+  long long int num_duplicate_hands;
+  if (sscanf(argv[10], "%lli", &num_duplicate_hands) != 1) Usage(argv[0]);
+  string action_sequence = argv[11];
   HandValueTree::Create();
-
-  // Leave this in if we don't want reproducibility
-  InitRand();
 
   Player player(*a_betting_abstraction, *b_betting_abstraction, *a_card_abstraction,
 		*b_card_abstraction, *a_cfr_config, *b_cfr_config, a_it, b_it);
-  player.Go(num_duplicate_hands);
+  player.Go(num_duplicate_hands, action_sequence);
 }

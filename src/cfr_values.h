@@ -29,18 +29,30 @@ class CFRValues {
 			      int only_p, bool sumprobs, void ****compressors) const;
   void Write(const char *dir, int it, Node *root, const std::string &action_sequence, int only_p,
 	     bool sumprobs) const;
+  // Note: doesn't handle nodes with one succ
   void RMProbs(int st, int p, int nt, int offset, int num_succs, int dsi,
 	       double *probs) const {
     street_values_[st]->RMProbs(p, nt, offset, num_succs, dsi, probs);
   }
+  // Note: doesn't handle nodes with one succ
   void PureProbs(int st, int p, int nt, int offset, int num_succs, double *probs) const {
     street_values_[st]->PureProbs(p, nt, offset, num_succs, probs);
   }
   void ReadNode(Node *node, Reader *reader, void *decompressor) {
     street_values_[node->Street()]->ReadNode(node, reader, decompressor);
   }
+  void ReadBoardValuesForNode(Node *node, Reader *reader, void *decompressor, int lbd,
+			      int num_hole_card_pairs) {
+    street_values_[node->Street()]->ReadBoardValuesForNode(node, reader, decompressor, lbd,
+							   num_hole_card_pairs);
+  }
   void WriteNode(Node *node, Writer *writer, void *compressor) const {
     street_values_[node->Street()]->WriteNode(node, writer, compressor);
+  }
+  void WriteBoardValuesForNode(Node *node, Writer *writer, void *compressor, int lbd,
+			       int num_hole_card_pairs) const {
+    street_values_[node->Street()]->WriteBoardValuesForNode(node, writer, compressor, lbd,
+							    num_hole_card_pairs);
   }
   void MergeInto(const CFRValues &subgame_values, int root_bd, Node *full_root, Node *subgame_root,
 		 const Buckets &buckets, int final_st);

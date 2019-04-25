@@ -1,12 +1,22 @@
+Is head_to_head with resolving surprisingly slow?  Seems like 2.2s per board for
+holdem/mb1b1.  How much of that is resolving?
+
+Are we smart enough to not resolve if we are already all-in?
+
+Use play_resolved to assess benefits of resolving on large games.  Can use solve_all_subgames
+for small games.  See how much sampling we can get away with.
+
+Support different resolving methods in play_resolved.
+
+Measure speed of turn resolving.  One bet size and one raise size for turn and river.
+Add multithreading?
+
 Switch to mb2b2ai as testbed.  May need more actions for tcfr to outperform ecfr.  May need
 more actions for boosting to help resolving.  May need more actions for combined resolved systems
 to outperform unsafe resolved systems.
 
 Build a card abstraction that is bigger than nhs and smaller than nxhs3.  Maybe should use
 abstraction on the turn.
-
-Resolving all endgames for holdem5/mb2b2ai will take more than 24 hours.  Also ran out of
-inodes.
 
 Experiment with MCTS as a tool for approximate best-response calculations.
 
@@ -20,9 +30,6 @@ Build a h5ms3f1p6 system with a non-reentrant tree.  Currently using hs3 buckets
 probably do something better for the river, and bucket the turn as well.
 
 Finish converting unsigned ints to ints everywhere.
-
-Get rid of that ugliness where the opp probs is inside VCFRState but not owned by it.
-shared_ptr?  Also street_buckets.  Shouldn't need to create outside.
 
 Get rid of cast to float of cbr values in dynamic_cbr.cpp.
 
@@ -40,18 +47,20 @@ logic of Targeted CFR, can we do iterations that are forced to go down the boost
 Use newer FileReader and FileWriter classes in slumbot2019
 
 Can we clean up templated code.  Or abandon that approach even?  OppChoice() is a bit of a
-mess.  Try to clean that up if nothing else.
+mess.  Try to clean that up if nothing else.  Would it help to make VCFR templated?
 
 Incorporate more modern C++:
 1) Replace new with unique_ptr everywhere possible
 2) Look into std::array and other container we might want to use
 3) Use auto wherever possible; e.g., for iterators
-4) Use C++ multithreading primitives
-5) Look into new kind of iteration
-6) Look into constructors that assign initial values
-7) Get rid of typedefs
-8) CFRValues should not take pointer to betting tree
-9) Replace NULL with nullptr everywhere possible
+4) Use modern C++ multithreading capabilities
+5) Use modern C++ mutex capabilities
+6) Isn't there a new kind of iteration?
+7) Use modern C++ braced initialization
+8) Get rid of typedefs.  Used aliases.
+9) Use scoped enums.
+10) CFRValues should not take pointer to betting tree
+11) Replace NULL with nullptr everywhere possible
 
 Fix determ play
 
@@ -59,3 +68,7 @@ It's a mess that we need to pass around root_bd_st/root_bd and if we get it wron
 errors.
 
 Is there a discrepancy with suited vs. unsuited hands in TCFR?  Can get very different strategies.
+
+Multithread play and/or play_resolved
+
+Can we get rid of two ways of hole card pair indexing?

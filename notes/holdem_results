@@ -1,0 +1,63 @@
+Experiments on the full game of Holdem
+
+nwml2/mb1b1/tcfr
+9.2g process size
+Why so large?  Is it the buckets?  2 bytes per 2.7b river hands?
+
+1b-2b in 51m
+play (100m; 6.5m) 1b vs. 2b: Avg B outcome: 0.029203 (14.6 mbb/g) over 100000000 dup hands
+MBB confidence interval: 13.671970-15.530850
+Avg P1 outcome: 0.634859
+head_to_head (1 board in 46s):
+  Avg B outcome: -0.010650 (-5.3 mbb/g)
+  Avg P1 outcome: 1.353655 (676.8 mbb/g)
+head_to_head (10 boards in 48s):
+  Avg B outcome: 0.027743 (13.9 mbb/g)
+  Avg P1 outcome: 0.631672 (315.8 mbb/g)
+head_to_head (100 boards in 30s):
+  Avg B outcome: 0.034027 (17.0 mbb/g)
+  Avg P1 outcome: 0.707906 (354.0 mbb/g)
+head_to_head (1000 boards in 39s):
+  Avg B outcome: 0.028333 (14.2 mbb/g)
+  Avg P1 outcome: 0.616488 (308.2 mbb/g)
+head_to_head (10000 boards in 2m10s):
+  Avg B outcome: 0.029400 (14.7 mbb/g)
+  Avg P1 outcome: 0.643031 (321.5 mbb/g)
+
+2b-3b in 51m (some contention)
+head_to_head (10000 boards in 2m10s)
+  Avg B outcome: 0.013783 (6.9 mbb/g)
+  Avg P1 outcome: 0.623578 (311.8 mbb/g)
+
+3b-5b in 93m
+head_head 3b vs. 5b (10000 boards)
+  Avg B outcome: 0.013859 (6.9 mbb/g)
+  Avg P1 outcome: 0.622328 (311.2 mbb/g)
+
+2b vs. 2b; resolve B
+Sampling 1 board (33s):
+  Avg B outcome: 0.163805 (81.9 mbb/g)
+  Avg P1 outcome: 1.574369 (787.2 mbb/g)
+Sampling 10 boards (48s):
+  Avg B outcome: 0.082324 (41.2 mbb/g)
+  Avg P1 outcome: 0.757105 (378.6 mbb/g)
+Sampling 100 boards (3m43s):
+  Avg B outcome: 0.095263 (47.6 mbb/g)
+  Avg P1 outcome: 0.726457 (363.2 mbb/g)
+
+5b vs. 5b; resolve B
+Sampling 100 river boards (3m49s):
+  Avg B outcome: 0.099296 (49.6 mbb/g)
+  Avg P1 outcome: 0.616497 (308.2 mbb/g)
+  197.7 secs spent resolving
+  Avg 0.04 secs per resolve
+  Avg B outcome: 0.104066 (52.0 mbb/g)
+  Avg P1 outcome: 0.621382 (310.7 mbb/g)
+  196.0 secs spent resolving
+  Avg 0.04 secs per resolve (5400 resolves)
+Sampling 1 turn board ():
+  Avg B outcome: -0.858689 (-429.3 mbb/g)
+  Avg P1 outcome: 0.379052 (189.5 mbb/g)
+  60.3 secs spent resolving
+  Avg 3.35 secs per resolve (18 resolves)
+  Still busted.

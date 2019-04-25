@@ -41,3 +41,22 @@ ms1f3
 mb1b1
 cfrps
 200 its in 42.5s: 1.43 mbb/g
+
+---------------------------------------------
+
+Debug play_resolved with buckets
+Start with null and none.  Should be practically identical.
+
+ms0/none/mb1b1/cfrps/200
+Exploitability: 0.60 mbb/g
+ms0/null/mb1b1/cfrps/200
+Exploitability: 0.60 mbb/g
+
+none vs. null
+play (100m in 43s)
+  Avg B outcome: -0.000107 (-0.1 mbb/g) over 100000000 dup hands
+  MBB confidence interval: -0.146225-0.038845
+  Avg P1 outcome: 0.044273
+play_resolved:
+  Avg B outcome: -0.000000 (-0.0 mbb/g)
+  Avg P1 outcome: 0.044630 (22.3 mbb/g)

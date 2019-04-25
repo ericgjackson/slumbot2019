@@ -82,6 +82,14 @@ cfrps/none
 400:  Exploitability: 10.70 mbb/g
 1000: Exploitability: 2.76 mbb/g
 
+200 vs. 400
+play (100m in 3m21s):
+  Avg B outcome: 0.008026 (4.0 mbb/g) over 100000000 dup hands
+  Avg P1 outcome: 0.591488
+play_resolved (no sampling): 
+  Avg B outcome: 0.008514 (4.3 mbb/g)
+  Avg P1 outcome: 0.590633 (295.3 mbb/g)
+
 tcfr
 7b: Exploitability: 189.58 mbb/g
 Resolve all river subgames with cfrps/200, 7b base
@@ -92,3 +100,11 @@ cfrd:     Exploitability: 106.91 mbb/g
 combined: Exploitability: 54.19 mbb/g
   Compare 53.69 for tcfrb001 base
 Boosting didn't do much.
+
+6b vs. 7b
+play (100m in 3m20s):
+  Avg B outcome: 0.000277 (0.1 mbb/g) over 100000000 dup hands
+  Avg P1 outcome: 0.597355
+play_resolved (no sampling):
+  Avg B outcome: 0.001598 (0.8 mbb/g)
+  Avg P1 outcome: 0.595717 (297.9 mbb/g)

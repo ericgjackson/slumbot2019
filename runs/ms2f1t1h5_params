@@ -1,0 +1,13 @@
+# One card flop, one card turn
+# 20 card deck (5 ranks)
+GameName ms2f1t1
+MaxStreet 2
+NumRanks 5
+NumSuits 4
+NumHoleCards 2
+NumFlopCards 1
+Ante 0
+SmallBlind 1
+BigBlind 2
+FirstToAct 1,0,0
+NumPlayers 2

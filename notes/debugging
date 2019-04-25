@@ -2,3 +2,52 @@ We have a single DynamicCBR object that is shared across multiple threads.
 We set p_ differently in each thread.  No good.
 Could move p_ to VCFRState.  But is that the only thing we need?
 Looks like p_ was in VCFRState in slumbot2017.
+
+How big is holdem5/mb2b2ai
+~40k betting sequences
+2219 river subtrees
+1272 non-all-in river subtrees
+15,120 boards
+19,232,640 endgame solves
+At one second per solve, way too long, right?
+3600 seconds per hour.
+Could sample N boards.
+Or could evaluate every turn board, and one river per turn.
+
+---------------------------------------------------
+
+ms3f1t1r1h5
+play_resolved, no resolving, 200 vs. 200
+Avg P1 outcome: 0.589602 (294.8 mbb/g)
+play_resolved, resolving, 200 vs. 200
+Avg B outcome: 0.004736 (2.4 mbb/g)
+Avg P1 outcome: 0.590085 (295.0 mbb/g)
+
+Combine resolving and sampling
+Sample 1 board
+Avg B outcome: 0.006395 (3.2 mbb/g)
+Avg B outcome: 0.004273 (2.1 mbb/g)
+Avg B outcome: 0.004084 (2.0 mbb/g)
+Avg B outcome: 0.004428 (2.2 mbb/g)
+P1 outcome is all over the map though.
+Sample 10 boards
+Avg B outcome: 0.005111 (2.6 mbb/g)
+Avg B outcome: 0.004095 (2.0 mbb/g)
+Avg B outcome: 0.004698 (2.3 mbb/g)
+Avg B outcome: 0.004456 (2.2 mbb/g)
+Sample 100 boards
+Avg B outcome: 0.004520 (2.3 mbb/g)
+Avg B outcome: 0.004679 (2.3 mbb/g)
+Avg B outcome: 0.004659 (2.3 mbb/g)
+
+---------------------------------------------------
+
+Turn resolving in head_to_head broken.
+
+Does it make sense that we get hole card pairs out of hands_ for the turn?
+I think so.
+
+Are we passing the right board in as gbd?
+
+Resolving is done with the resolve_hand_tree_ so hole card pairs are indexed
+as they are there.

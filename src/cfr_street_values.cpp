@@ -149,14 +149,20 @@ void CFRStreetValues<T>::AllocateAndClear(Node *node) {
   AllocateAndClear2(node);
 }
 
-// Compute probs from the current hand values using regret matching.
-// Normally the values we do this to are regrets, but they may also be
-// sumprobs.
-// May eventually want to take parameters for nonneg, explore, uniform,
-// nonterminal succs, num nonterminal succs.
+// Compute probs from the current hand values using regret matching.  Normally the values we do this
+// to are regrets, but they may also be sumprobs.
+// May eventually want to take parameters for nonneg, explore, uniform, nonterminal succs,
+// num nonterminal succs.
+// Note: doesn't handle nodes with one succ
 template <typename T>
 void CFRStreetValues<T>::RMProbs(int p, int nt, int offset, int num_succs, int dsi,
 				 double *probs) const {
+#if 0
+  fprintf(stderr, "RMProbs p %i nt %i offset %i\n", p, nt, offset);
+  fprintf(stderr, "data_ %p\n", data_);
+  fprintf(stderr, "data_[p] %p\n", data_[p]);
+  fprintf(stderr, "data_[p][nt] %p\n", data_[p][nt]);
+#endif
   T *my_vals = &data_[p][nt][offset];
   double sum = 0;
   for (int s = 0; s < num_succs; ++s) {
@@ -176,6 +182,7 @@ void CFRStreetValues<T>::RMProbs(int p, int nt, int offset, int num_succs, int d
   }
 }
 
+// Note: doesn't handle nodes with one succ
 template <class T>
 void CFRStreetValues<T>::PureProbs(int p, int nt, int offset, int num_succs, double *probs) const {
   T *my_vals = &data_[p][nt][offset];
@@ -228,6 +235,28 @@ void CFRStreetValues<T>::WriteNode(Node *node, Writer *writer,
   }
 }
 
+// Doesn't support abstractin
+template <typename T>
+void CFRStreetValues<T>::WriteBoardValuesForNode(Node *node, Writer *writer,
+						 void *compressor, int lbd,
+						 int num_hole_card_pairs) const {
+  int p = node->PlayerActing();
+  int nt = node->NonterminalID();
+  int num_succs = node->NumSuccs();
+  if (num_succs <= 1) return;
+  // if (compressed_streets_[st]) {}
+  if (compressor) {
+    fprintf(stderr, "Compression not supported yet\n");
+    exit(-1);
+  } else {
+    int offset = lbd * num_hole_card_pairs * num_succs;
+    int num_actions = num_hole_card_pairs * num_succs;
+    for (int a = 0; a < num_actions; ++a) {
+      writer->Write(data_[p][nt][offset + a]);
+    }
+  }
+}
+
 template <typename T>
 void CFRStreetValues<T>::InitializeValuesForReading(int p, int nt, int num_succs) {
   if (data_ == nullptr) {
@@ -240,8 +269,10 @@ void CFRStreetValues<T>::InitializeValuesForReading(int p, int nt, int num_succs
     data_[p] = new T *[num_nt];
     for (int i = 0; i < num_nt; ++i) data_[p][i] = nullptr;
   }
-  int num_actions = num_holdings_ * num_succs;
-  data_[p][nt] = new T[num_actions];
+  if (data_[p][nt] == nullptr) {
+    int num_actions = num_holdings_ * num_succs;
+    data_[p][nt] = new T[num_actions];
+  }
   // Don't need to zero
 }
 
@@ -252,7 +283,9 @@ void CFRStreetValues<T>::ReadNode(Node *node, Reader *reader, void *decompressor
   int p = node->PlayerActing();
   int nt = node->NonterminalID();
   // Assume this is because this node is reentrant.
-  if (data_ && data_[p] && data_[p][nt]) return;
+  if (data_ && data_[p] && data_[p][nt]) {
+    return;
+  }
   InitializeValuesForReading(p, nt, num_succs);
   if (decompressor) {
     fprintf(stderr, "Decompression not supported yet\n");
@@ -261,6 +294,28 @@ void CFRStreetValues<T>::ReadNode(Node *node, Reader *reader, void *decompressor
   int num_actions = num_holdings_ * num_succs;
   for (int a = 0; a < num_actions; ++a) {
     reader->ReadOrDie(&data_[p][nt][a]);
+  }
+}
+
+// Doesn't support abstraction.
+// Doesn't support reentrancy.
+// Normally used for resolved subgames.  Read just one board's data from disk.
+template <typename T>
+void CFRStreetValues<T>::ReadBoardValuesForNode(Node *node, Reader *reader, void *decompressor,
+						int lbd, int num_hole_card_pairs) {
+  int num_succs = node->NumSuccs();
+  if (num_succs <= 1) return;
+  int p = node->PlayerActing();
+  int nt = node->NonterminalID();
+  InitializeValuesForReading(p, nt, num_succs);
+  if (decompressor) {
+    fprintf(stderr, "Decompression not supported yet\n");
+    exit(-1);
+  }
+  int offset = lbd * num_hole_card_pairs * num_succs;
+  int num_actions = num_hole_card_pairs * num_succs;
+  for (int a = 0; a < num_actions; ++a) {
+    reader->ReadOrDie(&data_[p][nt][a + offset]);
   }
 }
 

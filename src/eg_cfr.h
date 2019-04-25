@@ -24,8 +24,7 @@ class EGCFR : public VCFR {
 			    const std::string &action_sequence, const HandTree *hand_tree,
 			    double *opp_cvs, int target_p, bool both_players, int num_its) = 0;
  protected:
-  virtual std::shared_ptr<double []> HalfIteration(BettingTree *subtree, int solve_bd, 
-						   const VCFRState &state);
+  virtual std::shared_ptr<double []> HalfIteration(BettingTree *subtree, const VCFRState &state);
 
   const CardAbstraction &base_card_abstraction_;
   const BettingAbstraction &base_betting_abstraction_;

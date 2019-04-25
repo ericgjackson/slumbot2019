@@ -39,6 +39,12 @@ OBJS =	obj/fast_hash.o obj/rand.o obj/files.o obj/cards.o obj/io.o obj/split.o o
 	obj/combined_eg_cfr.o obj/regret_compression.o obj/tcfr.o obj/rollout.o \
 	obj/sparse_and_dense.o obj/kmeans.o obj/mcts.o
 
+bin/show_num_boards:	obj/show_num_boards.o $(OBJS) $(HEADS)
+	g++ $(LDFLAGS) $(CFLAGS) -o bin/show_num_boards obj/show_num_boards.o $(OBJS) $(LIBRARIES)
+
+bin/show_boards:	obj/show_boards.o $(OBJS) $(HEADS)
+	g++ $(LDFLAGS) $(CFLAGS) -o bin/show_boards obj/show_boards.o $(OBJS) $(LIBRARIES)
+
 bin/build_hand_value_tree:	obj/build_hand_value_tree.o $(OBJS) $(HEADS)
 	g++ $(LDFLAGS) $(CFLAGS) -o bin/build_hand_value_tree obj/build_hand_value_tree.o $(OBJS) \
 	$(LIBRARIES)
@@ -47,8 +53,26 @@ bin/build_null_buckets:	obj/build_null_buckets.o $(OBJS) $(HEADS)
 	g++ $(LDFLAGS) $(CFLAGS) -o bin/build_null_buckets obj/build_null_buckets.o $(OBJS) \
 	$(LIBRARIES)
 
+bin/build_rollout_features:	obj/build_rollout_features.o $(OBJS) $(HEADS)
+	g++ $(LDFLAGS) $(CFLAGS) -o bin/build_rollout_features obj/build_rollout_features.o \
+	$(OBJS) $(LIBRARIES)
+
+bin/build_unique_buckets:	obj/build_unique_buckets.o $(OBJS) $(HEADS)
+	g++ $(LDFLAGS) $(CFLAGS) -o bin/build_unique_buckets obj/build_unique_buckets.o $(OBJS) \
+	$(LIBRARIES)
+
 bin/build_kmeans_buckets:	obj/build_kmeans_buckets.o $(OBJS) $(HEADS)
 	g++ $(LDFLAGS) $(CFLAGS) -o bin/build_kmeans_buckets obj/build_kmeans_buckets.o $(OBJS) \
+	$(LIBRARIES)
+
+bin/crossproduct:	obj/crossproduct.o $(OBJS) $(HEADS)
+	g++ $(LDFLAGS) $(CFLAGS) -o bin/crossproduct obj/crossproduct.o $(OBJS) $(LIBRARIES)
+
+bin/prify:	obj/prify.o $(OBJS) $(HEADS)
+	g++ $(LDFLAGS) $(CFLAGS) -o bin/prify obj/prify.o $(OBJS) $(LIBRARIES)
+
+bin/show_num_buckets:	obj/show_num_buckets.o $(OBJS) $(HEADS)
+	g++ $(LDFLAGS) $(CFLAGS) -o bin/show_num_buckets obj/show_num_buckets.o $(OBJS) \
 	$(LIBRARIES)
 
 bin/build_betting_tree:	obj/build_betting_tree.o $(OBJS) $(HEADS)
@@ -90,22 +114,17 @@ bin/show_probs_at_node:	obj/show_probs_at_node.o $(OBJS) $(HEADS)
 bin/play:	obj/play.o $(OBJS) $(HEADS)
 	g++ $(LDFLAGS) $(CFLAGS) -o bin/play obj/play.o $(OBJS) $(LIBRARIES)
 
+bin/head_to_head:	obj/head_to_head.o $(OBJS) $(HEADS)
+	g++ $(LDFLAGS) $(CFLAGS) -o bin/head_to_head obj/head_to_head.o $(OBJS) $(LIBRARIES)
+
+bin/mc_node:	obj/mc_node.o $(OBJS) $(HEADS)
+	g++ $(LDFLAGS) $(CFLAGS) -o bin/mc_node obj/mc_node.o $(OBJS) $(LIBRARIES)
+
+bin/eval_node:	obj/eval_node.o $(OBJS) $(HEADS)
+	g++ $(LDFLAGS) $(CFLAGS) -o bin/eval_node obj/eval_node.o $(OBJS) $(LIBRARIES)
+
 bin/sampled_br:	obj/sampled_br.o $(OBJS) $(HEADS)
 	g++ $(LDFLAGS) $(CFLAGS) -o bin/sampled_br obj/sampled_br.o $(OBJS) $(LIBRARIES)
-
-bin/build_rollout_features:	obj/build_rollout_features.o $(OBJS) $(HEADS)
-	g++ $(LDFLAGS) $(CFLAGS) -o bin/build_rollout_features obj/build_rollout_features.o \
-	$(OBJS) $(LIBRARIES)
-
-bin/build_unique_buckets:	obj/build_unique_buckets.o $(OBJS) $(HEADS)
-	g++ $(LDFLAGS) $(CFLAGS) -o bin/build_unique_buckets obj/build_unique_buckets.o $(OBJS) \
-	$(LIBRARIES)
-
-bin/crossproduct:	obj/crossproduct.o $(OBJS) $(HEADS)
-	g++ $(LDFLAGS) $(CFLAGS) -o bin/crossproduct obj/crossproduct.o $(OBJS) $(LIBRARIES)
-
-bin/prify:	obj/prify.o $(OBJS) $(HEADS)
-	g++ $(LDFLAGS) $(CFLAGS) -o bin/prify obj/prify.o $(OBJS) $(LIBRARIES)
 
 bin/x:	obj/x.o $(OBJS) $(HEADS)
 	g++ $(LDFLAGS) $(CFLAGS) -o bin/x obj/x.o $(OBJS) $(LIBRARIES)

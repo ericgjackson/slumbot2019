@@ -37,8 +37,7 @@ HandTree::HandTree(int root_st, int root_bd, int final_st) {
       int gbd = BoardTree::GlobalIndex(root_st_, root_bd_, st, lbd);
       const Card *board = BoardTree::Board(st, gbd);
       int sg = BoardTree::SuitGroups(st, gbd);
-      hands_[st][lbd] = new CanonicalCards(2, board, num_board_cards, sg,
-					   false);
+      hands_[st][lbd] = new CanonicalCards(2, board, num_board_cards, sg, false);
       if (st == max_street) {
 	hands_[st][lbd]->SortByHandStrength(board);
       }

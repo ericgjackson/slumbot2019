@@ -247,7 +247,7 @@ int BoardTree::LookupBoard(const Card *board, int st) {
   }
   int ret = lookup_[st][code];
   if (ret == kMaxInt) {
-    fprintf(stderr, "BoardTree::LookupBoard() invalid board\n");
+    fprintf(stderr, "BoardTree::LookupBoard() invalid board; st %i code %i\n", st, code);
     OutputNCards(board, num_board_cards);
     printf("\n");
     fflush(stdout);

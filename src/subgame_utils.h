@@ -15,6 +15,8 @@ class CFRValues;
 class HandTree;
 class Node;
 
+BettingTree *CreateSubtree(int st, int player_acting, int last_bet_to, int target_p,
+			   const BettingAbstraction &betting_abstraction);
 std::unique_ptr<CFRValues>
 ReadBaseSubgameStrategy(const CardAbstraction &base_card_abstraction,
 			const BettingAbstraction &base_betting_abstraction,

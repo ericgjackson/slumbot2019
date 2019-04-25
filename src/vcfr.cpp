@@ -728,8 +728,6 @@ shared_ptr<double []> VCFR::StreetInitial(Node *node, int plbd, const VCFRState 
   return vals;
 }
 
-// If we comment out showdown, still crash
-// If we comment out Fold(), do not crash
 shared_ptr<double []> VCFR::Process(Node *node, int lbd, const VCFRState &state, int last_st) {
   int st = node->Street();
   if (node->Terminal()) {

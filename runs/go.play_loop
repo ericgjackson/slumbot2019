@@ -1,0 +1,8 @@
+#!/bin/bash
+
+for i in {1..1000}
+do
+# ../bin/play_resolved ms2f1t1h5_params none_params none_params mb1b1_params mb1b1_params cfrps_params cfrps_params 200 200 1
+# ../bin/play_resolved ms3f1t1r1h5_params none_params none_params mb1b1_params mb1b1_params cfrps_params cfrps_params 200 200 200
+../bin/play_resolved ms1f1_params none_params none_params mb1b1_params mb1b1_params cfrps_params cfrps_params 200 200 1 false true none_params mb1b1_params cfrps_params 
+done

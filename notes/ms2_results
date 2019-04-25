@@ -1,0 +1,13 @@
+ms2f1t1h5
+mb1b1
+
+cfrps/200: Exploitability: 7.99 mbb/g
+
+Resolve all turn subgames
+Unsafe: Exploitability: 43.72 mbb/g
+Pretty bad.  Much worse than ms1f1.  But no bug as far as I know.
+Combined: Exploitability: 11.20 mbb/g
+
+Resolve all flop subgames
+Unsafe:   Exploitability: 13.77 mbb/g
+Combined: Exploitability: 11.86 mbb/g

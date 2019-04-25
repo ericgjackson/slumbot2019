@@ -1,4 +1,4 @@
-holdem5/mb2b2ai
+holdem5/mb2b2aai
 nhs3
 
 tcfr
@@ -6,6 +6,19 @@ tcfr
 1b-8b in 619m 
 8b:           Exploitability: 1578.35 mbb/g
 
-Resolving all river subgames: base 8b resolve cfrps/200
-Unsafe:
-Crashed.  Is it due to multithreading?
+RGBR calculation takes 3.5m 8-threaded
+
+play
+1b vs. 8b: Avg B outcome: 0.131965 (66.0 mbb/g) over 100000000 dup hands
+7b vs. 8b: Avg B outcome: 0.007089 (3.5 mbb/g) over 100000000 dup hands
+
+Not possible to resolve all river subgames.
+
+play_resolved
+Sample 1 board
+31s
+Avg B outcome: 0.811346 (405.7 mbb/g)
+Sample 100 boards
+46m
+Avg B outcome: 0.746263 (373.1 mbb/g)
+Avg P1 outcome: 0.167473 (83.7 mbb/g)

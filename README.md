@@ -32,7 +32,9 @@ approach that combines the unsafe and CFR-D methods.
 
 The MCCFR implementation supports multiplayer.
 
-We support the construction and usage of card abstractions.
+We support the construction and usage of card abstractions.  CFR+ may be used
+either with or without a card abstraction.  (MCCFR requires a card abstraction,
+but may use the "null" abstraction which is lossless.)
 
 CFR can be configured through several parameter files which control the game
 being solved, the card abstraction, the betting abstraction, and solving

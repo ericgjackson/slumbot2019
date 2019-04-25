@@ -155,6 +155,21 @@ int Game::StreetPermutations2(int street) {
   return multiplier / Factorial(num_street_cards);
 }
 
+// Assume only that the board cards for any street prior to the given street.  How many ways of
+// dealing out the next street are there?
+int Game::StreetPermutations3(int street) {
+  int num_cards_left = num_cards_in_deck_;
+  for (int s = 1; s < street; ++s) {
+    num_cards_left -= num_cards_for_street_[s];
+  }
+  int num_street_cards = num_cards_for_street_[street];
+  int multiplier = 1;
+  for (int n = (num_cards_left - num_street_cards) + 1; n <= num_cards_left; ++n) {
+    multiplier *= n;
+  }
+  return multiplier / Factorial(num_street_cards);
+}
+
 // Assume the hole cards for each player have been dealt out and the board
 // cards for any street prior to the given street.  How many ways of dealing
 // out the remainder of the board are there?

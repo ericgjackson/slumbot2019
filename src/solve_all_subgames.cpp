@@ -213,6 +213,7 @@ static Node *FindCorrespondingNode(Node *old_node, Node *old_target, Node *new_n
   return nullptr;
 }
 
+// Get rid of this; use CreateSubtree() from subgame_utils.cpp instead
 // Assume no bet pending
 // Doesn't support multiplayer yet
 BettingTree *SubgameSolver::CreateSubtree(Node *node, int target_p, bool base) {
@@ -294,7 +295,6 @@ void SSThread::Join(void) {
 
 void SubgameSolver::Split(Node *node, const string &action_sequence, int pgbd,
 			  shared_ptr<double []> *reach_probs) {
-  fprintf(stderr, "Split\n");
   unique_ptr<SSThread * []> threads(new SSThread *[num_threads_]);
   for (int t = 0; t < num_threads_; ++t) {
     threads[t] = new SSThread(node, action_sequence, pgbd, reach_probs, this, t, num_threads_);
@@ -579,7 +579,7 @@ int main(int argc, char *argv[]) {
     base_betting_abstraction(new BettingAbstraction(*base_betting_params));
   unique_ptr<Params> subgame_betting_params = CreateBettingAbstractionParams();
   subgame_betting_params->ReadFromFile(argv[5]);
-  unique_ptr<BettingAbstraction>subgame_betting_abstraction(
+  unique_ptr<BettingAbstraction> subgame_betting_abstraction(
 		   new BettingAbstraction(*subgame_betting_params));
   unique_ptr<Params> base_cfr_params = CreateCFRParams();
   base_cfr_params->ReadFromFile(argv[6]);

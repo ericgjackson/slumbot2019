@@ -20,17 +20,17 @@ class Game {
   static Card MaxCard(void) {
     return MakeCard(num_ranks_ - 1, num_suits_ - 1);
   }
-  static int FirstToAct(unsigned int st) {return first_to_act_[st];}
+  static int FirstToAct(int st) {return first_to_act_[st];}
   static int SmallBlind(void) {return small_blind_;}
   static int BigBlind(void) {return big_blind_;}
   static int Ante(void) {return ante_;}
-  static int NumCardsForStreet(unsigned int st) {
+  static int NumCardsForStreet(int st) {
     return num_cards_for_street_[st];
   }
-  static int NumHoleCardPairs(unsigned int st) {
+  static int NumHoleCardPairs(int st) {
     return num_hole_card_pairs_[st];
   }
-  static int NumBoardCards(unsigned int st) {
+  static int NumBoardCards(int st) {
     return num_board_cards_[st];
   }
   static int NumCardsInDeck(void) {return num_cards_in_deck_;}
@@ -43,6 +43,7 @@ class Game {
 #endif
   static int StreetPermutations(int street);
   static int StreetPermutations2(int street);
+  static int StreetPermutations3(int street);
   static int BoardPermutations(int street);
  private:
   static std::string game_name_;

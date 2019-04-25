@@ -19,8 +19,8 @@ UnsafeEGCFR::UnsafeEGCFR(const CardAbstraction &ca, const CardAbstraction &base_
 			 const BettingAbstraction &ba, const BettingAbstraction &base_ba,
 			 const CFRConfig &cc, const CFRConfig &base_cc, const Buckets &buckets,
 			 int num_threads) :
-  EGCFR(ca, base_ca, ba, base_ba, cc, base_cc, buckets,
-	ResolvingMethod::UNSAFE, false, false, num_threads) {
+  EGCFR(ca, base_ca, ba, base_ba, cc, base_cc, buckets, ResolvingMethod::UNSAFE, false, false,
+	num_threads) {
 }
 
 void UnsafeEGCFR::SolveSubgame(BettingTree *subtree, int solve_bd,
@@ -35,14 +35,14 @@ void UnsafeEGCFR::SolveSubgame(BettingTree *subtree, int solve_bd,
   for (int st = 0; st <= max_street; ++st) {
     subtree_streets[st] = st >= subtree_st;
   }
-  regrets_.reset(new CFRValues(nullptr, subtree_streets.get(), solve_bd,
-			       subtree_st, buckets_, subtree));
+  regrets_.reset(new CFRValues(nullptr, subtree_streets.get(), solve_bd, subtree_st, buckets_,
+			       subtree));
   regrets_->AllocateAndClearDoubles(subtree->Root(), -1);
 
   // Should honor sumprobs_streets_
 
-  sumprobs_.reset(new CFRValues(nullptr, subtree_streets.get(), solve_bd,
-				subtree_st, buckets_, subtree));
+  sumprobs_.reset(new CFRValues(nullptr, subtree_streets.get(), solve_bd, subtree_st, buckets_,
+				subtree));
   sumprobs_->AllocateAndClearDoubles(subtree->Root(), -1);
 
   unique_ptr< unique_ptr<VCFRState> [] > initial_states(new unique_ptr<VCFRState> [num_players]);
@@ -54,7 +54,7 @@ void UnsafeEGCFR::SolveSubgame(BettingTree *subtree, int solve_bd,
   for (it_ = 1; it_ <= num_its; ++it_) {
     // Go from high to low to mimic slumbot2017 code
     for (int p = (int)num_players - 1; p >= 0; --p) {
-      HalfIteration(subtree, solve_bd, *initial_states[p]);
+      HalfIteration(subtree, *initial_states[p]);
     }
   }
 }

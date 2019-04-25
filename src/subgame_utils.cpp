@@ -15,6 +15,7 @@
 
 #include "betting_abstraction.h"
 #include "betting_tree.h"
+#include "betting_tree_builder.h"
 #include "board_tree.h"
 #include "buckets.h"
 #include "canonical_cards.h"
@@ -31,6 +32,25 @@
 using std::shared_ptr;
 using std::string;
 using std::unique_ptr;
+
+// Create a subtree for resolving rooted at the node (from a base tree) passed in.
+// Assumes the subtree is rooted at a street-initial node.
+// Doesn't support multiplayer yet (?)
+BettingTree *CreateSubtree(int st, int player_acting, int last_bet_to, int target_p,
+			   const BettingAbstraction &betting_abstraction) {
+  // Assume subtree rooted at street-initial node
+  int last_bet_size = 0;
+  int num_street_bets = 0;
+  BettingTreeBuilder betting_tree_builder(betting_abstraction, target_p);
+  int num_terminals = 0;
+  // Should call routine from mp_betting_tree.cpp instead
+  shared_ptr<Node> subtree_root =
+    betting_tree_builder.CreateNoLimitSubtree(st, last_bet_size, last_bet_to, num_street_bets,
+					      player_acting, target_p, &num_terminals);
+  // Delete the nodes under subtree_root?  Or does garbage collection
+  // automatically take care of it because they are shared pointers.
+  return new BettingTree(subtree_root.get());
+}
 
 // I always load probabilities for both players because I need the reach
 // probabilities for both players.  In addition, as long as we are
@@ -108,11 +128,10 @@ void WriteSubgame(Node *node, const string &action_sequence, const string &below
     int ngbd_begin = BoardTree::SuccBoardBegin(last_st, gbd, st);
     int ngbd_end = BoardTree::SuccBoardEnd(last_st, gbd, st);
     for (int ngbd = ngbd_begin; ngbd < ngbd_end; ++ngbd) {
-      WriteSubgame(node, action_sequence, below_action_sequence, ngbd,
-		   base_card_abstraction, subgame_card_abstraction,
-		   base_betting_abstraction, subgame_betting_abstraction,
-		   base_cfr_config, subgame_cfr_config, method, sumprobs,
-		   root_bd_st, root_bd, asym_p, target_pa, st);
+      WriteSubgame(node, action_sequence, below_action_sequence, ngbd, base_card_abstraction,
+		   subgame_card_abstraction, base_betting_abstraction, subgame_betting_abstraction,
+		   base_cfr_config, subgame_cfr_config, method, sumprobs, root_bd_st, root_bd,
+		   asym_p, target_pa, st);
     }
     return;
   }
@@ -152,16 +171,13 @@ void WriteSubgame(Node *node, const string &action_sequence, const string &below
 
       sprintf(filename, "%s/%u", dir3, gbd);
 
+      // If we resolve more than one street, things get a little tricky.  We are writing one
+      // file per final-street board, but this sumprobs object will contain more than one
+      // board's data.
       Writer writer(filename);
-#if 0
-      // Need to apply an offset when writing out values at a node that is
-      // on a later street than the root of the subgame.
       int num_hole_card_pairs = Game::NumHoleCardPairs(node->Street());
       int lbd = BoardTree::LocalIndex(root_bd_st, root_bd, st, gbd);
-      int offset = lbd * num_hole_card_pairs * num_succs;
-      sumprobs->WriteNode(node, &writer, nullptr, num_hole_card_pairs, offset);
-#endif
-      sumprobs->WriteNode(node, &writer, nullptr);
+      sumprobs->WriteBoardValuesForNode(node, &writer, nullptr, lbd, num_hole_card_pairs);
     }
   }
 
@@ -234,27 +250,22 @@ static void ReadSubgame(Node *node, const string &action_sequence, int gbd,
     // Also assume subgame solving is unabstracted
     // We write only one board's data per file, even on streets later than
     // solve street.
-#if 0
-    int num_hole_card_pairs = Game::NumHoleCardPairs(node->Street());
     int lbd = BoardTree::LocalIndex(root_bd_st, root_bd, st, gbd);
-    int offset = lbd * num_hole_card_pairs * num_succs;
-    sumprobs->ReadNode(node, &reader, nullptr, num_hole_card_pairs, CFR_DOUBLE,
-		       offset);
-#endif
-    sumprobs->ReadNode(node, &reader, nullptr);
+    int num_hole_card_pairs = Game::NumHoleCardPairs(node->Street());
+    sumprobs->ReadBoardValuesForNode(node, &reader, nullptr, lbd, num_hole_card_pairs);
     if (! reader.AtEnd()) {
-      fprintf(stderr, "Reader didn't get to end\nFile: %s\n", filename);
+      fprintf(stderr, "Reader didn't get to end; pos %lli size %lli\nFile: %s\n",
+	      reader.BytePos(), reader.FileSize(), filename);
       exit(-1);	      
     }
   }
 
   for (int s = 0; s < num_succs; ++s) {
     string action = node->ActionName(s);
-    ReadSubgame(node->IthSucc(s), action_sequence + action, gbd,
-		base_card_abstraction, subgame_card_abstraction,
-		base_betting_abstraction, subgame_betting_abstraction,
-		base_cfr_config, subgame_cfr_config, method, sumprobs,
-		root_bd_st, root_bd, asym_p, target_pa, st);
+    ReadSubgame(node->IthSucc(s), action_sequence + action, gbd, base_card_abstraction,
+		subgame_card_abstraction, base_betting_abstraction, subgame_betting_abstraction,
+		base_cfr_config, subgame_cfr_config, method, sumprobs, root_bd_st, root_bd, asym_p,
+		target_pa, st);
   }
 }
 
@@ -279,9 +290,9 @@ unique_ptr<CFRValues> ReadSubgame(const string &action_sequence, BettingTree *su
 
   // Buckets needed for num buckets and for knowing what streets are
   // bucketed.
-  unique_ptr<CFRValues> sumprobs(new CFRValues(nullptr, subgame_streets.get(),
-					       gbd, subtree->Root()->Street(),
-					       subgame_buckets, subtree));
+  unique_ptr<CFRValues> sumprobs(new CFRValues(nullptr, subgame_streets.get(), gbd,
+					       subtree->Root()->Street(), subgame_buckets,
+					       subtree));
   // Assume doubles
   for (int st = 0; st <= max_street; ++st) {
     if (subgame_streets[st]) sumprobs->CreateStreetValues(st, CFR_DOUBLE);
@@ -472,7 +483,7 @@ void ZeroSumCVs(double *p0_cvs, double *p1_cvs, int num_hole_card_pairs,
   double p0_mean_cv, p1_mean_cv;
   CalculateMeanCVs(p0_cvs, p1_cvs, num_hole_card_pairs, reach_probs, hands, &p0_mean_cv,
 		   &p1_mean_cv);
-  fprintf(stderr, "Mean CVs: %f, %f\n", p0_mean_cv, p1_mean_cv);
+  // fprintf(stderr, "Mean CVs: %f, %f\n", p0_mean_cv, p1_mean_cv);
 
   double avg = (p0_mean_cv + p1_mean_cv) / 2.0;
   double adj = -avg;
@@ -502,6 +513,6 @@ void ZeroSumCVs(double *p0_cvs, double *p1_cvs, int num_hole_card_pairs,
   double adj_p0_mean_cv, adj_p1_mean_cv;
   CalculateMeanCVs(p0_cvs, p1_cvs, num_hole_card_pairs, reach_probs, hands, &adj_p0_mean_cv,
 		   &adj_p1_mean_cv);
-  fprintf(stderr, "Adj mean CVs: P0 %f, P1 %f\n", adj_p0_mean_cv, adj_p1_mean_cv);
+  // fprintf(stderr, "Adj mean CVs: P0 %f, P1 %f\n", adj_p0_mean_cv, adj_p1_mean_cv);
   
 }
