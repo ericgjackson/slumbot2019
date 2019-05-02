@@ -486,8 +486,10 @@ Player::Player(const BettingAbstraction &a_ba, const BettingAbstraction &b_ba,
   b_betting_trees_.reset(new BettingTrees(b_ba));
 
   // Note assumption that we can use the betting tree for position 0
-  a_probs_.reset(new CFRValues(nullptr, nullptr, 0, 0, *a_buckets_, a_betting_trees_.get()));
-  b_probs_.reset(new CFRValues(nullptr, nullptr, 0, 0, *b_buckets_, b_betting_trees_.get()));
+  a_probs_.reset(new CFRValues(nullptr, nullptr, 0, 0, *a_buckets_,
+			       a_betting_trees_->GetBettingTree()));
+  b_probs_.reset(new CFRValues(nullptr, nullptr, 0, 0, *b_buckets_,
+			       b_betting_trees_->GetBettingTree()));
 
   char dir[500];
   
@@ -498,14 +500,14 @@ Player::Player(const BettingAbstraction &a_ba, const BettingAbstraction &b_ba,
 	  a_ba.BettingAbstractionName().c_str(),
 	  a_cc.CFRConfigName().c_str());
   // Note assumption that we can use the betting tree for position 0
-  a_probs_->Read(dir, a_it, a_betting_trees_->Root(), "x", -1, true);
+  a_probs_->Read(dir, a_it, a_betting_trees_->GetBettingTree(), "x", -1, true);
 
   sprintf(dir, "%s/%s.%u.%s.%u.%u.%u.%s.%s", Files::OldCFRBase(), Game::GameName().c_str(),
 	  Game::NumPlayers(), b_ca.CardAbstractionName().c_str(), Game::NumRanks(),
 	  Game::NumSuits(), Game::MaxStreet(), b_ba.BettingAbstractionName().c_str(),
 	  b_cc.CFRConfigName().c_str());
   // Note assumption that we can use the betting tree for position 0
-  b_probs_->Read(dir, b_it, b_betting_trees_->Root(), "x", -1, true);
+  b_probs_->Read(dir, b_it, b_betting_trees_->GetBettingTree(), "x", -1, true);
 
 #if 0
   // If we want to go back to supporting asymmetric systems, may need to have a separate
