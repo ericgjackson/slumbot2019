@@ -115,6 +115,10 @@ TODO
 
 TODO
 
+## Asymmetric Betting Abstractions
+
+TODO
+
 # Discussion
 
 CFR+ is the preferred algorithm when it is feasible, ideally with no card abstraction.  It exhibits
@@ -130,15 +134,78 @@ game tree.
 
 ## Parameter Files
 
-CFR can be configured through several parameter files which control the game
-being solved, the card abstraction, the betting abstraction, and solving
-parameters.
+CFR can be configured through several parameter files which control the game being solved, the card
+abstraction, the betting abstraction, and solving parameters.
 
-A large number of variants of Holdem can be solved.  You can control the
-number of players, the number of cards in the deck, the number of betting
-rounds, the bet sizes supported in each round, the stack size, etc.
+### Game Params
+
+For an example, see runs/holdem_params or runs/ms1f3_params.
+
+Specifies the basic rules of the game including the number of streets (betting rounds), the
+size of the deck, the number of players and how many community cards are dealt on each street.
+
+Notes:
+
+* Although there is a parameter for the number of hole cards, the code assumes two hole cards
+in many places.
+* The turn and river are assumed to involve one community card being dealt.  Only the flop is
+configurable, and the flop may only involve one, two or three community cards.
+* Games involving "draws" like 5-card draw are not supported.
+
+### Card Abstraction Params
+
+Specifies the card abstraction.  For each street we specify a bucketing.  A bucketing is a way
+of reducing the size of the card space by mapping raw hands into buckets which are collections
+of very similar hands.
+
+There are two reserved names for bucketing:
+
+* "none": CFR+ can operate without a card abstraction.  To specify no abstraction, use "none"
+for the bucketing.
+* "null": the null abstraction only groups together groups of cards that are functionally equivalent
+(sometimes called "isomorphic").  For example, the preflop hands AsKs and AhKh can safely be
+grouped together in the same bucket.  MCCFR requires a card abstraction so use the "null"
+abstraction if you want a "lossless" abstraction.
+
+See the "Card Abstraction" section later for more information on card abstraction.
+
+### Betting Abstraction Params
+
+For an example, see runs/mb1b1_params.
+
+Specify things like the stack size, and what bet sizes are allowed per street and how many bets.
+
+### CFR Params
+
+For an example, see runs/cfrps_params or runs/ecfr_params.
+
+Specify whether you are using CFR+ or MCCFR and set other parameters that control solving.
 
 ## Card Abstraction
 
+Use build_null_buckets to create the "null" bucketing".
+
+You can also create your own card abstractions.
+
+Use build_rollout_features to create a map associating hands with certain hand strength
+related features.
+
+Use build_unique_buckets or build_kmeans buckets to create a bucketing from features.
+
+You may also wish to look into prify and combine_features.
+
 ## Betting Abstraction
+
+Once you have create a betting abstraction parameter file, build the betting tree
+with build_betting_tree:
+
+```
+../bin/build_betting tree <game params> <betting params>
+```
+
+You can also view your betting tree:
+
+```
+../bin/show_betting tree <game params> <betting params>
+```
 
