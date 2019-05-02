@@ -17,7 +17,7 @@
 #include <vector>
 
 #include "betting_abstraction.h"
-#include "betting_tree.h"
+#include "betting_trees.h"
 #include "board_tree.h"
 #include "buckets.h"
 #include "canonical_cards.h"
@@ -97,7 +97,7 @@ MCTSNode *MCTSNode::UCTSelectChild(void) const {
 class MCTS {
 public:
   MCTS(const CardAbstraction &ca, const BettingAbstraction &ba, const CFRConfig &cc,
-       const Buckets &buckets, const BettingTree &betting_tree, bool current, int num_threads,
+       const Buckets &buckets, const BettingTrees &betting_trees, bool current, int num_threads,
        int it, int responder);
   virtual ~MCTS(void) {}
   void Go(int num_iterations);
@@ -112,7 +112,7 @@ private:
   const BettingAbstraction &betting_abstraction_;
   const CFRConfig &cfr_config_;
   const Buckets &buckets_;
-  const BettingTree &betting_tree_;
+  const BettingTrees &betting_trees_;
   int it_;
   int responder_;
   std::unique_ptr<CFRValues> sumprobs_;
@@ -120,17 +120,18 @@ private:
 };
 
 MCTS::MCTS(const CardAbstraction &ca, const BettingAbstraction &ba, const CFRConfig &cc,
-	   const Buckets &buckets, const BettingTree &betting_tree, bool current, int num_threads,
+	   const Buckets &buckets, const BettingTrees &betting_trees, bool current, int num_threads,
 	   int it, int responder) :
   card_abstraction_(ca), betting_abstraction_(ba), cfr_config_(cc), buckets_(buckets),
-  betting_tree_(betting_tree), it_(it), responder_(responder) {
+  betting_trees_(betting_trees), it_(it), responder_(responder) {
   BoardTree::Create();
   int num_players = Game::NumPlayers();
   unique_ptr<bool []> players(new bool[num_players]);
   for (int p = 0; p < num_players; ++p) {
     players[p] = p != responder_;
   }
-  sumprobs_.reset(new CFRValues(players.get(), nullptr, 0, 0, buckets_, &betting_tree_));
+  sumprobs_.reset(new CFRValues(players.get(), nullptr, 0, 0, buckets_,
+				betting_trees_.GetBettingTree()));
 
   char dir[500];
   sprintf(dir, "%s/%s.%u.%s.%i.%i.%i.%s.%s", Files::OldCFRBase(), Game::GameName().c_str(),
@@ -144,8 +145,8 @@ MCTS::MCTS(const CardAbstraction &ca, const BettingAbstraction &ba, const CFRCon
     strcat(dir, buf);
   }
 
-  sumprobs_->Read(dir, it_, betting_tree_.Root(), "x", -1, true);
-  mcts_root_.reset(new MCTSNode(nullptr, betting_tree_.Root()));
+  sumprobs_->Read(dir, it_, betting_trees_.GetBettingTree(), "x", -1, true);
+  mcts_root_.reset(new MCTSNode(nullptr, betting_trees_.Root()));
 }
 
 MCTSNode *MCTS::Select(MCTSNode *mcts_node) {

@@ -4,10 +4,12 @@
 #include <memory>
 #include <string>
 
+#include "betting_tree.h"
 #include "cfr_street_values.h"
 #include "cfr_value_type.h"
 
 class BettingTree;
+class BettingTrees;
 class Buckets;
 class Node;
 
@@ -15,18 +17,16 @@ class CFRValues {
  public:
   CFRValues(const bool *players, const bool *streets, int root_bd, int root_bd_st,
 	    const Buckets &buckets, const BettingTree *betting_tree);
+  CFRValues(const bool *players, const bool *streets, int root_bd, int root_bd_st,
+	    const Buckets &buckets, const BettingTrees &betting_trees);
   virtual ~CFRValues(void);
   AbstractCFRStreetValues *StreetValues(int st) const {return street_values_[st];}
-  void AllocateAndClearInts(Node *node, int only_p);
-  void AllocateAndClearDoubles(Node *node, int only_p);
+  void AllocateAndClear(const BettingTree *betting_tree, CFRValueType value_type, int only_p);
   void CreateStreetValues(int st, CFRValueType value_type);
-  Reader *InitializeReader(const char *dir, int p, int st, int it,
-			   const std::string &action_sequence, int root_bd_st, int root_bd,
-			   bool sumprobs, CFRValueType *value_type);
-  void Read(const char *dir, int it, Node *root, const std::string &action_sequence, int only_p,
-	    bool sumprobs);
-  Writer ***InitializeWriters(const char *dir, int it, const std::string &action_sequence,
-			      int only_p, bool sumprobs, void ****compressors) const;
+  void Read(const char *dir, int it, const BettingTree *betting_tree,
+	    const std::string &action_sequence, int only_p, bool sumprobs);
+  void ReadAsymmetric(const char *dir, int it, const BettingTrees &betting_trees,
+		      const std::string &action_sequence, int only_p, bool sumprobs);
   void Write(const char *dir, int it, Node *root, const std::string &action_sequence, int only_p,
 	     bool sumprobs) const;
   // Note: doesn't handle nodes with one succ
@@ -46,9 +46,6 @@ class CFRValues {
     street_values_[node->Street()]->ReadBoardValuesForNode(node, reader, decompressor, lbd,
 							   num_hole_card_pairs);
   }
-  void WriteNode(Node *node, Writer *writer, void *compressor) const {
-    street_values_[node->Street()]->WriteNode(node, writer, compressor);
-  }
   void WriteBoardValuesForNode(Node *node, Writer *writer, void *compressor, int lbd,
 			       int num_hole_card_pairs) const {
     street_values_[node->Street()]->WriteBoardValuesForNode(node, writer, compressor, lbd,
@@ -58,10 +55,17 @@ class CFRValues {
 		 const Buckets &buckets, int final_st);
   
  protected:
-  void Read(Node *node, Reader ***readers, void ***decompressors, int only_p);
+  void Read(Node *node, Reader ***readers, void ***decompressors, int p);
+  Reader *InitializeReader(const char *dir, int p, int st, int it,
+			   const std::string &action_sequence, int root_bd_st, int root_bd,
+			   bool sumprobs, CFRValueType *value_type);
   void Write(Node *node, Writer ***writers, void ***compressors, bool ***seen) const;
+  Writer ***InitializeWriters(const char *dir, int it, const std::string &action_sequence,
+			      int only_p, bool sumprobs, void ****compressors) const;
   void MergeInto(Node *full_node, Node *subgame_node, int root_bd_st, int root_bd,
 		 const CFRValues &subgame_values, const Buckets &buckets, int final_st);
+  void Initialize(const bool *players, const bool *streets, int root_bd, int root_bd_st,
+		  const Buckets &buckets);
   
   std::unique_ptr<AbstractCFRStreetValues * []> street_values_;
   std::unique_ptr<bool []> players_;

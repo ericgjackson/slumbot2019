@@ -20,7 +20,7 @@
 #include <string>
 
 #include "betting_abstraction.h"
-#include "betting_tree.h"
+#include "betting_trees.h"
 #include "board_tree.h"
 #include "buckets.h"
 #include "canonical_cards.h"
@@ -54,7 +54,8 @@ void CFRP::Initialize(void) {
       streets[st] = st < subgame_street_;
     }
   }
-  regrets_.reset(new CFRValues(nullptr, streets.get(), 0, 0, buckets_, betting_tree_));
+  regrets_.reset(new CFRValues(nullptr, streets.get(), 0, 0, buckets_,
+			       betting_trees_->GetBettingTree()));
   
   // Should honor sumprobs_streets_
   if (betting_abstraction_.Asymmetric()) {
@@ -62,9 +63,11 @@ void CFRP::Initialize(void) {
     unique_ptr<bool []> players(new bool [num_players]);
     for (int p = 0; p < num_players; ++p) players[p] = false;
     players[target_p_] = true;
-    sumprobs_.reset(new CFRValues(players.get(), streets.get(), 0, 0, buckets_, betting_tree_));
+    sumprobs_.reset(new CFRValues(players.get(), streets.get(), 0, 0, buckets_,
+				  betting_trees_->GetBettingTree()));
   } else {
-    sumprobs_.reset(new CFRValues(nullptr, streets.get(), 0, 0, buckets_, betting_tree_));
+    sumprobs_.reset(new CFRValues(nullptr, streets.get(), 0, 0, buckets_,
+				  betting_trees_->GetBettingTree()));
   }
 
   unique_ptr<bool []> bucketed_streets(new bool[max_street + 1]);
@@ -76,16 +79,21 @@ void CFRP::Initialize(void) {
   if (bucketed_) {
     // Hmm, we only want to allocate this for the streets that need it
     current_strategy_.reset(new CFRValues(nullptr, bucketed_streets.get(), 0, 0, buckets_,
-					  betting_tree_));
+					  betting_trees_->GetBettingTree()));
   } else {
     current_strategy_.reset(nullptr);
   }
 }
 
 CFRP::CFRP(const CardAbstraction &ca, const BettingAbstraction &ba, const CFRConfig &cc,
-	   const Buckets &buckets, const BettingTree *betting_tree, int num_threads, int target_p) :
+	   const Buckets &buckets, int num_threads, int target_p) :
   VCFR(ca, ba, cc, buckets, num_threads) {
-  betting_tree_ = betting_tree;
+  if (ba.Asymmetric()) {
+    betting_trees_.reset(new BettingTrees(ba, target_p));
+  } else {
+    betting_trees_.reset(new BettingTrees(ba));
+  }
+  
   if (betting_abstraction_.Asymmetric()) {
     target_p_ = target_p;
   } else {
@@ -256,7 +264,7 @@ void CFRP::FloorRegrets(Node *node, int p) {
 void CFRP::HalfIteration(int p) {
   fprintf(stderr, "P%u half iteration\n", p);
   if (current_strategy_.get() != nullptr) {
-    SetCurrentStrategy(betting_tree_->Root());
+    SetCurrentStrategy(betting_trees_->Root());
   }
 
   if (subgame_street_ >= 0 && subgame_street_ <= Game::MaxStreet()) {
@@ -274,11 +282,11 @@ void CFRP::HalfIteration(int p) {
   if (subgame_street_ >= 0 && subgame_street_ <= Game::MaxStreet()) pre_phase_ = true;
   VCFRState state(p, hand_tree_.get());
   SetStreetBuckets(0, 0, state);
-  shared_ptr<double []> vals = Process(betting_tree_->Root(), 0, state, 0);
+  shared_ptr<double []> vals = Process(betting_trees_->Root(), 0, state, 0);
   if (subgame_street_ >= 0 && subgame_street_ <= Game::MaxStreet()) {
     WaitForFinalSubgames();
     pre_phase_ = false;
-    vals = Process(betting_tree_->Root(), 0, state, 0);
+    vals = Process(betting_trees_->Root(), 0, state, 0);
   }
 #if 0
   int num_hole_card_pairs = Game::NumHoleCardPairs(0);
@@ -299,7 +307,7 @@ void CFRP::HalfIteration(int p) {
 #endif
 
   if (nn_regrets_ && bucketed_) {
-    FloorRegrets(betting_tree_->Root(), p);
+    FloorRegrets(betting_trees_->Root(), p);
   }
 }
 
@@ -317,8 +325,8 @@ void CFRP::Checkpoint(int it) {
     strcat(dir, buf);
   }
   Mkdir(dir);
-  regrets_->Write(dir, it, betting_tree_->Root(), "x", -1, false);
-  sumprobs_->Write(dir, it, betting_tree_->Root(), "x", -1, true);
+  regrets_->Write(dir, it, betting_trees_->Root(), "x", -1, false);
+  sumprobs_->Write(dir, it, betting_trees_->Root(), "x", -1, true);
 }
 
 void CFRP::ReadFromCheckpoint(int it) {
@@ -334,8 +342,8 @@ void CFRP::ReadFromCheckpoint(int it) {
     sprintf(buf, ".p%u", target_p_);
     strcat(dir, buf);
   }
-  regrets_->Read(dir, it, betting_tree_->Root(), "x", -1, false);
-  sumprobs_->Read(dir, it, betting_tree_->Root(), "x", -1, true);
+  regrets_->Read(dir, it, betting_trees_->GetBettingTree(), "x", -1, false);
+  sumprobs_->Read(dir, it, betting_trees_->GetBettingTree(), "x", -1, true);
 }
 
 void CFRP::Run(int start_it, int end_it) {
@@ -352,19 +360,19 @@ void CFRP::Run(int start_it, int end_it) {
     bool double_regrets = cfr_config_.DoubleRegrets();
     bool double_sumprobs = cfr_config_.DoubleSumprobs();
     if (double_regrets) {
-      regrets_->AllocateAndClearDoubles(betting_tree_->Root(), -1);
+      regrets_->AllocateAndClear(betting_trees_->GetBettingTree(), CFR_DOUBLE, -1);
     } else {
-      regrets_->AllocateAndClearInts(betting_tree_->Root(), -1);
+      regrets_->AllocateAndClear(betting_trees_->GetBettingTree(), CFR_INT, -1);
     }
     if (double_sumprobs) {
-      sumprobs_->AllocateAndClearDoubles(betting_tree_->Root(), -1);
+      sumprobs_->AllocateAndClear(betting_trees_->GetBettingTree(), CFR_DOUBLE, -1);
     } else {
-      sumprobs_->AllocateAndClearInts(betting_tree_->Root(), -1);
+      sumprobs_->AllocateAndClear(betting_trees_->GetBettingTree(), CFR_INT, -1);
     }
   }
   if (bucketed_) {
     // Current strategy always uses doubles
-    current_strategy_->AllocateAndClearDoubles(betting_tree_->Root(), -1);
+    current_strategy_->AllocateAndClear(betting_trees_->GetBettingTree(), CFR_DOUBLE, -1);
   }
 
   if (subgame_street_ >= 0 && subgame_street_ <= Game::MaxStreet()) {

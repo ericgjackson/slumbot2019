@@ -40,14 +40,7 @@ Avg B outcome: 0.004520 (2.3 mbb/g)
 Avg B outcome: 0.004679 (2.3 mbb/g)
 Avg B outcome: 0.004659 (2.3 mbb/g)
 
----------------------------------------------------
+------------------------------------------------------------------------------
 
-Turn resolving in head_to_head broken.
+------------------------------------------------------------------------------
 
-Does it make sense that we get hole card pairs out of hands_ for the turn?
-I think so.
-
-Are we passing the right board in as gbd?
-
-Resolving is done with the resolve_hand_tree_ so hole card pairs are indexed
-as they are there.

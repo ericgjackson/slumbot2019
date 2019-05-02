@@ -27,21 +27,6 @@ Thread 0 avg P0 val -0.045806
 Thread 0 avg P1 val 0.044980
 Exploitability: 0.10 mbb/g
 
-
----------------------------------------------
-
-ms1f1
-mb1b1
-cfrps
-200 its: 2.86 mbb/g
-
----------------------------------------------
-
-ms1f3
-mb1b1
-cfrps
-200 its in 42.5s: 1.43 mbb/g
-
 ---------------------------------------------
 
 Debug play_resolved with buckets

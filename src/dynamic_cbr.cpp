@@ -4,7 +4,7 @@
 #include <memory>
 #include <string>
 
-#include "betting_tree.h"
+#include "betting_trees.h"
 #include "board_tree.h"
 #include "buckets.h"
 #include "canonical_cards.h"
@@ -22,8 +22,7 @@ using std::shared_ptr;
 using std::string;
 
 DynamicCBR::DynamicCBR(const CardAbstraction &ca, const BettingAbstraction &ba,
-		       const CFRConfig &cc, const Buckets &buckets, const BettingTree *betting_tree,
-		       int num_threads) :
+		       const CFRConfig &cc, const Buckets &buckets, int num_threads) :
   VCFR(ca, ba, cc, buckets, num_threads) {
   value_calculation_ = true;
   int max_street = Game::MaxStreet();

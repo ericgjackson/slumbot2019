@@ -11,7 +11,7 @@
 
 #include "betting_abstraction.h"
 #include "betting_abstraction_params.h"
-#include "betting_tree.h"
+#include "betting_trees.h"
 #include "board_tree.h"
 #include "buckets.h"
 #include "canonical_cards.h"
@@ -36,7 +36,7 @@ using std::vector;
 
 class Assembler {
 public:
-  Assembler(const BettingTree &base_betting_tree, const BettingTree &subgame_betting_tree,
+  Assembler(const BettingTrees &base_betting_trees, const BettingTrees &subgame_betting_trees,
 	    int solve_street, int base_it, int subgame_it, const CardAbstraction &base_ca,
 	    const CardAbstraction &subgame_ca, const CardAbstraction &merged_ca,
 	    const BettingAbstraction &base_ba, const BettingAbstraction &subgame_ba,
@@ -49,8 +49,8 @@ private:
   void WalkTrunk(Node *base_node, Node *subgame_node, const string &action_sequence, int last_st);
 
   bool asymmetric_;
-  const BettingTree &base_betting_tree_;
-  const BettingTree &subgame_betting_tree_;
+  const BettingTrees &base_betting_trees_;
+  const BettingTrees &subgame_betting_trees_;
   int solve_street_;
   int base_it_;
   int subgame_it_;
@@ -68,13 +68,14 @@ private:
   unique_ptr<Buckets> subgame_buckets_;
 };
 
-Assembler::Assembler(const BettingTree &base_betting_tree, const BettingTree &subgame_betting_tree,
-		     int solve_street, int base_it, int subgame_it, const CardAbstraction &base_ca,
+Assembler::Assembler(const BettingTrees &base_betting_trees,
+		     const BettingTrees &subgame_betting_trees, int solve_street, int base_it,
+		     int subgame_it, const CardAbstraction &base_ca,
 		     const CardAbstraction &subgame_ca, const CardAbstraction &merged_ca,
 		     const BettingAbstraction &base_ba, const BettingAbstraction &subgame_ba,
 		     const CFRConfig &base_cc, const CFRConfig &subgame_cc,
 		     const CFRConfig &merged_cc, ResolvingMethod method) :
-  base_betting_tree_(base_betting_tree), subgame_betting_tree_(subgame_betting_tree),
+  base_betting_trees_(base_betting_trees), subgame_betting_trees_(subgame_betting_trees),
   base_ca_(base_ca), subgame_ca_(subgame_ca), merged_ca_(merged_ca), base_ba_(base_ba),
   subgame_ba_(subgame_ba), base_cc_(base_cc), subgame_cc_(subgame_cc), merged_cc_(merged_cc) {
   asymmetric_ = false;
@@ -103,19 +104,19 @@ Assembler::Assembler(const BettingTree &base_betting_tree, const BettingTree &su
     base_compressed_streets[st] = true;
   }
 
-  CFRValues base_sumprobs(nullptr, base_streets.get(), 0, 0, base_buckets, &base_betting_tree_);
+  CFRValues base_sumprobs(nullptr, base_streets.get(), 0, 0, base_buckets, &base_betting_trees_);
   
   char read_dir[500], write_dir[500];
   sprintf(read_dir, "%s/%s.%i.%s.%i.%i.%i.%s.%s", Files::OldCFRBase(), Game::GameName().c_str(),
 	  Game::NumPlayers(), base_ca.CardAbstractionName().c_str(), Game::NumRanks(),
 	  Game::NumSuits(), Game::MaxStreet(), base_ba_.BettingAbstractionName().c_str(),
 	  base_cc_.CFRConfigName().c_str());
-  base_sumprobs.Read(read_dir, base_it, base_betting_tree_.Root(), "x", -1, true);
+  base_sumprobs.Read(read_dir, base_it, base_betting_trees_.Root(), "x", -1, true);
   sprintf(write_dir, "%s/%s.%i.%s.%i.%i.%i.%s.%s", Files::NewCFRBase(), Game::GameName().c_str(),
 	  Game::NumPlayers(), merged_ca_.CardAbstractionName().c_str(), Game::NumRanks(),
 	  Game::NumSuits(), Game::MaxStreet(), subgame_ba_.BettingAbstractionName().c_str(),
 	  merged_cc_.CFRConfigName().c_str());
-  base_sumprobs.Write(write_dir, subgame_it_, base_betting_tree_.Root(), "x", -1, true);
+  base_sumprobs.Write(write_dir, subgame_it_, base_betting_trees_.Root(), "x", -1, true);
 
   unique_ptr<bool []> subgame_streets(new bool[max_street + 1]);
   for (int st = 0; st <= max_street; ++st) {
@@ -135,7 +136,7 @@ Assembler::Assembler(const BettingTree &base_betting_tree, const BettingTree &su
   }
 
   merged_sumprobs_.reset(new CFRValues(nullptr, subgame_streets.get(), 0, 0, merged_buckets,
-				       &subgame_betting_tree_));
+				       &subgame_betting_trees_));
   for (int st = 0; st <= max_street; ++st) {
     if (subgame_streets[st]) merged_sumprobs_->CreateStreetValues(st, CFR_DOUBLE);
   }
@@ -154,8 +155,8 @@ void Assembler::WalkTrunk(Node *base_node, Node *subgame_node, const string &act
   if (st == solve_street_) {
     int num_boards = BoardTree::NumBoards(st);
     int base_subtree_nt = base_node->NonterminalID();
-    fprintf(stderr, "Base subtree NT: %u\n", base_subtree_nt);
-    unique_ptr<BettingTree> subtree(new BettingTree(subgame_node));
+    fprintf(stderr, "Base subtree NT: %i lbt %i\n", base_subtree_nt, base_node->LastBetTo());
+    unique_ptr<BettingTrees> subtrees(new BettingTrees(subgame_node));
 #if 0
     int max_street = Game::MaxStreet();
     unique_ptr<bool []> subgame_streets(new bool[max_street + 1]);
@@ -171,10 +172,10 @@ void Assembler::WalkTrunk(Node *base_node, Node *subgame_node, const string &act
 #endif
     for (int gbd = 0; gbd < num_boards; ++gbd) {
       unique_ptr<CFRValues> subgame_sumprobs =
-	ReadSubgame(action_sequence, subtree.get(), gbd, base_ca_, subgame_ca_, base_ba_,
+	ReadSubgame(action_sequence, subtrees.get(), gbd, base_ca_, subgame_ca_, base_ba_,
 		    subgame_ba_, base_cc_, subgame_cc_, *subgame_buckets_.get(), method_, st, gbd,
 		    -1);
-      merged_sumprobs_->MergeInto(*subgame_sumprobs.get(), gbd, subgame_node, subtree->Root(),
+      merged_sumprobs_->MergeInto(*subgame_sumprobs.get(), gbd, subgame_node, subtrees->Root(),
 				  *subgame_buckets_, Game::MaxStreet());
     }
     return;
@@ -187,14 +188,14 @@ void Assembler::WalkTrunk(Node *base_node, Node *subgame_node, const string &act
 }
 
 void Assembler::Go(void) {
-  WalkTrunk(base_betting_tree_.Root(), subgame_betting_tree_.Root(), "x",
-	    base_betting_tree_.Root()->Street());
+  WalkTrunk(base_betting_trees_.Root(), subgame_betting_trees_.Root(), "x",
+	    base_betting_trees_.Root()->Street());
   char dir[500];
   sprintf(dir, "%s/%s.%i.%s.%i.%i.%i.%s.%s", Files::NewCFRBase(), Game::GameName().c_str(),
 	  Game::NumPlayers(), merged_ca_.CardAbstractionName().c_str(), Game::NumRanks(),
 	  Game::NumSuits(), Game::MaxStreet(), subgame_ba_.BettingAbstractionName().c_str(),
 	  merged_cc_.CFRConfigName().c_str());
-  merged_sumprobs_->Write(dir, subgame_it_, subgame_betting_tree_.Root(), "x", -1, true);
+  merged_sumprobs_->Write(dir, subgame_it_, subgame_betting_trees_.Root(), "x", -1, true);
 }
 
 static void Usage(const char *prog_name) {
@@ -258,11 +259,11 @@ int main(int argc, char *argv[]) {
   else if (m == "combined")  method = ResolvingMethod::COMBINED;
   else                       Usage(argv[0]);
 
-  BettingTree base_betting_tree(*base_betting_abstraction);
-  BettingTree subgame_betting_tree(*subgame_betting_abstraction);
+  BettingTrees base_betting_trees(*base_betting_abstraction);
+  BettingTrees subgame_betting_trees(*subgame_betting_abstraction);
   BoardTree::Create();
 
-  Assembler assembler(base_betting_tree, subgame_betting_tree, solve_street, base_it, subgame_it,
+  Assembler assembler(base_betting_trees, subgame_betting_trees, solve_street, base_it, subgame_it,
 		      *base_card_abstraction, *subgame_card_abstraction, *merged_card_abstraction,
 		      *base_betting_abstraction, *subgame_betting_abstraction, *base_cfr_config,
 		      *subgame_cfr_config, *merged_cfr_config, method);

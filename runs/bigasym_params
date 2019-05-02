@@ -1,0 +1,12 @@
+BettingAbstractionName bigasym
+Limit false
+StackSize 200
+Asymmetric false
+NoLimitTreeType 1
+MinBet 2
+OurMaxBets 3,3,2,2
+OppMaxBets 3,3,2,2
+OppAlwaysAllIn true
+Asymmetric true
+OurBetSizes 0.5;1.0;1.0|0.5;1.0;1.0|0.5;1.0|0.5;1.0
+OppBetSizes 0.5,1.0,2.0;0.5,1.0,2.0;0.5,1.0,2.0|0.25,0.5,1.0,2.0;0.5,1.0,2.0;0.5,1.0,2.0|0.5;1.0|0.5;1.0

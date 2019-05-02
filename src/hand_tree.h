@@ -20,5 +20,6 @@ private:
 };
 
 int HCPIndex(int st, const Card *cards);
+int HCPIndex(int st, const Card *board, const Card *hole_cards);
 
 #endif

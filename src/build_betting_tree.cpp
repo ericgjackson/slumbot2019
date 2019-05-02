@@ -34,13 +34,21 @@ int main(int argc, char *argv[]) {
 
   BettingTreeBuilder *builder = NULL;
   if (argc == 4) {
-    unsigned int p;
+    if (! ba->Asymmetric()) {
+      fprintf(stderr, "With symmetric betting abstractions, no player argument allowed\n");
+      exit(-1);
+    }
+    int p;
     string p_arg = argv[3];
     if (p_arg == "p0")      p = 0;
     else if (p_arg == "p1") p = 1;
     else                    Usage(argv[0]);
     builder = new BettingTreeBuilder(*ba, p);
   } else {
+    if (ba->Asymmetric()) {
+      fprintf(stderr, "With asymmetric betting abstractions, player argument required\n");
+      exit(-1);
+    }
     builder = new BettingTreeBuilder(*ba);
   }
   builder->Build();

@@ -1,0 +1,76 @@
+We currently have two different ways of doing resolving.  One is to resolve all subgames
+offline with solve_all_subgames.  The other is to resolve subgames on the fly with
+head_to_head.  They both should yield the same results.  Here we do a set of experiments
+to confirm that we are getting the same results.
+
+We used a base system of ms3f1t1r1h5/nxhs3/mb1b1/tcfr trained for 7b iterations.
+
+Base: Exploitability: 189.58 mbb/g
+
+Resolve all rivers with solve_all_subgames in 22s
+Exploitability: 137.45 mbb/g
+Base vs. unsafe resolved (cfrpsmu)
+head_to_head
+  Avg B outcome: 0.037805 (18.9 mbb/g)
+  Avg P1 outcome: 0.590508 (295.3 mbb/g)
+play
+  Avg B outcome: 0.038333 (19.2 mbb/g) over 100000000 dup hands
+  MBB confidence interval: 17.391975-20.940940
+  Avg P1 outcome: 0.593060
+  Avg B outcome: 0.038773 (19.4 mbb/g) over 100000000 dup hands
+  MBB confidence interval: 17.612160-21.161165
+  Avg P1 outcome: 0.589008
+
+Now try head_to_head with resolving happening inside of head_to_head
+head_to_head
+  Avg B outcome: 0.037805 (18.9 mbb/g)
+  Avg P1 outcome: 0.590508 (295.3 mbb/g)
+  150.5 secs spent resolving
+  Avg 0.01 secs per resolve (26190 resolves)
+  Matches exactly.
+
+Conclusion 1: offline and online river subgame resolving are producing identical results.
+No apparent bug in either.
+Conclusion 2: resolving rivers produces a system that beats the base head to head.
+
+Now try turn resolves
+Exploitability: 79.43 mbb/g
+Base vs. unsafe resolved (cfrpsmu)
+head_to_head
+  Avg B outcome: 0.035108 (17.6 mbb/g)
+  Avg P1 outcome: 0.589916 (295.0 mbb/g)
+  Actually slightly worse than river resolves.  Interesting.  Believable?
+Now try head_to_head with turn resolving happening inside of head_to_head
+head_to_head
+  Sampling 1 river board (4s)
+    Avg B outcome: 0.009562 (4.8 mbb/g)
+    Avg P1 outcome: 0.068329 (34.2 mbb/g)
+    4.1 secs spent resolving
+    Avg 0.23 secs per resolve (18 resolves)
+  Sampling 10 river boards (35s)
+    Avg B outcome: 0.035000 (17.5 mbb/g)
+    Avg P1 outcome: 0.553776 (276.9 mbb/g)
+    34.7 secs spent resolving
+    Avg 0.21 secs per resolve (162 resolves)
+  Sampling 100 river boards (5m37s)
+    Avg B outcome: 0.025672 (12.8 mbb/g)
+    Avg P1 outcome: 0.575341 (287.7 mbb/g)
+    336.7 secs spent resolving
+    Avg 0.20 secs per resolve (1656 resolves)
+  Sampling all river boards (28m)
+    Avg B outcome: 0.035108 (17.6 mbb/g)
+    Avg P1 outcome: 0.589916 (295.0 mbb/g)
+    1700.1 secs spent resolving
+    Avg 0.19 secs per resolve (8730 resolves)
+    Matches exactly.
+
+Conclusion 1: offline and online turn subgame resolving are producing identical results.
+No apparent bug in either.
+Conclusion 2: resolving turns produces a system that beats the base head to head, but does so
+by a smaller margin than the river-resolved system did.
+
+Compare turn-resolved system to river-resolved system.
+head_to_head
+  Avg B outcome: 0.005232 (2.6 mbb/g)
+  Avg P1 outcome: 0.590356 (295.2 mbb/g)
+  The turn-resolved system beats the river-resolved system by a bit.

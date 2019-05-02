@@ -7,7 +7,6 @@
 
 #include "betting_abstraction.h"
 #include "betting_abstraction_params.h"
-#include "betting_tree.h"
 #include "buckets.h"
 #include "card_abstraction.h"
 #include "card_abstraction_params.h"
@@ -49,63 +48,61 @@ int main(int argc, char *argv[]) {
   unique_ptr<Params> cfr_params = CreateCFRParams();
   cfr_params->ReadFromFile(argv[4]);
   unique_ptr<CFRConfig> cfr_config(new CFRConfig(*cfr_params));
-  unsigned int num_threads, it;
-  if (sscanf(argv[5], "%u", &num_threads) != 1) Usage(argv[0]);
-  if (sscanf(argv[6], "%u", &it) != 1)          Usage(argv[0]);
+  int num_threads, it;
+  if (sscanf(argv[5], "%i", &num_threads) != 1) Usage(argv[0]);
+  if (sscanf(argv[6], "%i", &it) != 1)          Usage(argv[0]);
   string carg = argv[7];
   bool current;
   if (carg == "current")  current = true;
   else if (carg == "avg") current = false;
   else                    Usage(argv[0]);
-  unsigned int max_street = Game::MaxStreet();
+  int max_street = Game::MaxStreet();
   unique_ptr<bool []> streets(new bool[max_street + 1]);
   if (argc == 9) {
-    for (unsigned int st = 0; st <= max_street; ++st) {
-      streets[st] = false;
-    }
+    for (int st = 0; st <= max_street; ++st) streets[st] = false;
     vector<string> comps;
     Split(argv[8], ',', false, &comps);
-    unsigned int num = comps.size();
-    for (unsigned int i = 0; i < num; ++i) {
-      unsigned int st;
-      if (sscanf(comps[i].c_str(), "%u", &st) != 1) Usage(argv[0]);
+    int num = comps.size();
+    for (int i = 0; i < num; ++i) {
+      int st;
+      if (sscanf(comps[i].c_str(), "%i", &st) != 1) Usage(argv[0]);
       if (st > max_street) Usage(argv[0]);
       streets[st] = true;
     }
   } else {
-    for (unsigned int st = 0; st <= max_street; ++st) {
+    for (int st = 0; st <= max_street; ++st) {
       streets[st] = true;
     }
   }
   Buckets buckets(*card_abstraction, false);
 
-  unique_ptr<BettingTree> betting_tree;
-  unsigned int num_players = Game::NumPlayers();
+  int num_players = Game::NumPlayers();
   unique_ptr<double []> evs(new double[num_players]);
-  for(unsigned int p = 0; p < num_players; ++p) evs[p] = 0;
+  for (int p = 0; p < num_players; ++p) evs[p] = 0;
 
   if (betting_abstraction->Asymmetric()) {
     if (num_players > 2) {
       fprintf(stderr, "How to handle more than two players?!?\n");
       exit(-1);
     }
-    for (unsigned int target_p = 0; target_p < num_players; ++target_p) {
-      betting_tree.reset(new BettingTree(*betting_abstraction, target_p));
-      RGBR rgbr(*card_abstraction, *betting_abstraction, *cfr_config, buckets,
-		betting_tree.get(), current, num_threads, streets.get());
-      evs[target_p^1] = rgbr.Go(it, target_p^1);
+    for (int target_p = 0; target_p < num_players; ++target_p) {
+      // betting_tree.reset(new BettingTree(*betting_abstraction, target_p));
+      RGBR rgbr(*card_abstraction, *betting_abstraction, *cfr_config, buckets, current, num_threads,
+		streets.get(), target_p);
+      int responder_p = target_p^1;
+      evs[responder_p] = rgbr.Go(it, responder_p);
     }
   } else {
-    betting_tree.reset(new BettingTree(*betting_abstraction));
-    RGBR rgbr(*card_abstraction, *betting_abstraction, *cfr_config, buckets,
-	      betting_tree.get(), current, num_threads, streets.get());
-    for (unsigned int p = 0; p < num_players; ++p) {
+    // betting_tree.reset(new BettingTree(*betting_abstraction));
+    RGBR rgbr(*card_abstraction, *betting_abstraction, *cfr_config, buckets, current, num_threads,
+	      streets.get(), -1);
+    for (int p = 0; p < num_players; ++p) {
       evs[p] = rgbr.Go(it, p);
     }
   }
 
   double gap = 0;
-  for (unsigned int p = 0; p < num_players; ++p) {
+  for (int p = 0; p < num_players; ++p) {
     // Divide by two to convert chips into big blinds (assumption is that the
     // small blind is one chip).  Multiply by 1000 to convert big blinds into
     // milli-big-blinds.

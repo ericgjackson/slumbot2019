@@ -4,7 +4,7 @@
 #include <memory>
 #include <string>
 
-#include "betting_tree.h"
+#include "betting_trees.h"
 #include "cfr_values.h"
 #include "game.h"
 #include "hand_tree.h"
@@ -23,11 +23,11 @@ UnsafeEGCFR::UnsafeEGCFR(const CardAbstraction &ca, const CardAbstraction &base_
 	num_threads) {
 }
 
-void UnsafeEGCFR::SolveSubgame(BettingTree *subtree, int solve_bd,
+void UnsafeEGCFR::SolveSubgame(BettingTrees *subtrees, int solve_bd,
 			       shared_ptr<double []> *reach_probs, const string &action_sequence,
 			       const HandTree *hand_tree, double *opp_cvs, int target_p,
 			       bool both_players, int num_its) {
-  int subtree_st = subtree->Root()->Street();
+  int subtree_st = subtrees->Root()->Street();
   int num_players = Game::NumPlayers();
   int max_street = Game::MaxStreet();
   
@@ -36,14 +36,14 @@ void UnsafeEGCFR::SolveSubgame(BettingTree *subtree, int solve_bd,
     subtree_streets[st] = st >= subtree_st;
   }
   regrets_.reset(new CFRValues(nullptr, subtree_streets.get(), solve_bd, subtree_st, buckets_,
-			       subtree));
-  regrets_->AllocateAndClearDoubles(subtree->Root(), -1);
+			       subtrees->GetBettingTree()));
+  regrets_->AllocateAndClear(subtrees->GetBettingTree(), CFR_DOUBLE, -1);
 
   // Should honor sumprobs_streets_
 
   sumprobs_.reset(new CFRValues(nullptr, subtree_streets.get(), solve_bd, subtree_st, buckets_,
-				subtree));
-  sumprobs_->AllocateAndClearDoubles(subtree->Root(), -1);
+				subtrees->GetBettingTree()));
+  sumprobs_->AllocateAndClear(subtrees->GetBettingTree(), CFR_DOUBLE, -1);
 
   unique_ptr< unique_ptr<VCFRState> [] > initial_states(new unique_ptr<VCFRState> [num_players]);
   for (int p = 0; p < num_players; ++p) {
@@ -54,8 +54,7 @@ void UnsafeEGCFR::SolveSubgame(BettingTree *subtree, int solve_bd,
   for (it_ = 1; it_ <= num_its; ++it_) {
     // Go from high to low to mimic slumbot2017 code
     for (int p = (int)num_players - 1; p >= 0; --p) {
-      HalfIteration(subtree, *initial_states[p]);
+      HalfIteration(subtrees, *initial_states[p]);
     }
   }
 }
-

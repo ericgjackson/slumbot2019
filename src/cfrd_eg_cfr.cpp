@@ -4,7 +4,7 @@
 #include <memory>
 #include <string>
 
-#include "betting_tree.h"
+#include "betting_trees.h"
 #include "canonical_cards.h"
 #include "cfr_values.h"
 #include "cfrd_eg_cfr.h"
@@ -44,11 +44,11 @@ static void RegretsToProbs(double *regrets, int num_succs, int dsi, double *prob
   }
 }
 
-void CFRDEGCFR::HalfIteration(BettingTree *subtree, int target_p, VCFRState *state,
+void CFRDEGCFR::HalfIteration(BettingTrees *subtrees, int target_p, VCFRState *state,
 			      double *opp_cvs) {
   int p = state->P();
   const HandTree *hand_tree = state->GetHandTree();
-  int subtree_st = subtree->Root()->Street();
+  int subtree_st = subtrees->Root()->Street();
   int num_hole_card_pairs = Game::NumHoleCardPairs(subtree_st);
   int num_hole_cards = Game::NumCardsForStreet(0);
   int max_card1 = Game::MaxCard() + 1;
@@ -74,11 +74,11 @@ void CFRDEGCFR::HalfIteration(BettingTree *subtree, int target_p, VCFRState *sta
   }
   if (p == target_p) {
     state->SetOppProbs(villain_probs);
-    EGCFR::HalfIteration(subtree, *state);
+    EGCFR::HalfIteration(subtrees, *state);
   } else {
     // Opponent phase.  The target player plays his fixed range to the subgame.  The target
     // player's fixed range is embedded in the opp_probs in state.
-    shared_ptr<double []> vals = EGCFR::HalfIteration(subtree, *state);
+    shared_ptr<double []> vals = EGCFR::HalfIteration(subtrees, *state);
     for (int i = 0; i < num_hole_card_pairs; ++i) {
       double *regrets = cfrd_regrets_.get() + i * 2;
       const Card *cards = hands->Cards(i);
@@ -103,11 +103,11 @@ void CFRDEGCFR::HalfIteration(BettingTree *subtree, int target_p, VCFRState *sta
   }
 }
 
-void CFRDEGCFR::SolveSubgame(BettingTree *subtree, int solve_bd, shared_ptr<double []> *reach_probs,
-			     const string &action_sequence, const HandTree *hand_tree,
-			     double *opp_cvs, int target_p, bool both_players, int num_its) {
-
-  int subtree_st = subtree->Root()->Street();
+void CFRDEGCFR::SolveSubgame(BettingTrees *subtrees, int solve_bd,
+			     shared_ptr<double []> *reach_probs, const string &action_sequence,
+			     const HandTree *hand_tree, double *opp_cvs, int target_p,
+			     bool both_players, int num_its) {
+  int subtree_st = subtrees->Root()->Street();
   int num_players = Game::NumPlayers();
   int max_street = Game::MaxStreet();
   
@@ -116,8 +116,8 @@ void CFRDEGCFR::SolveSubgame(BettingTree *subtree, int solve_bd, shared_ptr<doub
     subtree_streets[st] = st >= subtree_st;
   }
   regrets_.reset(new CFRValues(nullptr, subtree_streets.get(), solve_bd, subtree_st, buckets_,
-			       subtree));
-  regrets_->AllocateAndClearDoubles(subtree->Root(), -1);
+			       subtrees->GetBettingTree()));
+  regrets_->AllocateAndClear(subtrees->GetBettingTree(), CFR_DOUBLE, -1);
 
   // Should honor sumprobs_streets_
 
@@ -126,8 +126,8 @@ void CFRDEGCFR::SolveSubgame(BettingTree *subtree, int solve_bd, shared_ptr<doub
     players[p] = p == target_p;
   }
   sumprobs_.reset(new CFRValues(players.get(), subtree_streets.get(), solve_bd, subtree_st,
-				buckets_, subtree));
-  sumprobs_->AllocateAndClearDoubles(subtree->Root(), -1);
+				buckets_, subtrees->GetBettingTree()));
+  sumprobs_->AllocateAndClear(subtrees->GetBettingTree(), CFR_DOUBLE, -1);
   
   int num_hole_card_pairs = Game::NumHoleCardPairs(subtree_st);
   cfrd_regrets_.reset(new double[num_hole_card_pairs * 2]);
@@ -145,7 +145,7 @@ void CFRDEGCFR::SolveSubgame(BettingTree *subtree, int solve_bd, shared_ptr<doub
   for (it_ = 1; it_ <= num_its; ++it_) {
     // Go from high to low to mimic slumbot2017 code
     for (int p = (int)num_players - 1; p >= 0; --p) {
-      HalfIteration(subtree, target_p, initial_states[p], opp_cvs);
+      HalfIteration(subtrees, target_p, initial_states[p], opp_cvs);
     }
   }
 

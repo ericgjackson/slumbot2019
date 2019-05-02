@@ -1,0 +1,21 @@
+I've run into lots of problems with head_to_head.  Indicates current code is too error prone.
+How can I rectify?
+
+Have set num hole card pairs incorrectly.
+Have used wrong board index (global or local)
+The different sorting of hole card pairs on the river has caused problems.
+
+What if we always sort hands by strength?  Come up with a hand strength measure for six
+cards.  When indexing buckets, also use this ordering of hands.  Will always need a
+CanonicalCards object.
+
+TCFR needs fast lookup of buckets.
+
+Buckets class could take a boolean depending on whether you wanted to use the sorted hand
+indexing or the unsorted hand indexing.  That's still somewhat error prone.
+
+Buckets class could take cards as an argument.
+
+I also have two ways to calculate offset for RMProbs().  Messy and error prone, no?
+
+Error prone that we have to get right hands from street_hands_ in head_to_head.

@@ -1,0 +1,10 @@
+BettingAbstractionName big2sym
+Limit false
+StackSize 200
+Asymmetric false
+NoLimitTreeType 1
+MinBet 2
+MaxBets 5,5,2,2
+AlwaysAllIn true
+Asymmetric false
+BetSizes 0.5,1.0,2.0;0.5,1.0,2.0;0.5,1.0,2.0;1.0;999.0|0.25,0.5,1.0,2.0;0.5,1.0,2.0;0.5,1.0,2.0;1.0;999.0|0.5;1.0|0.5;1.0

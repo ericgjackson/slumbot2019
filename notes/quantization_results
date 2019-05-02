@@ -1,0 +1,37 @@
+ms3f1t1r1h5
+nxhs3
+mb1b1
+
+Short quantize turn
+Char quantize river
+tcfrqsc_params
+1b in 25m
+1b: Exploitability: 199.41 mbb/g
+1b-2b in 26m
+2b: Exploitability: 191.94 mbb/g
+2b-7b in 131m
+7b: Exploitability: 186.51 mbb/g
+Compare tcfr_params system: Exploitability: 189.58 mbb/g
+(See ms3f1t1r1h5_results)
+
+tcfr/7b vs. tcfrqsc/7b
+head_to_head: Avg B outcome: -0.019629 (-9.8 mbb/g)
+
+Resolve all turn subgames with cfrps/200, 7b base
+Exploitability: 83.27 mbb/g
+Compare exploitability 79.43 mbb/g with tcfr_params base
+Very small difference
+Head to head of two turn-resolve systems - tcfr_params base vs tcfrqsc_params base
+Avg B outcome: -0.000009 (-0.0 mbb/g)
+Avg P1 outcome: 0.591715 (295.9 mbb/g)
+Essentially no difference
+
+------------------------------------------------------------------
+
+Short quantize turn
+Char quantize river
+tcfrqssc_params
+7b in 180m: Exploitability: 187.27 mbb/g
+tcfr/7b vs. tcfrqssc/7b
+Avg B outcome: -0.019631 (-9.8 mbb/g)
+Avg P1 outcome: 0.598681 (299.3 mbb/g)

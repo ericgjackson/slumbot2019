@@ -10,3 +10,5 @@ Still holds when comparing head-to-head to a system solved to a low exploitabili
 abstraction.
 
 Boosting doesn't seem to improve resolved results (heads-up).
+
+Char quantizing river, short quantizing turn, short quantizing flop seems to work.

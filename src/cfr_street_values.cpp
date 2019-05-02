@@ -72,6 +72,8 @@ CFRStreetValues<T>::CFRStreetValues(int st, const bool *players, int num_holding
 
 template <typename T>
 CFRStreetValues<T>::~CFRStreetValues(void) {
+  // This can happen for values for an all-in subtree.
+  if (data_ == nullptr) return;
   int num_players = Game::NumPlayers();
   for (int p = 0; p < num_players; ++p) {
     int num_nt = num_nonterminals_[p];
@@ -109,44 +111,44 @@ CFRValueType CFRStreetValues<double>::MyType(void) const {
 }
 
 template <typename T>
-void CFRStreetValues<T>::AllocateAndClear2(Node *node) {
+void CFRStreetValues<T>::AllocateAndClear2(Node *node, int p) {
   if (node->Terminal()) return;
   int st = node->Street();
   if (st > st_) return;
   int num_succs = node->NumSuccs();
   if (st == st_) {
     int pa = node->PlayerActing();
-    if (players_[pa]) {
+    if (pa == p) {
       int nt = node->NonterminalID();
       // Check for reentrant nodes
-      if (data_[pa][nt] == nullptr)  {
+      if (data_[p][nt] == nullptr)  {
 	int num_actions = num_holdings_ * num_succs;
-	data_[pa][nt] = new T[num_actions];
+	data_[p][nt] = new T[num_actions];
 	for (int a = 0; a < num_actions; ++a) {
-	  data_[pa][nt][a] = 0;
+	  data_[p][nt][a] = 0;
 	}
       }
     }
   }
   for (int s = 0; s < num_succs; ++s) {
-    AllocateAndClear2(node->IthSucc(s));
+    AllocateAndClear2(node->IthSucc(s), p);
   }
 }
 
 template <typename T>
-void CFRStreetValues<T>::AllocateAndClear(Node *node) {
-  int num_players = Game::NumPlayers();
-  data_ = new T **[num_players];
-  for (int p = 0; p < num_players; ++p) {
-    if (players_[p]) {
-      int num_nt = num_nonterminals_[p];
-      data_[p] = new T *[num_nt];
-      for (int i = 0; i < num_nt; ++i) data_[p][i] = nullptr;
-    } else {
-      data_[p] = nullptr;
-    }
+void CFRStreetValues<T>::AllocateAndClear(Node *node, int p) {
+  if (! players_[p]) return;
+  if (data_ == nullptr) {
+    int num_players = Game::NumPlayers();
+    data_ = new T **[num_players];
+    for (int p = 0; p < num_players; ++p) data_[p] = nullptr;
   }
-  AllocateAndClear2(node);
+  if (data_[p] == nullptr) {
+    int num_nt = num_nonterminals_[p];
+    data_[p] = new T *[num_nt];
+    for (int i = 0; i < num_nt; ++i) data_[p][i] = nullptr;
+  }
+  AllocateAndClear2(node, p);
 }
 
 // Compute probs from the current hand values using regret matching.  Normally the values we do this
@@ -154,6 +156,8 @@ void CFRStreetValues<T>::AllocateAndClear(Node *node) {
 // May eventually want to take parameters for nonneg, explore, uniform, nonterminal succs,
 // num nonterminal succs.
 // Note: doesn't handle nodes with one succ
+// Since this is invoked in an inner loop, might be nice to pull the array lookups out
+// (data_[p][nt][offset]).
 template <typename T>
 void CFRStreetValues<T>::RMProbs(int p, int nt, int offset, int num_succs, int dsi,
 				 double *probs) const {

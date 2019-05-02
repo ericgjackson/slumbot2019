@@ -8,6 +8,7 @@
 
 class BettingAbstraction;
 class BettingTree;
+class BettingTrees;
 class Buckets;
 class CardAbstraction;
 class CFRConfig;
@@ -15,13 +16,13 @@ class CFRValues;
 class HandTree;
 class Node;
 
-BettingTree *CreateSubtree(int st, int player_acting, int last_bet_to, int target_p,
-			   const BettingAbstraction &betting_abstraction);
+BettingTrees *CreateSubtrees(int st, int player_acting, int last_bet_to, int target_p,
+			     const BettingAbstraction &betting_abstraction);
 std::unique_ptr<CFRValues>
 ReadBaseSubgameStrategy(const CardAbstraction &base_card_abstraction,
 			const BettingAbstraction &base_betting_abstraction,
 			const CFRConfig &base_cfr_config,
-			const BettingTree *base_betting_tree,
+			const BettingTrees *base_betting_trees,
 			const Buckets &base_buckets, const Buckets &subgame_buckets,
 			int base_it, Node *base_node, int gbd,
 			const std::string &action_sequence, double **reach_probs,
@@ -36,7 +37,7 @@ void WriteSubgame(Node *node, const std::string &action_sequence,
 		  ResolvingMethod method, const CFRValues *sumprobs, int root_bd_st, int root_bd,
 		  int target_p, int cfr_target_p, int last_st);
 std::unique_ptr<CFRValues>
-ReadSubgame(const std::string &action_sequence, BettingTree *subtree, int gbd,
+ReadSubgame(const std::string &action_sequence, BettingTrees *subtrees, int gbd,
 	    const CardAbstraction &base_card_abstraction,
 	    const CardAbstraction &subgame_card_abstraction,
 	    const BettingAbstraction &base_betting_abstraction,

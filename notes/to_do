@@ -1,24 +1,74 @@
-Is head_to_head with resolving surprisingly slow?  Seems like 2.2s per board for
-holdem/mb1b1.  How much of that is resolving?
+Build a new heads-up system:
+1) Will use base for preflop and flop; resolve turn and river
+2) Therefore null abstraction preflop and flop
+3) Therefore rich betting abstraction preflop and flop w/ one bet and raise turn and river
+4) Asymmetric betting abstraction with only one bet size for us
+5) Boosting?
+6) Reentrant on turn and river?
+7) Quantize on turn and river, at least.
+8) Don't save sumprobs for turn or river
 
-Are we smart enough to not resolve if we are already all-in?
+head_to_head now giving results for asymmetric, but I'm not sure if I believe them or not.
+Really big win for symmetric mb1b2 against asymmetric asyma.  OTOH, much smaller win
+for symmetric mb1b1aai against asymb.  Which I expect because all-ins should be less
+useful.
 
-Use play_resolved to assess benefits of resolving on large games.  Can use solve_all_subgames
-for small games.  See how much sampling we can get away with.
+Could try asymmetric system that doesn't give extra options to the opponent?  That's what
+testasym did.  That still doesn't prove things are fully working.  There could be a problem
+aligning succs, for example.  The test with mb1b1aai and asymb was better and gave a much
+smaller advantage to the symmetric player.  Is that conclusive?  Might be nice to have
+a made up bet size that is in the middle of valid bet sizes but which always leads to a
+terrible outcome for the bettor.  In that case the symmetric and asymmetric players should
+perform identically.
 
-Support different resolving methods in play_resolved.
+Should we even save opponent sumprobs in asymmetric system?
+
+Evaluate char quantization for flop, turn and river.
+
+Evaluate boosting on game with many betting sequences (mb2b2aai).
+
+Do I want to just use symmetric training so that I don't need to worry about what bet sizes
+are most important?
+
+Incorporate combined endgame solving into head_to_head; see how well it works.
+
+Experiment with combination of:
+1) TCFR
+2) holdem
+3) kmeans abstraction; null for preflop/flop, 1000 buckets for turn/river
+4) Quantize turn and river
+5) Asymmetric betting abstraction (asymc)
+6) Should I turn off saving of sumprobs for turn/river?  Try that later.
+
+Try CFR+ with a hard warmup.
+
+Can we resolve flops offline like Lars?  Solving flop subgame (mb1b1) taking 7m10s.
+6 resolves is 44m, but we will want to use a richer preflop abstraction than mb1b1.
+Call it 1 hour.  1755 flops is 1755 thread-hours.  With 8 threads, 220 hours.  About 9
+days.  Doable.  On Amazon would be faster.  But if we want a richer preflop or flop betting
+abstraction, that's going to make a big difference.
+
+Could make head_to_head twice as fast with unsafe endgame solving.  Solving each subgame twice
+now and we don't need to.
+
+head_to_head may repeatedly solve flop or turn subgames.  Should figure out the minimal set
+we need to resolve.  Also: if we're going to solve a flop subgame, should we just go ahead
+and evaluate every river board consistent with that flop?
 
 Measure speed of turn resolving.  One bet size and one raise size for turn and river.
-Add multithreading?
+Add multithreading?  VCFR already supports spinning off threads.  Need to allow control of
+what street to split on.
 
 Switch to mb2b2ai as testbed.  May need more actions for tcfr to outperform ecfr.  May need
 more actions for boosting to help resolving.  May need more actions for combined resolved systems
 to outperform unsafe resolved systems.
 
-Build a card abstraction that is bigger than nhs and smaller than nxhs3.  Maybe should use
-abstraction on the turn.
+Create resolve params, use for things like head_to_head and solve_all_subgames.  Should help
+reduce length of command lines.
 
 Experiment with MCTS as a tool for approximate best-response calculations.
+
+Support progressive endgame resolving.  Including resolves rooted at street initial nodes.
 
 Experiment with multiplayer and reentrancy.  Evaluate with head-to-head?  Can we use h5;
 i.e., a 20 card deck?  6 hole cards, 5 board cards, 9 unused cards.  I guess so.
@@ -72,3 +122,5 @@ Is there a discrepancy with suited vs. unsuited hands in TCFR?  Can get very dif
 Multithread play and/or play_resolved
 
 Can we get rid of two ways of hole card pair indexing?
+
+Understand why we lost so badly to ackr.  Preflop purification?

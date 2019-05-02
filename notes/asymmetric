@@ -1,0 +1,12 @@
+Want to give the target player the most important bet sizes.
+
+One way to decide is to build an asymmetric system and a symmetric system and see
+if the symmetric system beats the asymmetric system by a lot or a little.
+
+Another way is to look at the P0/P1 values during training of a symmetric system
+and the P0/P1 values during training of the asymmetric system of interest.  They
+shouldn't be too different.
+
+Or even just look at the P0/P1 values during the training of the asymmetric system.
+What P1 can get when P1 is the target player should be as close as possible to what
+P1 can get when P0 is the target player.

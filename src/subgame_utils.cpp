@@ -15,6 +15,7 @@
 
 #include "betting_abstraction.h"
 #include "betting_tree.h"
+#include "betting_trees.h"
 #include "betting_tree_builder.h"
 #include "board_tree.h"
 #include "buckets.h"
@@ -35,9 +36,10 @@ using std::unique_ptr;
 
 // Create a subtree for resolving rooted at the node (from a base tree) passed in.
 // Assumes the subtree is rooted at a street-initial node.
+// Doesn't support asymmetric yet
 // Doesn't support multiplayer yet (?)
-BettingTree *CreateSubtree(int st, int player_acting, int last_bet_to, int target_p,
-			   const BettingAbstraction &betting_abstraction) {
+BettingTrees *CreateSubtrees(int st, int player_acting, int last_bet_to, int target_p,
+			     const BettingAbstraction &betting_abstraction) {
   // Assume subtree rooted at street-initial node
   int last_bet_size = 0;
   int num_street_bets = 0;
@@ -49,7 +51,7 @@ BettingTree *CreateSubtree(int st, int player_acting, int last_bet_to, int targe
 					      player_acting, target_p, &num_terminals);
   // Delete the nodes under subtree_root?  Or does garbage collection
   // automatically take care of it because they are shared pointers.
-  return new BettingTree(subtree_root.get());
+  return new BettingTrees(subtree_root.get());
 }
 
 // I always load probabilities for both players because I need the reach
@@ -61,7 +63,7 @@ BettingTree *CreateSubtree(int st, int player_acting, int last_bet_to, int targe
 unique_ptr<CFRValues> ReadBaseSubgameStrategy(const CardAbstraction &base_card_abstraction,
 					      const BettingAbstraction &base_betting_abstraction,
 					      const CFRConfig &base_cfr_config,
-					      const BettingTree *base_betting_tree,
+					      const BettingTrees *base_betting_trees,
 					      const Buckets &base_buckets,
 					      const Buckets &subgame_buckets, int base_it,
 					      Node *base_node, int gbd,
@@ -76,7 +78,7 @@ unique_ptr<CFRValues> ReadBaseSubgameStrategy(const CardAbstraction &base_card_a
   }
   unique_ptr<CFRValues> strategy(new CFRValues(nullptr, subgame_streets.get(),
 					       gbd, base_node->Street(), base_buckets,
-					       base_betting_tree));
+					       base_betting_trees->GetBettingTree()));
 
   char dir[500];
   sprintf(dir, "%s/%s.%u.%s.%i.%i.%i.%s.%s", Files::OldCFRBase(),
@@ -105,7 +107,7 @@ unique_ptr<CFRValues> ReadBaseSubgameStrategy(const CardAbstraction &base_card_a
   fprintf(stderr, "Need to implement ReadSubtreeFromFull()\n");
   exit(-1);
 #if 0
-  strategy->ReadSubtreeFromFull(dir, base_it, base_betting_tree->Root(),
+  strategy->ReadSubtreeFromFull(dir, base_it, base_betting_trees->Root(),
 				base_node, subtree->Root(), action_sequence,
 				num_full_holdings.get(), -1);
 #endif
@@ -200,7 +202,9 @@ static void ReadSubgame(Node *node, const string &action_sequence, int gbd,
 			const CFRConfig &base_cfr_config, const CFRConfig &subgame_cfr_config,
 			ResolvingMethod method,	CFRValues *sumprobs, int root_bd_st, int root_bd,
 			int asym_p, int target_pa, int last_st) {
-  if (node->Terminal()) return;
+  if (node->Terminal()) {
+    return;
+  }
   int st = node->Street();
   if (st > last_st) {
     int ngbd_begin = BoardTree::SuccBoardBegin(last_st, gbd, st);
@@ -273,7 +277,7 @@ static void ReadSubgame(Node *node, const string &action_sequence, int gbd,
 // probabilities for both players in case we are performing nested subgame
 // solving.  In addition, as long as we are zero-summing the T-values, we
 // need the strategy for both players for the CBR computation.
-unique_ptr<CFRValues> ReadSubgame(const string &action_sequence, BettingTree *subtree, int gbd,
+unique_ptr<CFRValues> ReadSubgame(const string &action_sequence, BettingTrees *subtrees, int gbd,
 				  const CardAbstraction &base_card_abstraction,
 				  const CardAbstraction &subgame_card_abstraction,
 				  const BettingAbstraction &base_betting_abstraction,
@@ -285,25 +289,26 @@ unique_ptr<CFRValues> ReadSubgame(const string &action_sequence, BettingTree *su
   int max_street = Game::MaxStreet();
   unique_ptr<bool []> subgame_streets(new bool[max_street + 1]);
   for (int st = 0; st <= max_street; ++st) {
-    subgame_streets[st] = st >= subtree->Root()->Street();
+    // Assume symmetric?
+    subgame_streets[st] = st >= subtrees->Root()->Street();
   }
 
   // Buckets needed for num buckets and for knowing what streets are
   // bucketed.
   unique_ptr<CFRValues> sumprobs(new CFRValues(nullptr, subgame_streets.get(), gbd,
-					       subtree->Root()->Street(), subgame_buckets,
-					       subtree));
+					       subtrees->Root()->Street(), subgame_buckets,
+					       subtrees->GetBettingTree()));
   // Assume doubles
   for (int st = 0; st <= max_street; ++st) {
     if (subgame_streets[st]) sumprobs->CreateStreetValues(st, CFR_DOUBLE);
   }
 
   for (int target_pa = 0; target_pa <= 1; ++target_pa) {
-    ReadSubgame(subtree->Root(), action_sequence, gbd, base_card_abstraction,
+    ReadSubgame(subtrees->Root(), action_sequence, gbd, base_card_abstraction,
 		subgame_card_abstraction, base_betting_abstraction,
 		subgame_betting_abstraction, base_cfr_config,
 		subgame_cfr_config, method, sumprobs.get(), root_bd_st, root_bd,
-		asym_p, target_pa, subtree->Root()->Street());
+		asym_p, target_pa, subtrees->Root()->Street());
   }
   
   return sumprobs;

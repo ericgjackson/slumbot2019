@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/time.h> // gettimeofday()
 
 #include <memory>
 #include <string>
@@ -28,6 +29,7 @@
 #include "betting_abstraction.h"
 #include "betting_abstraction_params.h"
 #include "betting_tree.h"
+#include "betting_trees.h"
 #include "board_tree.h"
 #include "buckets.h"
 #include "canonical_cards.h"
@@ -68,8 +70,8 @@ private:
   int num_players_;
   bool a_asymmetric_;
   bool b_asymmetric_;
-  BettingTree **a_betting_trees_;
-  BettingTree **b_betting_trees_;
+  unique_ptr<BettingTrees> a_betting_trees_;
+  unique_ptr<BettingTrees> b_betting_trees_;
   const Buckets *a_buckets_;
   const Buckets *b_buckets_;
   unique_ptr<CFRValues> a_probs_;
@@ -303,8 +305,8 @@ void Player::PlayDuplicateHand(unsigned long long int h, const Card *cards, doub
     }
     unique_ptr<Node * []> nodes(new Node *[num_players_]);
     for (int p = 0; p < num_players_; ++p) {
-      if (p == b_pos) nodes[p] = b_betting_trees_[p]->Root();
-      else            nodes[p] = a_betting_trees_[p]->Root();
+      if (p == b_pos) nodes[p] = b_betting_trees_->Root(p);
+      else            nodes[p] = a_betting_trees_->Root(p);
     }
     Play(nodes.get(), b_pos, contributions.get(), Game::BigBlind(), folded.get(), num_players_,
 	 1000, -1, outcomes.get());
@@ -377,9 +379,9 @@ void Player::Go(unsigned long long int num_duplicate_hands) {
   for (int p = 0; p < num_players_; ++p) {
     hole_cards[p] = new Card[2];
   }
-  for (int p = 0; p < num_players_; ++p) {
-    srand48_r(p, &rand_buf_);
-  }
+  struct timeval time; 
+  gettimeofday(&time, NULL);
+  srand48_r((time.tv_sec * 1000) + (time.tv_usec / 1000), &rand_buf_);
   for (unsigned long long int h = 0; h < num_duplicate_hands; ++h) {
     // Assume 2 hole cards
     DealNCards(cards, num_board_cards + 2 * num_players_);
@@ -480,36 +482,12 @@ Player::Player(const BettingAbstraction &a_ba, const BettingAbstraction &b_ba,
 
   a_asymmetric_ = a_ba.Asymmetric();
   b_asymmetric_ = b_ba.Asymmetric();
-  a_betting_trees_ = new BettingTree *[num_players_];
-  b_betting_trees_ = new BettingTree *[num_players_];
-  if (a_asymmetric_) {
-    fprintf(stderr, "Asymmetric not supported yet\n");
-    exit(-1);
-    for (int asym_p = 0; asym_p < num_players_; ++asym_p) {
-      a_betting_trees_[asym_p] = new BettingTree(a_ba, asym_p);
-    }
-  } else {
-    a_betting_trees_[0] = new BettingTree(a_ba);
-    for (int asym_p = 1; asym_p < num_players_; ++asym_p) {
-      a_betting_trees_[asym_p] = a_betting_trees_[0];
-    }
-  }
-  if (b_asymmetric_) {
-    fprintf(stderr, "Asymmetric not supported yet\n");
-    exit(-1);
-    for (int asym_p = 0; asym_p < num_players_; ++asym_p) {
-      b_betting_trees_[asym_p] = new BettingTree(b_ba, asym_p);
-    }
-  } else {
-    b_betting_trees_[0] = new BettingTree(b_ba);
-    for (int asym_p = 1; asym_p < num_players_; ++asym_p) {
-      b_betting_trees_[asym_p] = b_betting_trees_[0];
-    }
-  }
+  a_betting_trees_.reset(new BettingTrees(a_ba));
+  b_betting_trees_.reset(new BettingTrees(b_ba));
 
   // Note assumption that we can use the betting tree for position 0
-  a_probs_.reset(new CFRValues(nullptr, nullptr, 0, 0, *a_buckets_, a_betting_trees_[0]));
-  b_probs_.reset(new CFRValues(nullptr, nullptr, 0, 0, *b_buckets_, b_betting_trees_[0]));
+  a_probs_.reset(new CFRValues(nullptr, nullptr, 0, 0, *a_buckets_, a_betting_trees_.get()));
+  b_probs_.reset(new CFRValues(nullptr, nullptr, 0, 0, *b_buckets_, b_betting_trees_.get()));
 
   char dir[500];
   
@@ -520,14 +498,14 @@ Player::Player(const BettingAbstraction &a_ba, const BettingAbstraction &b_ba,
 	  a_ba.BettingAbstractionName().c_str(),
 	  a_cc.CFRConfigName().c_str());
   // Note assumption that we can use the betting tree for position 0
-  a_probs_->Read(dir, a_it, a_betting_trees_[0]->Root(), "x", -1, true);
+  a_probs_->Read(dir, a_it, a_betting_trees_->Root(), "x", -1, true);
 
   sprintf(dir, "%s/%s.%u.%s.%u.%u.%u.%s.%s", Files::OldCFRBase(), Game::GameName().c_str(),
 	  Game::NumPlayers(), b_ca.CardAbstractionName().c_str(), Game::NumRanks(),
 	  Game::NumSuits(), Game::MaxStreet(), b_ba.BettingAbstractionName().c_str(),
 	  b_cc.CFRConfigName().c_str());
   // Note assumption that we can use the betting tree for position 0
-  b_probs_->Read(dir, b_it, b_betting_trees_[0]->Root(), "x", -1, true);
+  b_probs_->Read(dir, b_it, b_betting_trees_->Root(), "x", -1, true);
 
 #if 0
   // If we want to go back to supporting asymmetric systems, may need to have a separate
@@ -605,22 +583,6 @@ Player::~Player(void) {
   delete [] raw_hcps_;
   if (b_buckets_ != a_buckets_) delete b_buckets_;
   delete a_buckets_;
-  if (a_asymmetric_) {
-    for (int asym_p = 0; asym_p < num_players_; ++asym_p) {
-      delete a_betting_trees_[asym_p];
-    }
-  } else {
-    delete a_betting_trees_[0];
-  }
-  delete [] a_betting_trees_;
-  if (b_asymmetric_) {
-    for (int asym_p = 0; asym_p < num_players_; ++asym_p) {
-      delete b_betting_trees_[asym_p];
-    }
-  } else {
-    delete b_betting_trees_[0];
-  }
-  delete [] b_betting_trees_;
 }
 
 static void Usage(const char *prog_name) {

@@ -618,6 +618,7 @@ T_VALUE TCFRThread::Process(unsigned char *ptr, int last_player_acting, int last
     int call_succ_index = ptr[4];
     // unsigned int player_acting = ptr[5];
     if (player_acting == p_) {
+      // Our choice
       int our_bucket = hand_buckets_[p_ * (max_street_ + 1) + st];
 
       int size_bucket_data;
@@ -629,8 +630,9 @@ T_VALUE TCFRThread::Process(unsigned char *ptr, int last_player_acting, int last
 	size_bucket_data = num_succs * sizeof(T_REGRET);
       }
       if (sumprob_streets_[p_][st]) {
-	// if (! asymmetric_ || target_player_ == player_acting) {
-	size_bucket_data += num_succs * sizeof(T_SUM_PROB);
+	if (! asymmetric_ || target_player_ == player_acting) {
+	  size_bucket_data += num_succs * sizeof(T_SUM_PROB);
+	}
       }
       unsigned char *ptr1 = SUCCPTR(ptr) + num_succs * 8;
       ptr1 += our_bucket * size_bucket_data;
@@ -734,8 +736,7 @@ T_VALUE TCFRThread::Process(unsigned char *ptr, int last_player_acting, int last
       } else { // Recursing on all succs
 	for (int s = 0; s < num_succs; ++s) {
 	  bool prune = false;
-	  if (! char_quantized_streets_[st] &&
-	      ! short_quantized_streets_[st]) {
+	  if (! char_quantized_streets_[st] && ! short_quantized_streets_[st]) {
 	    T_REGRET *bucket_regrets = (T_REGRET *)ptr1;
 	    prune = (bucket_regrets[s] >= pruning_threshold);
 	  }
@@ -812,11 +813,9 @@ T_VALUE TCFRThread::Process(unsigned char *ptr, int last_player_acting, int last
 	int offset = -min_regret;
 	for (int s = 0; s < num_succs; ++s) {
 	  // Assume no pruning if quantization for now
-	  if (! char_quantized_streets_[st] &&
-	      ! short_quantized_streets_[st]) {
+	  if (! char_quantized_streets_[st] && ! short_quantized_streets_[st]) {
 	    T_REGRET *bucket_regrets = (T_REGRET *)ptr1;
-	    if (s != fold_succ_index &&
-		bucket_regrets[s] >= pruning_threshold) {
+	    if (s != fold_succ_index && bucket_regrets[s] >= pruning_threshold) {
 	      continue;
 	    }
 	  }
@@ -843,8 +842,8 @@ T_VALUE TCFRThread::Process(unsigned char *ptr, int last_player_acting, int last
       }
       return val;
     } else {
-      unsigned int opp_bucket =
-	hand_buckets_[player_acting * (max_street_ + 1) + st];
+      // Opp choice
+      unsigned int opp_bucket = hand_buckets_[player_acting * (max_street_ + 1) + st];
 
       unsigned char *ptr1 = SUCCPTR(ptr) + num_succs * 8;
       unsigned int size_bucket_data;
@@ -856,8 +855,9 @@ T_VALUE TCFRThread::Process(unsigned char *ptr, int last_player_acting, int last
 	size_bucket_data = num_succs * sizeof(T_REGRET);
       }
       if (sumprob_streets_[player_acting][st]) {
-	// if (! asymmetric_ || target_player_ == player_acting) {
-	size_bucket_data += num_succs * sizeof(T_SUM_PROB);
+	if (! asymmetric_ || target_player_ == player_acting) {
+	  size_bucket_data += num_succs * sizeof(T_SUM_PROB);
+	}
       }
 
       ptr1 += opp_bucket * size_bucket_data;
@@ -935,7 +935,8 @@ T_VALUE TCFRThread::Process(unsigned char *ptr, int last_player_acting, int last
 	}
 
 	// Update sum-probs
-	if (sumprob_streets_[player_acting][st] && (all_full_ || ! full_only_avg_update_)) {
+	if (sumprob_streets_[player_acting][st] && (all_full_ || ! full_only_avg_update_) &&
+	    (! asymmetric_ || target_player_ == player_acting)) {
 	  T_SUM_PROB *these_sum_probs;
 	  if (char_quantized_streets_[st]) {
 	    these_sum_probs = (T_SUM_PROB *)(ptr1 + num_succs);
@@ -1040,51 +1041,51 @@ void TCFR::ReadRegrets(unsigned char *ptr, Node *node, Reader ***readers, bool *
   unsigned char first_byte = ptr[0];
   // Terminal node
   if (first_byte != 0) return;
-  unsigned int num_succs = ptr[2];
+  int num_succs = ptr[2];
   if (num_succs > 1) {
-    unsigned int pa = ptr[5];
-    unsigned int st = ptr[1];
-    unsigned int nt = node->NonterminalID();
+    int pa = ptr[5];
+    int st = ptr[1];
+    int nt = node->NonterminalID();
     if (seen[st][pa][nt]) return;
     seen[st][pa][nt] = true;
     Reader *reader = readers[pa][st];
-    unsigned int num_buckets = buckets_.NumBuckets(st);
+    int num_buckets = buckets_.NumBuckets(st);
     unsigned char *ptr1 = SUCCPTR(ptr) + num_succs * 8;
     if (char_quantized_streets_[st]) {
-      for (unsigned int b = 0; b < num_buckets; ++b) {
-	for (unsigned int s = 0; s < num_succs; ++s) {
+      for (int b = 0; b < num_buckets; ++b) {
+	for (int s = 0; s < num_succs; ++s) {
 	  ptr1[s] = reader->ReadUnsignedCharOrDie();
 	}
 	ptr1 += num_succs;
-	if (sumprob_streets_[pa][st]) {
+	if (sumprob_streets_[pa][st] && (! asymmetric_ || target_player_ == pa)) {
 	  ptr1 += num_succs * sizeof(T_SUM_PROB);
 	}
       }
     } else if (short_quantized_streets_[st]) {
-      for (unsigned int b = 0; b < num_buckets; ++b) {
+      for (int b = 0; b < num_buckets; ++b) {
 	unsigned short *regrets = (unsigned short *)ptr1;
-	for (unsigned int s = 0; s < num_succs; ++s) {
+	for (int s = 0; s < num_succs; ++s) {
 	  regrets[s] = reader->ReadUnsignedShortOrDie();
 	}
 	ptr1 += num_succs * 2;
-	if (sumprob_streets_[pa][st]) {
+	if (sumprob_streets_[pa][st] && (! asymmetric_ || target_player_ == pa)) {
 	  ptr1 += num_succs * sizeof(T_SUM_PROB);
 	}
       }
     } else {
-      for (unsigned int b = 0; b < num_buckets; ++b) {
+      for (int b = 0; b < num_buckets; ++b) {
 	T_REGRET *regrets = (T_REGRET *)ptr1;
-	for (unsigned int s = 0; s < num_succs; ++s) {
+	for (int s = 0; s < num_succs; ++s) {
 	  regrets[s] = reader->ReadUnsignedIntOrDie();
 	}
 	ptr1 += num_succs * sizeof(T_REGRET);
-	if (sumprob_streets_[pa][st]) {
+	if (sumprob_streets_[pa][st] && (! asymmetric_ || target_player_ == pa)) {
 	  ptr1 += num_succs * sizeof(T_SUM_PROB);
 	}
       }
     }
   }
-  for (unsigned int s = 0; s < num_succs; ++s) {
+  for (int s = 0; s < num_succs; ++s) {
     unsigned long long int succ_offset =
       *((unsigned long long int *)(SUCCPTR(ptr) + s * 8));
     ReadRegrets(data_ + succ_offset, node->IthSucc(s), readers, seen);
@@ -1095,51 +1096,51 @@ void TCFR::WriteRegrets(unsigned char *ptr, Node *node, Writer ***writers, bool 
   unsigned char first_byte = ptr[0];
   // Terminal node
   if (first_byte != 0) return;
-  unsigned int num_succs = ptr[2];
+  int num_succs = ptr[2];
   if (num_succs > 1) {
-    unsigned int pa = ptr[5];
-    unsigned int st = ptr[1];
-    unsigned int nt = node->NonterminalID();
+    int pa = ptr[5];
+    int st = ptr[1];
+    int nt = node->NonterminalID();
     if (seen[st][pa][nt]) return;
     seen[st][pa][nt] = true;
     Writer *writer = writers[pa][st];
-    unsigned int num_buckets = buckets_.NumBuckets(st);
+    int num_buckets = buckets_.NumBuckets(st);
     unsigned char *ptr1 = SUCCPTR(ptr) + num_succs * 8;
     if (char_quantized_streets_[st]) {
-      for (unsigned int b = 0; b < num_buckets; ++b) {
-	for (unsigned int s = 0; s < num_succs; ++s) {
+      for (int b = 0; b < num_buckets; ++b) {
+	for (int s = 0; s < num_succs; ++s) {
 	  writer->WriteUnsignedChar(ptr1[s]);
 	}
 	ptr1 += num_succs;
-	if (sumprob_streets_[pa][st]) {
+	if (sumprob_streets_[pa][st] && (! asymmetric_ || target_player_ == pa)) {
 	  ptr1 += num_succs * sizeof(T_SUM_PROB);
 	}
       }
     } else if (short_quantized_streets_[st]) {
-      for (unsigned int b = 0; b < num_buckets; ++b) {
+      for (int b = 0; b < num_buckets; ++b) {
 	unsigned short *regrets = (unsigned short *)ptr1;
-	for (unsigned int s = 0; s < num_succs; ++s) {
+	for (int s = 0; s < num_succs; ++s) {
 	  writer->WriteUnsignedShort(regrets[s]);
 	}
 	ptr1 += num_succs * 2;
-	if (sumprob_streets_[pa][st]) {
+	if (sumprob_streets_[pa][st] && (! asymmetric_ || target_player_ == pa)) {
 	  ptr1 += num_succs * sizeof(T_SUM_PROB);
 	}
       }
     } else {
-      for (unsigned int b = 0; b < num_buckets; ++b) {
+      for (int b = 0; b < num_buckets; ++b) {
 	T_REGRET *regrets = (T_REGRET *)ptr1;
-	for (unsigned int s = 0; s < num_succs; ++s) {
+	for (int s = 0; s < num_succs; ++s) {
 	  writer->WriteUnsignedInt(regrets[s]);
 	}
 	ptr1 += num_succs * sizeof(T_REGRET);
-	if (sumprob_streets_[pa][st]) {
+	if (sumprob_streets_[pa][st] && (! asymmetric_ || target_player_ == pa)) {
 	  ptr1 += num_succs * sizeof(T_SUM_PROB);
 	}
       }
     }
   }
-  for (unsigned int s = 0; s < num_succs; ++s) {
+  for (int s = 0; s < num_succs; ++s) {
     unsigned long long int succ_offset =
       *((unsigned long long int *)(SUCCPTR(ptr) + s * 8));
     WriteRegrets(data_ + succ_offset, node->IthSucc(s), writers, seen);
@@ -1150,21 +1151,21 @@ void TCFR::ReadSumprobs(unsigned char *ptr, Node *node, Reader ***readers, bool 
   unsigned char first_byte = ptr[0];
   // Terminal node
   if (first_byte != 0) return;
-  unsigned int num_succs = ptr[2];
+  int num_succs = ptr[2];
   if (num_succs > 1) {
-    unsigned int pa = ptr[5];
-    unsigned int st = ptr[1];
-    unsigned int nt = node->NonterminalID();
+    int pa = ptr[5];
+    int st = ptr[1];
+    int nt = node->NonterminalID();
     if (seen[st][pa][nt]) return;
     seen[st][pa][nt] = true;
-    unsigned int num_buckets = buckets_.NumBuckets(st);
+    int num_buckets = buckets_.NumBuckets(st);
     unsigned char *ptr1 = SUCCPTR(ptr) + num_succs * 8;
-    if (sumprob_streets_[pa][st]) {
+    if (sumprob_streets_[pa][st] && (! asymmetric_ || target_player_ == pa)) {
       Reader *reader = readers[pa][st];
       if (char_quantized_streets_[st]) {
-	for (unsigned int b = 0; b < num_buckets; ++b) {
+	for (int b = 0; b < num_buckets; ++b) {
 	  T_SUM_PROB *sum_probs = (T_SUM_PROB *)(ptr1 + num_succs);
-	  for (unsigned int s = 0; s < num_succs; ++s) {
+	  for (int s = 0; s < num_succs; ++s) {
 	    // Temporary for the case where I am starting to maintain
 	    // sumprobs in the middle of running CFR.
 	    if (reader == nullptr) {
@@ -1176,9 +1177,9 @@ void TCFR::ReadSumprobs(unsigned char *ptr, Node *node, Reader ***readers, bool 
 	  ptr1 += num_succs * (1 + sizeof(T_SUM_PROB));
 	}
       } else if (short_quantized_streets_[st]) {
-	for (unsigned int b = 0; b < num_buckets; ++b) {
+	for (int b = 0; b < num_buckets; ++b) {
 	  T_SUM_PROB *sum_probs = (T_SUM_PROB *)(ptr1 + num_succs * 2);
-	  for (unsigned int s = 0; s < num_succs; ++s) {
+	  for (int s = 0; s < num_succs; ++s) {
 	    // Temporary for the case where I am starting to maintain
 	    // sumprobs in the middle of running CFR.
 	    if (reader == nullptr) {
@@ -1190,10 +1191,10 @@ void TCFR::ReadSumprobs(unsigned char *ptr, Node *node, Reader ***readers, bool 
 	  ptr1 += num_succs * (2 + sizeof(T_SUM_PROB));
 	}
       } else {
-	for (unsigned int b = 0; b < num_buckets; ++b) {
+	for (int b = 0; b < num_buckets; ++b) {
 	  T_SUM_PROB *sumprobs =
 	    (T_SUM_PROB *)(ptr1 + num_succs * sizeof(T_REGRET));
-	  for (unsigned int s = 0; s < num_succs; ++s) {
+	  for (int s = 0; s < num_succs; ++s) {
 	    // Temporary for the case where I am starting to maintain
 	    // sumprobs in the middle of running CFR.
 	    if (reader == nullptr) {
@@ -1207,42 +1208,42 @@ void TCFR::ReadSumprobs(unsigned char *ptr, Node *node, Reader ***readers, bool 
 	if (boost_thresholds_[st] > 0) {
 	  unique_ptr<unsigned long long int []>
 	    succ_total_sumprobs(new unsigned long long int[num_succs]);
-	  for (unsigned int s = 0; s < num_succs; ++s) {
+	  for (int s = 0; s < num_succs; ++s) {
 	    succ_total_sumprobs[s] = 0;
 	  }
 	  unsigned char *ptr2 = SUCCPTR(ptr) + num_succs * 8;
-	  for (unsigned int b = 0; b < num_buckets; ++b) {
+	  for (int b = 0; b < num_buckets; ++b) {
 	    T_SUM_PROB *sumprobs =
 	      (T_SUM_PROB *)(ptr2 + num_succs * sizeof(T_REGRET));
-	    for (unsigned int s = 0; s < num_succs; ++s) {
+	    for (int s = 0; s < num_succs; ++s) {
 	      succ_total_sumprobs[s] += sumprobs[s];
 	    }
 	    ptr2 += num_succs * (sizeof(T_REGRET) + sizeof(T_SUM_PROB));
 	  }
 	  while (true) {
 	    bool too_high = false;
-	    for (unsigned int s = 0; s < num_succs; ++s) {
+	    for (int s = 0; s < num_succs; ++s) {
 	      if (succ_total_sumprobs[s] > 2000000000) {
 		too_high = true;
 		break;
 	      }
 	    }
 	    if (! too_high) break;
-	    for (unsigned int s = 0; s < num_succs; ++s) {
+	    for (int s = 0; s < num_succs; ++s) {
 	      succ_total_sumprobs[s] /= 2;
 	    }
 	  }
-	  unsigned int *action_sumprobs = (unsigned int *)
+	  int *action_sumprobs = (int *)
 	    (SUCCPTR(ptr) + num_succs * 8 + num_buckets * num_succs *
 	     (sizeof(T_REGRET) + sizeof(T_SUM_PROB)));
-	  for (unsigned int s = 0; s < num_succs; ++s) {
+	  for (int s = 0; s < num_succs; ++s) {
 	    action_sumprobs[s] = succ_total_sumprobs[s];
 	  }
 	}
       }
     }
   }
-  for (unsigned int s = 0; s < num_succs; ++s) {
+  for (int s = 0; s < num_succs; ++s) {
     unsigned long long int succ_offset =
       *((unsigned long long int *)(SUCCPTR(ptr) + s * 8));
     ReadSumprobs(data_ + succ_offset, node->IthSucc(s), readers, seen);
@@ -1253,38 +1254,38 @@ void TCFR::WriteSumprobs(unsigned char *ptr, Node *node, Writer ***writers, bool
   unsigned char first_byte = ptr[0];
   // Terminal node
   if (first_byte != 0) return;
-  unsigned int num_succs = ptr[2];
+  int num_succs = ptr[2];
   if (num_succs > 1) {
-    unsigned int pa = ptr[5];
-    unsigned int st = ptr[1];
-    unsigned int nt = node->NonterminalID();
+    int pa = ptr[5];
+    int st = ptr[1];
+    int nt = node->NonterminalID();
     if (seen[st][pa][nt]) return;
     seen[st][pa][nt] = true;
-    if (sumprob_streets_[pa][st]) {
+    if (sumprob_streets_[pa][st] && (! asymmetric_ || target_player_ == pa)) {
       Writer *writer = writers[pa][st];
-      unsigned int num_buckets = buckets_.NumBuckets(st);
+      int num_buckets = buckets_.NumBuckets(st);
       unsigned char *ptr1 = SUCCPTR(ptr) + num_succs * 8;
       if (char_quantized_streets_[st]) {
-	for (unsigned int b = 0; b < num_buckets; ++b) {
+	for (int b = 0; b < num_buckets; ++b) {
 	  T_SUM_PROB *sum_probs = (T_SUM_PROB *)(ptr1 + num_succs);
-	  for (unsigned int s = 0; s < num_succs; ++s) {
+	  for (int s = 0; s < num_succs; ++s) {
 	    writer->WriteUnsignedInt(sum_probs[s]);
 	  }
 	  ptr1 += num_succs * (1 + sizeof(T_SUM_PROB));
 	}
       } else if (short_quantized_streets_[st]) {
-	for (unsigned int b = 0; b < num_buckets; ++b) {
+	for (int b = 0; b < num_buckets; ++b) {
 	  T_SUM_PROB *sum_probs = (T_SUM_PROB *)(ptr1 + num_succs * 2);
-	  for (unsigned int s = 0; s < num_succs; ++s) {
+	  for (int s = 0; s < num_succs; ++s) {
 	    writer->WriteUnsignedInt(sum_probs[s]);
 	  }
 	  ptr1 += num_succs * (2 + sizeof(T_SUM_PROB));
 	}
       } else {
-	for (unsigned int b = 0; b < num_buckets; ++b) {
+	for (int b = 0; b < num_buckets; ++b) {
 	  T_SUM_PROB *sum_probs =
 	    (T_SUM_PROB *)(ptr1 + num_succs * sizeof(T_REGRET));
-	  for (unsigned int s = 0; s < num_succs; ++s) {
+	  for (int s = 0; s < num_succs; ++s) {
 	    writer->WriteUnsignedInt(sum_probs[s]);
 	  }
 	  ptr1 += num_succs * (sizeof(T_REGRET) + sizeof(T_SUM_PROB));
@@ -1292,7 +1293,7 @@ void TCFR::WriteSumprobs(unsigned char *ptr, Node *node, Writer ***writers, bool
       }
     }
   }
-  for (unsigned int s = 0; s < num_succs; ++s) {
+  for (int s = 0; s < num_succs; ++s) {
     unsigned long long int succ_offset =
       *((unsigned long long int *)(SUCCPTR(ptr) + s * 8));
     WriteSumprobs(data_ + succ_offset, node->IthSucc(s), writers, seen);
@@ -1332,7 +1333,7 @@ void TCFR::Read(int batch_index) {
   for (int p = 0; p < num_players; ++p) {
     sum_prob_readers[p] = new Reader *[max_street_ + 1];
     for (int st = 0; st <= max_street_; ++st) {
-      if (! sumprob_streets_[p][st]) {
+      if (! sumprob_streets_[p][st] || (asymmetric_ && p != target_player_)) {
 	sum_prob_readers[p][st] = NULL;
 	continue;
       }
@@ -1351,6 +1352,7 @@ void TCFR::Read(int batch_index) {
       }
     }
   }
+
   ReadRegrets(data_, betting_tree_->Root(), regret_readers, seen);
   for (int st = 0; st <= max_street_; ++st) {
     for (int p = 0; p < num_players; ++p) {
@@ -1447,8 +1449,8 @@ void TCFR::Write(int batch_index) {
   for (int p = 0; p < num_players; ++p) {
     sum_prob_writers[p] = new Writer *[max_street_ + 1];
     for (int st = 0; st <= max_street_; ++st) {
-      if (! sumprob_streets_[p][st]) {
-	sum_prob_writers[p][st] = NULL;
+      if (! sumprob_streets_[p][st] || (asymmetric_ && p != target_player_)) {
+	sum_prob_writers[p][st] = nullptr;
 	continue;
       }
       sprintf(buf, "%s/sumprobs.x.0.0.%u.%u.p%u.i", dir, st, batch_index, p);
@@ -1463,7 +1465,6 @@ void TCFR::Write(int batch_index) {
       }
     }
   }
-  fprintf(stderr, "Calling WriteSumprobs\n");
   WriteSumprobs(data_, betting_tree_->Root(), sum_prob_writers, seen);
   for (int st = 0; st <= max_street_; ++st) {
     for (int p = 0; p < num_players; ++p) {
@@ -1632,7 +1633,8 @@ void TCFR::Run(int start_batch_index, int end_batch_index, int batch_size, int s
 // The next num-succs * 8 bytes are for the succ ptrs
 // For each bucket
 //   num-succs * sizeof(T_REGRET) for the regrets
-//   num-succs * sizeof(T_SUM_PROB) for the sum-probs
+//   If saving sumprobs:
+//     num-succs * sizeof(T_SUM_PROB) for the sum-probs
 // If boosting: num_succs * sizeof(T_SUM_PROB) for the action-sum-probs
 unsigned char *TCFR::Prepare(unsigned char *ptr, Node *node, unsigned short last_bet_to,
 			     unsigned long long int ***offsets) {
@@ -1678,7 +1680,7 @@ unsigned char *TCFR::Prepare(unsigned char *ptr, Node *node, unsigned short last
 	}
       }
       // Sumprobs
-      if (sumprob_streets_[pa][st]) {
+      if (sumprob_streets_[pa][st] && (! asymmetric_ || target_player_ == pa)) {
 	for (int s = 0; s < num_succs; ++s) {
 	  *((T_SUM_PROB *)ptr1) = 0;
 	  ptr1 += sizeof(T_SUM_PROB);
@@ -1686,7 +1688,8 @@ unsigned char *TCFR::Prepare(unsigned char *ptr, Node *node, unsigned short last
       }
     }
     // Action sumprobs
-    if (boost_thresholds_[st] > 0 && sumprob_streets_[pa][st]) {
+    if (boost_thresholds_[st] > 0 && sumprob_streets_[pa][st] &&
+	(! asymmetric_ || target_player_ == pa)) {
       for (int s = 0; s < num_succs; ++s) {
 	*((T_SUM_PROB *)ptr1) = 0;
 	ptr1 += sizeof(T_SUM_PROB);
@@ -1764,7 +1767,7 @@ void TCFR::MeasureTree(Node *node, bool ***seen, unsigned long long int *allocat
     } else {
       this_sz += nb * num_succs * sizeof(T_REGRET);
     }
-    if (sumprob_streets_[pa][st]) {
+    if (sumprob_streets_[pa][st] && (! asymmetric_ || target_player_ == pa)) {
       this_sz += nb * num_succs * sizeof(T_SUM_PROB);
       if (boost_thresholds_[st] > 0) this_sz += num_succs * sizeof(T_SUM_PROB);
     }
@@ -1805,7 +1808,8 @@ void TCFR::Prepare(void) {
   delete [] seen;
 
   // Should get amount of RAM from method in Files class
-  if (allocation_size > 1180000000000ULL) {
+  // if (allocation_size > 1180000000000ULL) {
+  if (allocation_size > 32000000000ULL) {
     fprintf(stderr, "Allocation size %llu too big\n", allocation_size);
     exit(-1);
   }
@@ -1831,8 +1835,7 @@ void TCFR::Prepare(void) {
   unsigned char *end = Prepare(data_, betting_tree_->Root(), Game::BigBlind(), offsets);
   unsigned long long int sz = end - data_;
   if (sz != allocation_size) {
-    fprintf(stderr, "Didn't fill expected number of bytes: sz %llu as %llu\n",
-	    sz, allocation_size);
+    fprintf(stderr, "Didn't fill expected number of bytes: sz %llu as %llu\n", sz, allocation_size);
     exit(-1);
   }
 
@@ -1857,8 +1860,7 @@ TCFR::TCFR(const CardAbstraction &ca, const BettingAbstraction &ba, const CFRCon
   buckets_(buckets) {
   max_street_ = Game::MaxStreet();
 #ifdef BC
-  fprintf(stderr,
-	  "Sampling canonical boards; scaling updates by board count\n");
+  fprintf(stderr, "Sampling canonical boards; scaling updates by board count\n");
 #else
   fprintf(stderr, "Sampling raw boards with right frequency\n");
 #endif
@@ -1934,9 +1936,7 @@ TCFR::TCFR(const CardAbstraction &ca, const BettingAbstraction &ba, const CFRCon
     }
   } else {
     for (int p = 0; p < num_players_; ++p) {
-      for (int st = 0; st <= max_street_; ++st) {
-	sumprob_streets_[p][st] = false;
-      }
+      for (int st = 0; st <= max_street_; ++st) sumprob_streets_[p][st] = false;
     }
     for (int i = 0; i < num_ssv; ++i) {
       int st = ssv[i];
@@ -2023,8 +2023,7 @@ TCFR::TCFR(const CardAbstraction &ca, const BettingAbstraction &ba, const CFRCon
     long long int total_bytes = num_hands * bytes;
     Reader reader(buf);
     if (reader.FileSize() != total_bytes) {
-      fprintf(stderr, "File size %lli expected %lli\n", reader.FileSize(),
-	      total_bytes);
+      fprintf(stderr, "File size %lli expected %lli\n", reader.FileSize(), total_bytes);
     }
     hvb_table_ = new unsigned char[total_bytes];
     for (long long int i = 0; i < total_bytes; ++i) {

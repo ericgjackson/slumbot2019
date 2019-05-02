@@ -5,6 +5,7 @@
 #include <string>
 
 #include "betting_tree.h"
+#include "betting_trees.h"
 #include "board_tree.h"
 #include "buckets.h"
 #include "cfr_street_values.h"
@@ -17,8 +18,10 @@
 using std::string;
 using std::unique_ptr;
 
-CFRValues::CFRValues(const bool *players, const bool *streets, int root_bd, int root_bd_st,
-		     const Buckets &buckets, const BettingTree *betting_tree) {
+void CFRValues::Initialize(const bool *players, const bool *streets, int root_bd, int root_bd_st,
+			   const Buckets &buckets) {
+  root_bd_ = root_bd;
+  root_bd_st_ = root_bd_st;
   int num_players = Game::NumPlayers();
   players_.reset(new bool[num_players]);
   for (int p = 0; p < num_players; ++p) {
@@ -29,9 +32,6 @@ CFRValues::CFRValues(const bool *players, const bool *streets, int root_bd, int 
   for (int st = 0; st <= max_street; ++st) {
     streets_[st] = streets == nullptr || streets[st];
   }
-
-  root_bd_ = root_bd;
-  root_bd_st_ = root_bd_st;
 
   num_holdings_.reset(new int[max_street + 1]);
   for (int st = 0; st <= max_street; ++st) {
@@ -48,12 +48,23 @@ CFRValues::CFRValues(const bool *players, const bool *streets, int root_bd, int 
     }
   }
 
+  street_values_.reset(new AbstractCFRStreetValues *[max_street + 1]);
+  for (int st = 0; st <= max_street; ++st) street_values_[st] = nullptr;
+}
+
+CFRValues::CFRValues(const bool *players, const bool *streets, int root_bd, int root_bd_st,
+		     const Buckets &buckets, const BettingTree *betting_tree) {
+  Initialize(players, streets, root_bd, root_bd_st, buckets);
+  
+  int num_players = Game::NumPlayers();
+  int max_street = Game::MaxStreet();
   int num = num_players * (max_street + 1);
   num_nonterminals_.reset(new int[num]);
   for (int p = 0; p < num_players; ++p) {
     for (int st = 0; st <= max_street; ++st) {
       int index = p * (max_street + 1) + st;
       if (players_[p] && (streets == nullptr || streets[st])) {
+	// Assumes symmetric
 	num_nonterminals_[index] = betting_tree->NumNonterminals(p, st);
       } else {
 	num_nonterminals_[index] = 0;
@@ -61,8 +72,27 @@ CFRValues::CFRValues(const bool *players, const bool *streets, int root_bd, int 
     }
   }
 
-  street_values_.reset(new AbstractCFRStreetValues *[max_street + 1]);
-  for (int st = 0; st <= max_street; ++st) street_values_[st] = nullptr;
+}
+
+// For asymmetric systems.
+CFRValues::CFRValues(const bool *players, const bool *streets, int root_bd, int root_bd_st,
+		     const Buckets &buckets, const BettingTrees &betting_trees) {
+  Initialize(players, streets, root_bd, root_bd_st, buckets);
+  
+  int num_players = Game::NumPlayers();
+  int max_street = Game::MaxStreet();
+  int num = num_players * (max_street + 1);
+  num_nonterminals_.reset(new int[num]);
+  for (int p = 0; p < num_players; ++p) {
+    for (int st = 0; st <= max_street; ++st) {
+      int index = p * (max_street + 1) + st;
+      if (players_[p] && (streets == nullptr || streets[st])) {
+	num_nonterminals_[index] = betting_trees.NumNonterminals(p, p, st);
+      } else {
+	num_nonterminals_[index] = 0;
+      }
+    }
+  }
 }
 
 CFRValues::~CFRValues(void) {
@@ -71,27 +101,29 @@ CFRValues::~CFRValues(void) {
 }
 
 // Shouldn't we respect only_p?
-void CFRValues::AllocateAndClearInts(Node *node, int only_p) {
+void CFRValues::AllocateAndClear(const BettingTree *betting_tree, CFRValueType value_type,
+				 int only_p) {
   int max_street = Game::MaxStreet();
+  int num_players = Game::NumPlayers();
   for (int st = 0; st <= max_street; ++st) {
     if (streets_[st]) {
       int num_holdings = num_holdings_[st];
-      street_values_[st] = new CFRStreetValues<int>(st, players_.get(), num_holdings,
-						    num_nonterminals_.get());
-      street_values_[st]->AllocateAndClear(node);
-    }
-  }
-}
-
-// Shouldn't we respect only_p?
-void CFRValues::AllocateAndClearDoubles(Node *node, int only_p) {
-  int max_street = Game::MaxStreet();
-  for (int st = 0; st <= max_street; ++st) {
-    if (streets_[st]) {
-      int num_holdings = num_holdings_[st];
-      street_values_[st] = new CFRStreetValues<double>(st, players_.get(), num_holdings,
-						       num_nonterminals_.get());
-      street_values_[st]->AllocateAndClear(node);
+      if (value_type == CFR_INT) {
+	street_values_[st] = new CFRStreetValues<int>(st, players_.get(), num_holdings,
+						      num_nonterminals_.get());
+      } else if (value_type == CFR_DOUBLE) {
+	street_values_[st] = new CFRStreetValues<double>(st, players_.get(), num_holdings,
+							 num_nonterminals_.get());
+      } else {
+	fprintf(stderr, "CFRValues::AllocateAndClear() unexpected value type %i\n",
+		(int)value_type);
+	exit(-1);
+      }
+      for (int p = 0; p < num_players; ++p) {
+	if ((only_p == -1 || p == only_p) && players_[p]) {
+	  street_values_[st]->AllocateAndClear(betting_tree->Root(), p);
+	}
+      }
     }
   }
 }
@@ -119,27 +151,27 @@ void CFRValues::CreateStreetValues(int st, CFRValueType value_type) {
   }
 }
 
-void CFRValues::Read(Node *node, Reader ***readers, void ***decompressors, int only_p) {
+void CFRValues::Read(Node *node, Reader ***readers, void ***decompressors, int p) {
   if (node->Terminal()) return;
   int st = node->Street();
   int num_succs = node->NumSuccs();
-  int p = node->PlayerActing();
-  if (street_values_[st] && players_[p] && ! (only_p != -1 && p != only_p)) {
+  int pa = node->PlayerActing();
+  if (street_values_[st] && pa == p) {
     Reader *reader = readers[p][st];
     if (reader == nullptr) {
-      fprintf(stderr, "CFRValues::Read(): p %u st %u missing file?\n", p, st);
+      fprintf(stderr, "CFRValues::Read(): pa %i st %i missing file?\n", pa, st);
       exit(-1);
     }
-    street_values_[st]->ReadNode(node, reader, decompressors ? decompressors[p][st] : nullptr);
+    street_values_[st]->ReadNode(node, reader, decompressors ? decompressors[pa][st] : nullptr);
   }
   for (int s = 0; s < num_succs; ++s) {
-    Read(node->IthSucc(s), readers, decompressors, only_p);
+    Read(node->IthSucc(s), readers, decompressors, p);
   }
 }
 
 Reader *CFRValues::InitializeReader(const char *dir, int p, int st, int it,
-				    const string &action_sequence, int root_bd_st,
-				    int root_bd, bool sumprobs, CFRValueType *value_type) {
+				    const string &action_sequence, int root_bd_st, int root_bd,
+				    bool sumprobs, CFRValueType *value_type) {
   char buf[500];
 
   int t;
@@ -172,8 +204,8 @@ Reader *CFRValues::InitializeReader(const char *dir, int p, int st, int it,
   return reader;
 }
 
-void CFRValues::Read(const char *dir, int it, Node *root, const string &action_sequence, int only_p,
-		     bool sumprobs) {
+void CFRValues::Read(const char *dir, int it, const BettingTree *betting_tree,
+		     const string &action_sequence, int only_p, bool sumprobs) {
   int num_players = Game::NumPlayers();
   Reader ***readers = new Reader **[num_players];
   void ***decompressors = nullptr;
@@ -203,7 +235,11 @@ void CFRValues::Read(const char *dir, int it, Node *root, const string &action_s
     }
   }
 
-  Read(root, readers, decompressors, only_p);
+  for (int p = 0; p < num_players; ++p) {
+    if ((only_p == -1 || p == only_p) && players_[p]) {
+      Read(betting_tree->Root(), readers, decompressors, p);
+    }    
+  }
   
   for (int p = 0; p < num_players; ++p) {
     if (only_p != -1 && p != only_p) continue;
@@ -224,7 +260,68 @@ void CFRValues::Read(const char *dir, int it, Node *root, const string &action_s
   delete [] decompressors;
 }
 
-// Prevent redunant writing with reentrant trees
+// For asymmetric systems.  For when you want P0's values to be the values trained for a target
+// P0 system and P1's values to be the values trained for a target P1 system.
+// Be careful to use the right version of Read() for your needs.
+void CFRValues::ReadAsymmetric(const char *dir, int it, const BettingTrees &betting_trees,
+			       const string &action_sequence, int only_p, bool sumprobs) {
+  int num_players = Game::NumPlayers();
+  Reader ***readers = new Reader **[num_players];
+  void ***decompressors = nullptr;
+  int max_street = Game::MaxStreet();
+  char asym_dir[500];
+
+  for (int p = 0; p < num_players; ++p) {
+    if (only_p != -1 && p != only_p) {
+      readers[p] = nullptr;
+      continue;
+    }
+    if (! players_[p]) {
+      readers[p] = nullptr;
+      continue;
+    }
+    sprintf(asym_dir, "%s.p%i", dir, p);
+    readers[p] = new Reader *[max_street + 1];
+    for (int st = 0; st <= max_street; ++st) {
+      if (! streets_[st]) {
+	readers[p][st] = nullptr;
+	continue;
+      }
+      CFRValueType value_type;
+      readers[p][st] = InitializeReader(asym_dir, p, st, it, action_sequence, root_bd_st_, root_bd_,
+					sumprobs, &value_type);
+      if (street_values_[st] == nullptr) {
+	CreateStreetValues(st, value_type);
+      }
+    }
+  }
+
+  for (int p = 0; p < num_players; ++p) {
+    if ((only_p == -1 || p == only_p) && players_[p]) {
+      Read(betting_trees.Root(p), readers, decompressors, p);
+    }    
+  }
+  
+  for (int p = 0; p < num_players; ++p) {
+    if (only_p != -1 && p != only_p) continue;
+    if (! players_[p]) continue;
+    for (int st = 0; st <= max_street; ++st) {
+      if (! streets_[st]) continue;
+      if (! readers[p][st]->AtEnd()) {
+	fprintf(stderr, "Reader p %u st %u didn't get to end\n", p, st);
+	fprintf(stderr, "Pos: %lli\n", readers[p][st]->BytePos());
+	fprintf(stderr, "File size: %lli\n", readers[p][st]->FileSize());
+	exit(-1);
+      }
+      delete readers[p][st];
+    }
+    delete [] readers[p];
+  }
+  delete [] readers;
+  delete [] decompressors;
+}
+
+// Prevent redundant writing with reentrant trees
 void CFRValues::Write(Node *node, Writer ***writers, void ***compressors, bool ***seen) const {
   if (node->Terminal()) return;
   int num_succs = node->NumSuccs();

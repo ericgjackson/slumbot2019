@@ -1,0 +1,90 @@
+9886 hands where Slumbot is P1.
+1061 are folds.
+8825 are r200
+  143 are r200f
+  209 are r200c
+  615 are r200r300
+    Avg. P0 outcome: 181.393
+    105: r200r300f
+      Avg. P0 outcome: 200
+    458: r200r300c
+      Avg. P0 outcome: 86.9956
+    52:  r200r300r1800
+      Avg. P0 outcome: 975.25
+      2:  r200r300r1800c
+      0:  r200r300r1800f
+      50:  r200r300r1800r
+        26:  r200r300r1800r16500
+          23:  r200r300r1800r16500f
+	  The three non-folds are 76s, AKo and AQs
+        15:  r200r300r1800r9900
+          14:  r200r300r1800r9900f
+	    The one non-fold is 76s
+	9 misc raises: 20000, 5660, 3300, 5271, 6323, 3313
+  1835 are r200r900
+    Avg. P0 outcome: 404.825
+    1193: r200r900f
+      Avg. P0 outcome: 200
+    545: r200r900c
+      Avg. P0 outcome: 612.635
+    97: r200r900r
+      Avg. P0 outcome: 1756.36
+      53: r200r900r2400
+        Avg. P0 outcome: 1224.58
+      44: r200r900r3000
+        Avg. P0 outcome: 2396.91
+	ackr almost always reraises
+  4032 are r200r1500
+    Avg. P0 outcome: 212.639
+  1603 are r200r3000
+    Avg. P0 outcome: 294.885
+  388 are r200r20000
+    Avg. P0 outcome: -534.021
+
+Look at r200r300.
+P0 hands don't look that strong.
+
+Look at r200r300r1800.
+ackr almost always reraises
+Slumbot isn't that strong.
+
+76s (4)
+A6s (3)
+AKo (3)
+AQs (5)
+J7s (5)
+J8s (3)
+K5s (2)
+KJo (5)
+Q4s
+Q8s
+QJs
+T6s
+T7s
+T9s
+
+Look at r200r900r3000
+
+Slumbot has: A4s, AQo, AKs, J8s, JJ,  K6s, KJo, KTo, Q7s, T7s
+
+I purified probs on the preflop.  Could have lead to weirdness.
+
+Why am I seeing 128 for selected succ in PProbs::Prob().
+Won't see it in bot because bot hard codes root actions.
+
+How do we treat r200r300?
+
+Smallest raise we understand is pot size, I think.  r200r600.
+When deciding whether to raise at r200r300, we always translate up to the smallest
+bet size; i.e., r200r600.
+ID 1
+
+See what we raise with.
+
+Look into purification code.  Does it look correct?  How did we get bad results at root?!?
+
+Who do I see reraising at r200r600?
+32s, 76s, T6s, T7s, T9s, J7s, J8s, Q4s, Q8s, QJs, QQ, K5s, KJo, KQs, KK, A6s, AQs, AKs, AKo, AA.
+This is a superset of what I see in the logs.
+Still seems like a weakish range.
+ackr just got lucky not to run into QQ, KK, AA

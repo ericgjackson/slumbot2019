@@ -4,11 +4,12 @@
 #include <memory>
 #include <string>
 
+#include "betting_trees.h"
 #include "cfrp.h"
 #include "vcfr.h"
 
 class BettingAbstraction;
-class BettingTree;
+class BettingTrees;
 class Buckets;
 class CardAbstraction;
 class CFRP;
@@ -20,7 +21,7 @@ public:
   CFRPSubgame(const CardAbstraction &ca, const BettingAbstraction &ba, const CFRConfig &cc,
 	      const Buckets &buckets, Node *root, int root_bd, const std::string &action_sequence,
 	      int p, CFRP *cfr);
-  virtual ~CFRPSubgame(void);
+  virtual ~CFRPSubgame(void) {}
   void Go(void);
   Node *Root(void) const {return root_;}
   int RootBd(void) const {return root_bd_;}
@@ -41,12 +42,12 @@ public:
   Node *root_;
   int root_bd_;
   int root_bd_st_;
-  std::unique_ptr<BettingTree> subtree_;
+  std::unique_ptr<BettingTrees> subtrees_;
   int p_;
   CFRP *cfr_;
-  bool *subtree_streets_;
+  std::unique_ptr<bool []> subtree_streets_;
   std::shared_ptr<double []> opp_probs_;
-  const HandTree *hand_tree_;
+  std::unique_ptr<const HandTree> hand_tree_;
   int thread_index_;
   std::shared_ptr<double []> final_vals_;
   int last_checkpoint_it_;

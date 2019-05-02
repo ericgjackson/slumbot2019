@@ -90,7 +90,7 @@ play_resolved (no sampling):
   Avg B outcome: 0.008514 (4.3 mbb/g)
   Avg P1 outcome: 0.590633 (295.3 mbb/g)
 
-tcfr
+tcfr/nxhs3
 7b: Exploitability: 189.58 mbb/g
 Resolve all river subgames with cfrps/200, 7b base
 unsafe:   Exploitability: 137.45 mbb/g
@@ -100,11 +100,72 @@ cfrd:     Exploitability: 106.91 mbb/g
 combined: Exploitability: 54.19 mbb/g
   Compare 53.69 for tcfrb001 base
 Boosting didn't do much.
+Resolve all turn subgames with cfrps/200, 7b base
+unsafe: Exploitability: 79.43 mbb/g
 
-6b vs. 7b
+6b vs. 7b (nxhs3)
 play (100m in 3m20s):
   Avg B outcome: 0.000277 (0.1 mbb/g) over 100000000 dup hands
   Avg P1 outcome: 0.597355
-play_resolved (no sampling):
+head_to_head (no sampling)
   Avg B outcome: 0.001598 (0.8 mbb/g)
   Avg P1 outcome: 0.595717 (297.9 mbb/g)
+
+ecfr/null
+1b in 84m: Exploitability: 28.89 mbb/g
+
+cfrps/200 vs ecfr/1b
+play (100m)
+  Avg B outcome: 0.002466 (1.2 mbb/g) over 100000000 dup hands
+  MBB confidence interval: -0.564394-3.030854
+  Avg P1 outcome: 0.595016
+  
+head_to_head:
+  Avg B outcome: 0.001946 (1.0 mbb/g)
+  Avg P1 outcome: 0.591959 (296.0 mbb/g)
+
+cfrps/400 vs ecfr/1b
+head_to_head:
+  Avg B outcome: -0.006125 (-3.1 mbb/g)
+  Avg P1 outcome: 0.591068 (295.5 mbb/g)
+
+cfrps/200 vs cfrps/200
+play:
+  Avg B outcome: 0.000382 (0.2 mbb/g) over 100000000 dup hands
+  MBB confidence interval: -1.605460-1.987400
+  Avg P1 outcome: 0.591768
+
+head_to_head:
+  Avg B outcome: 0.000000 (0.0 mbb/g)
+  Avg P1 outcome: 0.589602 (294.8 mbb/g)
+
+------------------------------------------------------------------
+
+mb1b1aai
+
+none/cfrps/200: Exploitability: 106.11 mbb/g
+none/cfrps/400: Exploitability: 34.21 mbb/g
+
+Compare mb1b1/none/cfrps/200: Exploitability: 32.21 mbb/g
+
+Resolve all river subgames unsafe (200/200)
+  Exploitability: 127.91 mbb/g
+  Worse than base - does that indicate a problem?
+head_to_head comparing base to river-resolved (unsafe)
+  Avg B outcome: 0.019441 (9.7 mbb/g)
+  Avg P1 outcome: 0.550380 (275.2 mbb/g)
+  232.1 secs spent resolving
+  Avg 0.00 secs per resolve (51410 resolves)
+Resolve all river subgames unsafe (200/400)
+  Exploitability: 123.40 mbb/g
+Resolve all river subgames combined (200/200)
+  Exploitability: 85.46 mbb/g
+  This is a bit better than the base, at least.
+head_to_head comparing base to river-resolved (combined)
+  Avg B outcome: 0.015480 (7.7 mbb/g)
+  Avg P1 outcome: 0.549690 (274.8 mbb/g)
+
+Unsafe river resolved vs. combined river resolved
+head_to_head
+  Avg B outcome: -0.002979 (-1.5 mbb/g)
+  Avg P1 outcome: 0.553097 (276.5 mbb/g)

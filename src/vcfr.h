@@ -24,6 +24,7 @@ class VCFR {
   CFRValues *Sumprobs(void) const {return sumprobs_.get();}
   void MoveSumprobs(std::unique_ptr<CFRValues> &src) {sumprobs_ = std::move(src);}
   void MoveRegrets(std::unique_ptr<CFRValues> &src) {regrets_ = std::move(src);}
+  void ClearSumprobs(void) {sumprobs_.reset(nullptr);}
   virtual void SetStreetBuckets(int st, int gbd, const VCFRState &state);
  protected:
   template <typename T>

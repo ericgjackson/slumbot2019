@@ -1,0 +1,162 @@
+ms3f1t1r1h5/none/asyma/cfrps
+
+RGBR:
+200:
+P0 best response: -0.079531 (-39.77 mbb/g)
+P1 best response: 0.867799 (433.90 mbb/g)
+Gap: 0.788267
+Exploitability: 197.07 mbb/g
+Bigger gap than I expected.  Bug or real?  See if we converge to a lot less.
+400:
+P0 best response: -0.132574 (-66.29 mbb/g)
+P1 best response: 0.860837 (430.42 mbb/g)
+Gap: 0.728263
+Exploitability: 182.07 mbb/g
+Not converging very low.
+Should look at head-to-head
+
+------------
+
+Switch to testasym_params
+P0 best response: -0.529810 (-264.90 mbb/g)
+P1 best response: 0.658667 (329.33 mbb/g)
+Gap: 0.128858
+Exploitability: 32.21 mbb/g
+Matches symmetric system.
+testasym/200 vs. mb1b1/200
+Avg B outcome: 0.000000 (0.0 mbb/g)
+Avg P1 outcome: 0.589602 (294.8 mbb/g)
+
+---------
+
+asymb_params
+One bet, one bet size for both players
+Except always-all-in for opponent
+
+200:
+P0 best response: -0.369458 (-184.73 mbb/g)
+P1 best response: 0.890956 (445.48 mbb/g)
+Gap: 0.521498
+Exploitability: 130.37 mbb/g
+
+Closer.  That could reflect the lower usefulness of the all-in bet.
+Also: does it just take longer for system to converge with more bets, and specifically there is
+an advantage for the player with more bets?  If so, gap should decrease with more iterations.
+
+400:
+P0 best response: -0.502690 (-251.34 mbb/g)
+P1 best response: 0.762319 (381.16 mbb/g)
+Gap: 0.259629
+Exploitability: 64.91 mbb/g
+
+600:
+P0 best response: -0.534152 (-267.08 mbb/g)
+P1 best response: 0.715752 (357.88 mbb/g)
+Gap: 0.181599
+Exploitability: 45.40 mbb/g
+
+1000:
+P0 best response: -0.554727 (-277.36 mbb/g)
+P1 best response: 0.677604 (338.80 mbb/g)
+Gap: 0.122877
+Exploitability: 30.72 mbb/g
+
+2000:
+P0 best response: -0.565159 (-282.58 mbb/g)
+P1 best response: 0.654591 (327.30 mbb/g)
+Gap: 0.089432
+Exploitability: 22.36 mbb/g
+
+------------
+
+Compare symmetric mb1b1aai
+Worse at 200, but better at 400, 1000.
+200:  Exploitability: 161.97 mbb/g
+400:  Exploitability: 53.46 mbb/g
+1000: Exploitability: 13.32 mbb/g
+
+------------
+
+asymc
+1/2 pot and pot for target player
+1/2 pot, pot and 2x pot for opponent
+200:  Exploitability: 107.14 mbb/g
+400:  Exploitability: 59.03 mbb/g
+600:  Exploitability: 44.95 mbb/g
+800:  Exploitability: 39.98 mbb/g
+1000: Exploitability: 36.18 mbb/g
+
+----------------------------------------------------------------
+
+Look at head_to_head results
+asymb/200 vs. mb1b1aai/200
+Avg B outcome: -0.055400 (-27.7 mbb/g)
+Avg P1 outcome: 0.586687 (293.3 mbb/g)
+That's suspicious; didn't expect symmetric system to lose.
+asymb/200 vs. mb1b1aai/400
+Avg B outcome: 0.024871 (12.4 mbb/g)
+Avg P1 outcome: 0.613720 (306.9 mbb/g)
+asymb/400 vs. mb1b1aai/400
+Avg B outcome: 0.001284 (0.6 mbb/g)
+Avg P1 outcome: 0.607957 (304.0 mbb/g)
+asymb/1000 vs. mb1b1aai/1000
+Avg B outcome: 0.019574 (9.8 mbb/g)
+Avg P1 outcome: 0.610930 (305.5 mbb/g)
+asymb/2000 vs. mb1b1aai/200
+Avg B outcome: -0.068111 (-34.1 mbb/g)
+Avg P1 outcome: 0.589305 (294.7 mbb/g)
+asymb/2000 vs. mb1b1aai/1000
+Avg B outcome: 0.018572 (9.3 mbb/g)
+Avg P1 outcome: 0.610211 (305.1 mbb/g)
+
+Maybe it just takes the symmetric system longer to converge.
+
+asymb vs. asymb
+Avg B outcome: -0.000000 (-0.0 mbb/g)
+Avg P1 outcome: 0.625404 (312.7 mbb/g)
+
+asyma vs. mb1b2
+mb1b2/200: Exploitability: 36.72 mbb/g
+asyma/200 vs. mb1b2/200
+  Avg B outcome: 0.168947 (84.5 mbb/g)
+  Avg P1 outcome: 0.390419 (195.2 mbb/g)
+  Do I really believe this?
+mb1b2/400: Exploitability: 12.67 mbb/g
+asyma/400 vs. mb1b2/400
+  Avg B outcome: 0.167477 (83.7 mbb/g)
+  Avg P1 outcome: 0.390064 (195.0 mbb/g)
+
+asymc vs. mb1b3
+mb1b3/200: Exploitability: 103.17 mbb/g
+asymc/200 vs. mb1b3/200:
+Avg B outcome: 0.012358 (6.2 mbb/g)
+Avg P1 outcome: 0.321253 (160.6 mbb/g)
+mb1b3/400: Exploitability: 41.98 mbb/g
+asymc/400 vs. mb1b3/400:
+Avg B outcome: 0.030200 (15.1 mbb/g)
+Avg P1 outcome: 0.334050 (167.0 mbb/g)
+
+----------------------------------------------
+
+tcfr/holdem/a/asymc/tcfrqsc
+P0 1b in 116m
+P1 1b in 121m
+P0 1b-2b in 104m
+P1 1b-2b in 102m
+
+head_to_head: 1b vs. 2b
+1 river board sampled in 30s
+  Avg B outcome: 0.014518 (7.3 mbb/g)
+  Avg P1 outcome: 0.469027 (234.5 mbb/g)
+10 river boards sampled in 30s
+  Avg B outcome: 0.031373 (15.7 mbb/g)
+  Avg P1 outcome: 0.594994 (297.5 mbb/g)
+100 river boards sampled in 38s
+  Avg B outcome: 0.024233 (12.1 mbb/g)
+  Avg P1 outcome: 0.429863 (214.9 mbb/g)
+1k river boards sampled in 1m49s
+  Avg B outcome: 0.026542 (13.3 mbb/g)
+  Avg P1 outcome: 0.439313 (219.7 mbb/g)
+10k river boards sampled in 13m51s
+  Avg B outcome: 0.027844 (13.9 mbb/g)
+  Avg P1 outcome: 0.468129 (234.1 mbb/g)

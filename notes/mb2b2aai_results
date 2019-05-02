@@ -14,11 +14,15 @@ play
 
 Not possible to resolve all river subgames.
 
-play_resolved
-Sample 1 board
-31s
-Avg B outcome: 0.811346 (405.7 mbb/g)
-Sample 100 boards
-46m
-Avg B outcome: 0.746263 (373.1 mbb/g)
-Avg P1 outcome: 0.167473 (83.7 mbb/g)
+Redo with head_to_head
+8b vs. 8b with river subgame resolving
+Sample 1 board (37s):
+  Avg B outcome: 0.117187 (58.6 mbb/g)
+  Avg P1 outcome: -0.215330 (-107.7 mbb/g)
+  22.3 secs spent resolving
+  Avg 0.01 secs per resolve (2546 resolves)
+Sample 10 boards (5m8s):
+  Avg B outcome: 0.149967 (75.0 mbb/g)
+  Avg P1 outcome: 0.093787 (46.9 mbb/g)
+  303.4 secs spent resolving
+  Avg 0.01 secs per resolve (25460 resolves)

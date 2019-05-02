@@ -1,0 +1,61 @@
+How big a system can we build on our local machine?
+
+About 25 gigs to work with (buckets are ~5g)
+
+Asymmetric.
+
+Don't save probs for turn or river.
+
+One byte for each target player river regret.
+One byte for each opponent turn regret.
+Two bytes for each target player turn regret.
+Two bytes for each opponent player turn regret.
+Int for each target player flop regret
+Int for each target player flop sumprob
+Int for each opponent flop regret
+
+OurBetSizes 0.5;1.0|0.5;1.0|0.5;1.0|0.5;1.0
+OppBetSizes 0.5,1.0;0.5,1.0|0.5,1.0;0.5,1.0|0.5;1.0|0.5;1.0
+164 flop betting sequences
+
+OurBetSizes 0.5;1.0;1.0|0.5;1.0;1.0|0.5;1.0|0.5;1.0
+OppBetSizes 0.5,1.0;0.5,1.0;0.5,1.0|0.5,1.0;0.5,1.0;0.5,1.0|0.5;1.0|0.5;1.0
+394 flop betting sequences
+Surprised it's not more.
+
+OurBetSizes 0.5;1.0;1.0|0.5;1.0;1.0|0.5;1.0|0.5;1.0
+OppBetSizes 0.5,1.0,2.0;0.5,1.0,2.0;0.5,1.0,2.0|0.5,1.0,2.0;0.5,1.0,2.0;0.5,1.0,2.0|0.5;1.0|0.5;1.0
+Didn't change?  That seems wrong.
+
+OurBetSizes 0.5;1.0;1.0|0.5;1.0;1.0|0.5;1.0|0.5;1.0
+OppBetSizes 0.5,1.0,2.0;0.5,1.0,2.0;0.5,1.0,2.0|0.5,1.0,2.0;0.5,1.0,2.0;0.5,1.0,2.0|0.5;1.0|0.5;1.0
+640 flop betting sequences.
+1,286,792 flop null buckets
+836,414,800 flop information sets
+
+OppBetSizes 0.5,1.0,2.0;0.5,1.0,2.0;0.5,1.0,2.0|0.25,0.5,1.0,2.0;0.5,1.0,2.0;0.5,1.0,2.0|0.5;1.0|0.5;1.0
+778 flop betting sequences
+
+What should the final system look like?
+* Only 100 BB stack
+* Fit into a 1 TB RAM AWS instance?
+* Asymmetric - few bets for us, many for opponent
+* Jam or fold after some total number of bets (5 or 6)
+*   Maybe not needed with 100 BB stack size.
+* Only all-in bet when one pot size bet remaining
+* Eliminate a bet if it is too close to an all-in - just allow the all-in bet.
+* Can we quantize flop?  Will certainly quantize the turn and river.
+* Only one bet and raise on the turn
+
+big2asym
+1820 flop betting sequences
+With 8 bytes for regret and sumprob:
+23.4g
+OurBetSizes 0.5,1.0;1.0;1.0;1.0;999.0|0.5,1.0;1.0;1.0;1.0;999.0|0.5;1.0|0.5;1.0
+OppBetSizes 0.5,1.0,2.0;0.5,1.0,2.0;0.5,1.0,2.0;1.0;999.0|0.25,0.5,1.0,2.0;0.5,1.0,2.0;0.5,1.0,2.0;1.0;999.0|0.5;1.0|0.5;1.0
+
+big2sym
+Like big2asym, but use opp's parameters for both players.
+8274 flop betting sequences
+With 8 bytes for regret and sumprob:
+85g for flop data

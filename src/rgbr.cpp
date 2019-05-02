@@ -7,7 +7,7 @@
 #include <memory>
 
 #include "betting_abstraction.h"
-#include "betting_tree.h"
+#include "betting_trees.h"
 #include "board_tree.h"
 #include "buckets.h"
 #include "canonical_cards.h"
@@ -32,9 +32,9 @@ using std::shared_ptr;
 using std::unique_ptr;
 
 RGBR::RGBR(const CardAbstraction &ca, const BettingAbstraction &ba, const CFRConfig &cc,
-	   const Buckets &buckets, const BettingTree *betting_tree, bool current, int num_threads,
-	   const bool *streets) :
-  CFRP(ca, ba, cc, buckets, betting_tree, num_threads, -1) {
+	   const Buckets &buckets, bool current, int num_threads, const bool *streets,
+	   int target_p) :
+  CFRP(ca, ba, cc, buckets, num_threads, target_p) {
   br_current_ = current;
   value_calculation_ = true;
 
@@ -93,12 +93,16 @@ double RGBR::Go(int it, int p) {
     players[p1] = p1 != p || ! all_streets;
   }
   if (br_current_) {
-    regrets_.reset(new CFRValues(players.get(), streets, 0, 0, buckets_, betting_tree_));
-    regrets_->Read(dir, it_, betting_tree_->Root(), "x", -1, false);
+    regrets_.reset(new CFRValues(players.get(), streets, 0, 0, buckets_,
+				 betting_trees_->GetBettingTree()));
+    // Assumes symmetric
+    regrets_->Read(dir, it_, betting_trees_->GetBettingTree(), "x", -1, false);
     sumprobs_.reset(nullptr);
   } else {
-    sumprobs_.reset(new CFRValues(players.get(), streets, 0, 0, buckets_, betting_tree_));
-    sumprobs_->Read(dir, it_, betting_tree_->Root(), "x", -1, true);
+    sumprobs_.reset(new CFRValues(players.get(), streets, 0, 0, buckets_,
+				  betting_trees_->GetBettingTree()));
+    // Assumes symmetric
+    sumprobs_->Read(dir, it_, betting_trees_->GetBettingTree(), "x", -1, true);
     regrets_.reset(nullptr);
   }
 
@@ -126,11 +130,13 @@ double RGBR::Go(int it, int p) {
   if (subgame_street_ >= 0 && subgame_street_ <= max_street) pre_phase_ = true;
   VCFRState state(p, hand_tree_.get());
   SetStreetBuckets(0, 0, state);
-  shared_ptr<double []> vals = Process(betting_tree_->Root(), 0, state, 0);
+  // Assumes symmetric
+  shared_ptr<double []> vals = Process(betting_trees_->Root(), 0, state, 0);
   if (subgame_street_ >= 0 && subgame_street_ <= max_street) {
     WaitForFinalSubgames();
     pre_phase_ = false;
-    vals = Process(betting_tree_->Root(), 0, state, 0);
+    // Assumes symmetric
+    vals = Process(betting_trees_->Root(), 0, state, 0);
   }
   
   int num_hole_card_pairs = Game::NumHoleCardPairs(0);

@@ -14,7 +14,7 @@ class Node;
 class DynamicCBR : public VCFR {
 public:
   DynamicCBR(const CardAbstraction &ca, const BettingAbstraction &ba, const CFRConfig &cc,
-	     const Buckets &buckets, const BettingTree *betting_tree, int num_threads);
+	     const Buckets &buckets, int num_threads);
   DynamicCBR(void);
   ~DynamicCBR(void);
   std::shared_ptr<double []> Compute(Node *node, std::shared_ptr<double []> *reach_probs, int gbd,

@@ -1,0 +1,11 @@
+BettingAbstractionName asymc
+Limit false
+StackSize 200
+Asymmetric false
+NoLimitTreeType 1
+MinBet 2
+OurMaxBets 1,1,1,1
+OppMaxBets 1,1,1,1
+Asymmetric true
+OurBetSizes 0.5,1.0|0.5,1.0|0.5,1.0|0.5,1.0
+OppBetSizes 0.5,1.0,2.0|0.5,1.0,2.0|0.5,1.0,2.0|0.5,1.0,2.0

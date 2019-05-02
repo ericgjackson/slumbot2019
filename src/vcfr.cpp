@@ -599,8 +599,7 @@ void VCFR::SetStreetBuckets(int st, int gbd, const VCFRState &state) {
   for (int i = 0; i < num_board_cards; ++i) {
     cards[i + 2] = board[i];
   }
-  int lbd = BoardTree::LocalIndex(state.RootBdSt(), state.RootBd(),
-					   st, gbd);
+  int lbd = BoardTree::LocalIndex(state.RootBdSt(), state.RootBd(), st, gbd);
 
   const HandTree *hand_tree = state.GetHandTree();
   const CanonicalCards *hands = hand_tree->Hands(st, lbd);

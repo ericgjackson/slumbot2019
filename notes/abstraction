@@ -1,0 +1,15 @@
+Build simple turn and river abstractions for experiments.
+Only 1000 buckets?
+Use build_kmeans_buckets.
+
+River:
+wmls4.a
+WML features for all four streets: wml0.5,wml0.6,wml0.7,wml
+No multiplier
+Neighbor thresh 100.0
+18.8m unique objects
+
+Turn:
+wmls3 turn features: 0.5, 0.7, 0.9
+
+a_params

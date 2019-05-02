@@ -6,7 +6,6 @@
 
 #include "betting_abstraction.h"
 #include "betting_abstraction_params.h"
-#include "betting_tree.h"
 #include "buckets.h"
 #include "card_abstraction.h"
 #include "card_abstraction_params.h"
@@ -54,27 +53,23 @@ int main(int argc, char *argv[]) {
   unsigned int target_p = -1;
   if (argc == 9) {
     if (! betting_abstraction->Asymmetric()) {
-      fprintf(stderr, "Don't specify p0/p1 when using symmetric betting "
-	      "abstraction\n");
+      fprintf(stderr, "Don't specify p0/p1 when using symmetric betting abstraction\n");
       exit(-1);
     }
     string p_arg = argv[8];
     if (p_arg == "p0")      target_p = 0;
     else if (p_arg == "p1") target_p = 1;
     else                    Usage(argv[0]);
+  } else {
+    if (betting_abstraction->Asymmetric()) {
+      fprintf(stderr, "Must specify p0/p1 when using asymmetric betting abstraction\n");
+      exit(-1);
+    }
   }
   Buckets buckets(*card_abstraction, false);
 
-  unique_ptr<BettingTree> betting_tree;
-  if (betting_abstraction->Asymmetric()) {
-    betting_tree.reset(new BettingTree(*betting_abstraction, target_p));
-  } else {
-    betting_tree.reset(new BettingTree(*betting_abstraction));
-  }
-
   if (cfr_config->Algorithm() == "cfrp") {
-    CFRP cfr(*card_abstraction, *betting_abstraction, *cfr_config, buckets, betting_tree.get(),
-	     num_threads, target_p);
+    CFRP cfr(*card_abstraction, *betting_abstraction, *cfr_config, buckets, num_threads, target_p);
     cfr.Initialize();
     cfr.Run(start_it, end_it);
   } else {

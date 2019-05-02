@@ -1,5 +1,4 @@
-// Alberta has a notion of suit groups.  Suits that are equivalent are in the
-// same group.
+// Alberta has a notion of suit groups.  Suits that are equivalent are in the same group.
 //
 // I would like to incrementally add cards and not be limited to adding
 // three cards.  For starters, should be able to calculate canonical flop

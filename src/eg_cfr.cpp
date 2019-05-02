@@ -3,7 +3,7 @@
 
 #include <memory>
 
-#include "betting_tree.h"
+#include "betting_trees.h"
 #include "board_tree.h"
 #include "eg_cfr.h"
 #include "hand_value_tree.h"
@@ -14,8 +14,8 @@
 using std::shared_ptr;
 
 // Can we skip this if no opp hands reach
-shared_ptr<double []> EGCFR::HalfIteration(BettingTree *subtree, const VCFRState &state) {
-  Node *subtree_root = subtree->Root();
+shared_ptr<double []> EGCFR::HalfIteration(BettingTrees *subtrees, const VCFRState &state) {
+  Node *subtree_root = subtrees->Root();
   return Process(subtree_root, 0, state, subtree_root->Street());
 }
 

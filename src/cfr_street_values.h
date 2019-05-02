@@ -13,7 +13,7 @@ class Writer;
 class AbstractCFRStreetValues {
  public:
   virtual ~AbstractCFRStreetValues(void) {}
-  virtual void AllocateAndClear(Node *node) = 0;
+  virtual void AllocateAndClear(Node *node, int p) = 0;
   virtual void RMProbs(int p, int nt, int offset,  int num_succs, int dsi, double *probs) const = 0;
   virtual void PureProbs(int p, int nt, int offset, int num_succs, double *probs) const = 0;
   virtual void Floor(int p, int nt, int num_succs, int floor) = 0;
@@ -37,8 +37,7 @@ public:
   CFRValueType MyType(void) const;
   bool Players(int p) const {return players_[p];}
   T *AllValues(int p, int nt) {return data_[p] ? data_[p][nt] : nullptr;}
-  void AllocateAndClear2(Node *node);
-  void AllocateAndClear(Node *node);
+  void AllocateAndClear(Node *node, int p);
   // Note: doesn't handle nodes with one succ
   void RMProbs(int p, int nt, int offset, int num_succs, int dsi, double *probs) const;
   // Note: doesn't handle nodes with one succ
@@ -55,6 +54,8 @@ public:
   void MergeInto(Node *full_node, Node *subgame_node, int root_bd_st, int root_bd,
 		 const CFRStreetValues<T> *subgame_values, const Buckets &buckets);
 protected:
+  void AllocateAndClear2(Node *node, int p);
+  
   int st_;
   std::unique_ptr<bool []> players_;
   int num_holdings_;

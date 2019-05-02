@@ -33,14 +33,22 @@ int main(int argc, char *argv[]) {
 
   BettingTree *betting_tree = NULL;
   if (argc == 4) {
+    if (! betting_abstraction->Asymmetric()) {
+      fprintf(stderr, "With symmetric betting abstractions, no player argument allowed\n");
+      exit(-1);
+    }
     string p_arg = argv[3];
-    unsigned int p;
+    int p;
     if (p_arg == "p0")      p = 0;
     else if (p_arg == "p1") p = 1;
     else                    Usage(argv[0]);
-    betting_tree = BettingTree::BuildAsymmetricTree(*betting_abstraction, p);
+    betting_tree = new BettingTree(*betting_abstraction, p);
   } else {
-    betting_tree = BettingTree::BuildTree(*betting_abstraction);
+    if (betting_abstraction->Asymmetric()) {
+      fprintf(stderr, "With asymmetric betting abstractions, player argument required\n");
+      exit(-1);
+    }
+    betting_tree = new BettingTree(*betting_abstraction);
   }
   betting_tree->Display();
 }
