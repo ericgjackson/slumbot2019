@@ -17,28 +17,29 @@ void AbstractCFRStreetValues::MergeInto(Node *full_node, Node *subgame_node, int
 					int root_bd, const AbstractCFRStreetValues *subgame_values,
 					const Buckets &buckets) {
   CFRValueType vtype = MyType();
-  if (vtype == CFR_CHAR) {
+  if (vtype == CFRValueType::CFR_CHAR) {
     CFRStreetValues<unsigned char> *street_values =
       dynamic_cast<CFRStreetValues<unsigned char> *>(this);
     const CFRStreetValues<unsigned char> *subgame_street_values =
       dynamic_cast<const CFRStreetValues<unsigned char> *>(subgame_values);
     street_values->MergeInto(full_node, subgame_node, root_bd_st, root_bd, subgame_street_values,
 			     buckets);
-  } else if (vtype == CFR_SHORT) {
+  } else if (vtype == CFRValueType::CFR_SHORT) {
     CFRStreetValues<unsigned short> *street_values =
       dynamic_cast<CFRStreetValues<unsigned short> *>(this);
     const CFRStreetValues<unsigned short> *subgame_street_values =
       dynamic_cast<const CFRStreetValues<unsigned short> *>(subgame_values);
     street_values->MergeInto(full_node, subgame_node, root_bd_st, root_bd, subgame_street_values,
 			     buckets);
-  } else if (vtype == CFR_INT) {
+  } else if (vtype == CFRValueType::CFR_INT) {
     CFRStreetValues<int> *street_values = dynamic_cast<CFRStreetValues<int> *>(this);
     const CFRStreetValues<int> *subgame_street_values =
       dynamic_cast<const CFRStreetValues<int> *>(subgame_values);
     street_values->MergeInto(full_node, subgame_node, root_bd_st, root_bd, subgame_street_values,
 			     buckets);
-  } else if (vtype == CFR_DOUBLE) {
-    CFRStreetValues<double> *street_values = dynamic_cast<CFRStreetValues<double> *>(this);
+  } else if (vtype == CFRValueType::CFR_DOUBLE) {
+    CFRStreetValues<double> *street_values =
+      dynamic_cast<CFRStreetValues<double> *>(this);
     const CFRStreetValues<double> *subgame_street_values =
       dynamic_cast<const CFRStreetValues<double> *>(subgame_values);
     street_values->MergeInto(full_node, subgame_node, root_bd_st, root_bd, subgame_street_values,
@@ -51,7 +52,8 @@ void AbstractCFRStreetValues::MergeInto(Node *full_node, Node *subgame_node, int
 
 template <typename T>
 CFRStreetValues<T>::CFRStreetValues(int st, const bool *players, int num_holdings,
-				    int *num_nonterminals) {
+				    int *num_nonterminals, CFRValueType file_value_type) {
+  file_value_type_ = file_value_type;
   st_ = st;
   int num_players = Game::NumPlayers();
   players_.reset(new bool[num_players]);
@@ -87,27 +89,27 @@ CFRStreetValues<T>::~CFRStreetValues(void) {
 
 template <>
 CFRValueType CFRStreetValues<unsigned char>::MyType(void) const {
-  return CFR_CHAR;
+  return CFRValueType::CFR_CHAR;
 }
 
 template <>
 CFRValueType CFRStreetValues<unsigned short>::MyType(void) const {
-  return CFR_SHORT;
+  return CFRValueType::CFR_SHORT;
 }
 
 template <>
 CFRValueType CFRStreetValues<int>::MyType(void) const {
-  return CFR_INT;
+  return CFRValueType::CFR_INT;
 }
 
 template <>
 CFRValueType CFRStreetValues<unsigned int>::MyType(void) const {
-  return CFR_INT;
+  return CFRValueType::CFR_INT;
 }
 
 template <>
 CFRValueType CFRStreetValues<double>::MyType(void) const {
-  return CFR_DOUBLE;
+  return CFRValueType::CFR_DOUBLE;
 }
 
 template <typename T>
@@ -187,8 +189,9 @@ void CFRStreetValues<T>::RMProbs(int p, int nt, int offset, int num_succs, int d
 }
 
 // Note: doesn't handle nodes with one succ
-template <class T>
-void CFRStreetValues<T>::PureProbs(int p, int nt, int offset, int num_succs, double *probs) const {
+template <typename T>
+void CFRStreetValues<T>::PureProbs(int p, int nt, int offset, int num_succs,
+				   double *probs) const {
   T *my_vals = &data_[p][nt][offset];
   T max_v = my_vals[0];
   int best_s = 0;
@@ -221,8 +224,7 @@ void CFRStreetValues<T>::Set(int p, int nt, int h, int num_succs, T *vals) {
 }
 
 template <typename T>
-void CFRStreetValues<T>::WriteNode(Node *node, Writer *writer,
-				   void *compressor) const {
+void CFRStreetValues<T>::WriteNode(Node *node, Writer *writer, void *compressor) const {
   int p = node->PlayerActing();
   int nt = node->NonterminalID();
   int num_succs = node->NumSuccs();
@@ -239,11 +241,10 @@ void CFRStreetValues<T>::WriteNode(Node *node, Writer *writer,
   }
 }
 
-// Doesn't support abstractin
+// Doesn't support abstraction
 template <typename T>
-void CFRStreetValues<T>::WriteBoardValuesForNode(Node *node, Writer *writer,
-						 void *compressor, int lbd,
-						 int num_hole_card_pairs) const {
+void CFRStreetValues<T>::WriteBoardValuesForNode(Node *node, Writer *writer, void *compressor,
+						 int lbd, int num_hole_card_pairs) const {
   int p = node->PlayerActing();
   int nt = node->NonterminalID();
   int num_succs = node->NumSuccs();
@@ -280,6 +281,70 @@ void CFRStreetValues<T>::InitializeValuesForReading(int p, int nt, int num_succs
   // Don't need to zero
 }
 
+// raw_probs need not sum to 1.0
+// raw_probs can contain negative values (e.g., from regrets).  Negative values are treated like
+// zero.
+// num_succs must be at least 1
+// We take care to make sure quantized probabilities always sum to exactly 255.
+static void Quantize(double *raw_probs, int num_succs, unsigned char *quantized_probs) {
+  double sum = 0;
+  for (int s = 0; s < num_succs; ++s) {
+    sum += raw_probs[s];
+  }
+  int q_sum = 0;
+  for (int s = 0; s < num_succs - 1; ++s) {
+    double raw = raw_probs[s];
+    if (raw < 0) {
+      quantized_probs[s] = 0;
+      continue;
+    }
+    // Note that we multiply by 256.0, not 255.0.  I want 256 equally sized buckets.
+    // But I want the maximum value to be 255.
+    // Corner case is that raw_probs[s] == sum which could lead to a quantized prob value of 256.
+    int q = (raw_probs[s] / sum) * 256.0;
+    if (q_sum + q > 255) q = 255 - q_sum;
+    quantized_probs[s] = q;
+    q_sum += q;
+  }
+  if (q_sum > 255) {
+    fprintf(stderr, "q_sum > 255?!?  %i\n", q_sum);
+    for (int s = 0; s < num_succs; ++s) {
+      fprintf(stderr, "raw %f q %i\n", raw_probs[s], (int)quantized_probs[s]);
+    }
+    exit(-1);
+  }
+  quantized_probs[num_succs - 1] = 255 - q_sum;
+}
+
+template <>
+unsigned char ***CFRStreetValues<unsigned char>::GetUnsignedCharData(void) {
+  return data_;
+}
+
+template <>
+unsigned char ***CFRStreetValues<unsigned short>::GetUnsignedCharData(void) {
+  fprintf(stderr, "Cannot call GetUnsignedCharData()\n");
+  exit(-1);
+}
+
+template <>
+unsigned char ***CFRStreetValues<int>::GetUnsignedCharData(void) {
+  fprintf(stderr, "Cannot call GetUnsignedCharData()\n");
+  exit(-1);
+}
+
+template <>
+unsigned char ***CFRStreetValues<unsigned int>::GetUnsignedCharData(void) {
+  fprintf(stderr, "Cannot call GetUnsignedCharData()\n");
+  exit(-1);
+}
+
+template <>
+unsigned char ***CFRStreetValues<double>::GetUnsignedCharData(void) {
+  fprintf(stderr, "Cannot call GetUnsignedCharData()\n");
+  exit(-1);
+}
+
 template <typename T>
 void CFRStreetValues<T>::ReadNode(Node *node, Reader *reader, void *decompressor) {
   int num_succs = node->NumSuccs();
@@ -296,8 +361,60 @@ void CFRStreetValues<T>::ReadNode(Node *node, Reader *reader, void *decompressor
     exit(-1);
   }
   int num_actions = num_holdings_ * num_succs;
-  for (int a = 0; a < num_actions; ++a) {
-    reader->ReadOrDie(&data_[p][nt][a]);
+  if (file_value_type_ == CFRValueType::CFR_CHAR) {
+    for (int a = 0; a < num_actions; ++a) {
+      reader->ReadOrDie(&data_[p][nt][a]);
+    }
+  } else if (file_value_type_ == CFRValueType::CFR_SHORT) {
+    if (sizeof(T) == 1) {
+      // Quantizing
+      unique_ptr<double []> succ_probs(new double[num_succs]);
+      unsigned char ***data = GetUnsignedCharData();
+      for (int h = 0; h < num_holdings_; ++h) {
+	for (int s = 0; s < num_succs; ++s) {
+	  unsigned short us;
+	  reader->ReadOrDie(&us);
+	  succ_probs[s] = us;
+	}
+	Quantize(succ_probs.get(), num_succs, &data[p][nt][h * num_succs]);
+      }
+    } else {
+      for (int a = 0; a < num_actions; ++a) {
+	reader->ReadOrDie(&data_[p][nt][a]);
+      }
+    }
+  } else if (file_value_type_ == CFRValueType::CFR_INT) {
+    if (sizeof(T) == 1) {
+      unique_ptr<double []> succ_probs(new double[num_succs]);
+      unsigned char ***data = GetUnsignedCharData();
+      for (int h = 0; h < num_holdings_; ++h) {
+	for (int s = 0; s < num_succs; ++s) {
+	  int i;
+	  reader->ReadOrDie(&i);
+	  succ_probs[s] = i;
+	}
+	Quantize(succ_probs.get(), num_succs, &data[p][nt][h * num_succs]);
+      }
+    } else {
+      for (int a = 0; a < num_actions; ++a) {
+	reader->ReadOrDie(&data_[p][nt][a]);
+      }
+    }
+  } else if (file_value_type_ == CFRValueType::CFR_DOUBLE) {
+    if (sizeof(T) == 1) {
+      unique_ptr<double []> succ_probs(new double[num_succs]);
+      unsigned char ***data = GetUnsignedCharData();
+      for (int h = 0; h < num_holdings_; ++h) {
+	for (int s = 0; s < num_succs; ++s) {
+	  reader->ReadOrDie(&succ_probs[s]);
+	}
+	Quantize(succ_probs.get(), num_succs, &data[p][nt][h * num_succs]);
+      }
+    } else {
+      for (int a = 0; a < num_actions; ++a) {
+	reader->ReadOrDie(&data_[p][nt][a]);
+      }
+    }
   }
 }
 
@@ -369,13 +486,11 @@ void CFRStreetValues<T>::MergeInto(Node *full_node, Node *subgame_node, int root
       int a = 0;
       T *vals = subgame_values->data_[p][subgame_nt];
       for (int lbd = 0; lbd < num_local_boards; ++lbd) {
-	int gbd =
-	  BoardTree::GlobalIndex(root_bd_st, root_bd, st_, lbd);
+	int gbd = BoardTree::GlobalIndex(root_bd_st, root_bd, st_, lbd);
 	for (int hcp = 0; hcp < num_hole_card_pairs; ++hcp) {
 	  for (int s = 0; s < num_succs; ++s) {
 	    T v = vals[a++];
-	    int new_a = gbd * num_hole_card_pairs * num_succs +
-	      hcp * num_succs + s;
+	    int new_a = gbd * num_hole_card_pairs * num_succs + hcp * num_succs + s;
 	    data_[p][full_nt][new_a] = v;
 	  }
 	}

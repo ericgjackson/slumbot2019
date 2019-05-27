@@ -12,6 +12,7 @@ class BettingTrees;
 class CardAbstraction;
 class CFRConfig;
 class HandTree;
+class ReachProbs;
 class VCFRState;
 
 class EGCFR : public VCFR {
@@ -19,8 +20,7 @@ class EGCFR : public VCFR {
   EGCFR(const CardAbstraction &ca, const CardAbstraction &base_ca, const BettingAbstraction &ba,
 	const BettingAbstraction &base_ba, const CFRConfig &cc, const CFRConfig &base_cc,
 	const Buckets &buckets, ResolvingMethod method, bool cfrs, bool zero_sum, int num_threads);
-  virtual void SolveSubgame(BettingTrees *subtrees, int solve_bd,
-			    std::shared_ptr<double []> *reach_probs,
+  virtual void SolveSubgame(BettingTrees *subtrees, int solve_bd, const ReachProbs &reach_probs,
 			    const std::string &action_sequence, const HandTree *hand_tree,
 			    double *opp_cvs, int target_p, bool both_players, int num_its) = 0;
  protected:

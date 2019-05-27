@@ -109,7 +109,12 @@ TODO
 
 ## Multiplayer
 
-TODO
+Multiplayer (i.e., more than two players) does not work with all features of this package.
+For example, multiplayer is only supported by MCCFR and not by CFR+.  And you cannot compute
+real-game best responses on multiplayer games.
+
+Because the betting tree can explode with multiplayer games, it is often advisable to use
+a reentrant betting tree with multiplayer.  See the "Betting Abstraction" section below.
 
 ## Disk-Based CFR+
 
@@ -209,3 +214,8 @@ You can also view your betting tree:
 ../bin/show_betting tree <game params> <betting params>
 ```
 
+### Reentrant Betting Abstractions
+
+For an example, see runs/mb1b1r3_params.
+
+TODO

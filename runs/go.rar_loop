@@ -1,0 +1,9 @@
+#!/bin/bash
+
+for i in {1..1000}
+do
+# ../bin/run_approx_rgbr ms2f1t1h5_params none_params mb1b1_params cfrps_params 200 raw 2 1
+# ../bin/run_approx_rgbr ms3f1t1r1h5_params none_params mb1b1_params cfrps_params 200 raw 2 1
+# ../bin/run_approx_rgbr ms3f1t1r1h5_params none_params mb1b1_params cfrps_params 200 raw 3 1
+../bin/run_approx_rgbr ms3f1t1r1h5_params nxhs3_params mb1b1_params tcfr_params 6 raw 3 1
+done

@@ -8,6 +8,8 @@
 //
 // With base_mem false, solve_all_subgames is pretty slow because we repeatedly read the entire base
 // strategy in (inside ReadBaseSubgameStrategy()).
+//
+// Should allow trunk sumprobs to be quantized.
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -40,8 +42,9 @@
 #include "hand_tree.h"
 #include "io.h"
 #include "params.h"
+#include "reach_probs.h"
 #include "split.h"
-#include "subgame_utils.h"
+#include "subgame_utils.h" // WriteSubgame()
 #include "unsafe_eg_cfr.h"
 #include "vcfr.h"
 
@@ -62,19 +65,18 @@ public:
 		const bool *pure_streets, bool base_mem, int base_it, int num_subgame_its,
 		int num_threads);
   ~SubgameSolver(void) {}
-  void Walk(Node *node, const string &action_sequence, int gbd, shared_ptr<double []> *reach_probs,
+  void Walk(Node *node, const string &action_sequence, int gbd, const ReachProbs &reach_probs,
 	    int last_st);
   void Walk(void);
 private:
   BettingTrees *CreateSubtrees(Node *node, int target_p, bool base);
-  void Split(Node *node, const string &action_sequence, int pgbd,
-	     shared_ptr<double []> *reach_probs);
+  void Split(Node *node, const string &action_sequence, int pgbd, const ReachProbs &reach_probs);
   void StreetInitial(Node *node, const string &action_sequence, int pgbd,
-		     shared_ptr<double []> *reach_probs);
+		     const ReachProbs &reach_probs);
   void ResolveUnsafe(Node *node, int gbd, const string &action_sequence,
-		     shared_ptr<double []> *reach_probs);
+		     const ReachProbs &reach_probs);
   void ResolveSafe(Node *node, int gbd, const string &action_sequence,
-		     shared_ptr<double []> *reach_probs);
+		   const ReachProbs &reach_probs);
 
   const CardAbstraction &base_card_abstraction_;
   const CardAbstraction &subgame_card_abstraction_;
@@ -86,7 +88,7 @@ private:
   const Buckets &subgame_buckets_;
   unique_ptr<BettingTrees> base_betting_trees_;
   unique_ptr<HandTree> trunk_hand_tree_;
-  unique_ptr<CFRValues> trunk_sumprobs_;
+  shared_ptr<CFRValues> trunk_sumprobs_;
   unique_ptr<DynamicCBR> dynamic_cbr_;
   int solve_st_;
   ResolvingMethod method_;
@@ -166,7 +168,7 @@ SubgameSolver::SubgameSolver(const CardAbstraction &base_card_abstraction,
     strcat(dir, buf);
   }
 #endif
-  trunk_sumprobs_->Read(dir, base_it_, base_betting_trees_->GetBettingTree(), "x", -1, true);
+  trunk_sumprobs_->Read(dir, base_it_, base_betting_trees_->GetBettingTree(), "x", -1, true, false);
 
   if (base_mem_) {
     // We are calculating CBRs from the *base* strategy, not the resolved
@@ -178,13 +180,13 @@ SubgameSolver::SubgameSolver(const CardAbstraction &base_card_abstraction,
       for (int st = 0; st <= max_street; ++st) {
 	subgame_streets[st] = st >= solve_st_;
       }
-      unique_ptr<CFRValues> regrets;
+      shared_ptr<CFRValues> regrets;
       regrets.reset(new CFRValues(nullptr, subgame_streets.get(), 0, 0, base_buckets_,
 				  base_betting_trees_->GetBettingTree()));
-      regrets->Read(dir, base_it_, base_betting_trees_->GetBettingTree(), "x", -1, false);
-      dynamic_cbr_->MoveRegrets(regrets);
+      regrets->Read(dir, base_it_, base_betting_trees_->GetBettingTree(), "x", -1, false, false);
+      dynamic_cbr_->SetRegrets(regrets);
     } else {
-      dynamic_cbr_->MoveSumprobs(trunk_sumprobs_);
+      dynamic_cbr_->SetSumprobs(trunk_sumprobs_);
     }
   }
 
@@ -237,7 +239,7 @@ BettingTrees *SubgameSolver::CreateSubtrees(Node *node, int target_p, bool base)
 
 class SSThread {
 public:
-  SSThread(Node *node, const string &action_sequence, int pgbd, shared_ptr<double []> *reach_probs,
+  SSThread(Node *node, const string &action_sequence, int pgbd, const ReachProbs &reach_probs,
 	   SubgameSolver *solver, int thread_index, int num_threads);
   ~SSThread(void) {}
   void Run(void);
@@ -247,7 +249,7 @@ private:
   Node *node_;
   string action_sequence_;
   int pgbd_;
-  shared_ptr<double []> *reach_probs_;
+  const ReachProbs &reach_probs_;
   SubgameSolver *solver_;
   int thread_index_;
   int num_threads_;
@@ -255,15 +257,10 @@ private:
 };
 
 SSThread::SSThread(Node *node, const string &action_sequence, int pgbd,
-		   shared_ptr<double []> *reach_probs, SubgameSolver *solver, int thread_index,
+		   const ReachProbs &reach_probs, SubgameSolver *solver, int thread_index,
 		   int num_threads) :
-  action_sequence_(action_sequence) {
-  node_ = node;
-  pgbd_ = pgbd;
-  reach_probs_ = reach_probs;
-  solver_ = solver;
-  thread_index_ = thread_index;
-  num_threads_ = num_threads;
+  node_(node), action_sequence_(action_sequence), pgbd_(pgbd), reach_probs_(reach_probs),
+  solver_(solver), thread_index_(thread_index), num_threads_(num_threads) {
 }
 
 void SSThread::Go(void) {
@@ -292,7 +289,7 @@ void SSThread::Join(void) {
 }
 
 void SubgameSolver::Split(Node *node, const string &action_sequence, int pgbd,
-			  shared_ptr<double []> *reach_probs) {
+			  const ReachProbs &reach_probs) {
   unique_ptr<SSThread * []> threads(new SSThread *[num_threads_]);
   for (int t = 0; t < num_threads_; ++t) {
     threads[t] = new SSThread(node, action_sequence, pgbd, reach_probs, this, t, num_threads_);
@@ -305,7 +302,7 @@ void SubgameSolver::Split(Node *node, const string &action_sequence, int pgbd,
 }
 
 void SubgameSolver::StreetInitial(Node *node, const string &action_sequence, int pgbd,
-				  shared_ptr<double []> *reach_probs) {
+				  const ReachProbs &reach_probs) {
   int nst = node->Street();
   if (nst == 1 && num_threads_ > 1) {
     Split(node, action_sequence, pgbd, reach_probs);
@@ -323,7 +320,7 @@ void SubgameSolver::StreetInitial(Node *node, const string &action_sequence, int
 // Might need to do up to four solves.  Imagine we have an asymmetric base
 // betting tree, and an asymmetric solving method.
 void SubgameSolver::ResolveUnsafe(Node *node, int gbd, const string &action_sequence,
-				  shared_ptr<double []> *reach_probs) {
+				  const ReachProbs &reach_probs) {
   int st = node->Street();
   fprintf(stderr, "ResolveUnsafe %s st %i nt %i gbd %i\n", action_sequence.c_str(), st,
 	  node->NonterminalID(), gbd);
@@ -419,7 +416,7 @@ void SubgameSolver::ResolveUnsafe(Node *node, int gbd, const string &action_sequ
 }
 
 void SubgameSolver::ResolveSafe(Node *node, int gbd, const string &action_sequence,
-				shared_ptr<double []> *reach_probs) {
+				const ReachProbs &reach_probs) {
   int st = node->Street();
   fprintf(stderr, "ResolveSafe %s st %i nt %i gbd %i\n", action_sequence.c_str(), st,
 	  node->NonterminalID(), gbd);
@@ -477,7 +474,7 @@ void SubgameSolver::ResolveSafe(Node *node, int gbd, const string &action_sequen
 }
 
 void SubgameSolver::Walk(Node *node, const string &action_sequence, int gbd,
-			 shared_ptr<double []> *reach_probs, int last_st) {
+			 const ReachProbs &reach_probs, int last_st) {
   if (node->Terminal()) return;
   int st = node->Street();
   if (st > last_st) {
@@ -499,44 +496,23 @@ void SubgameSolver::Walk(Node *node, const string &action_sequence, int gbd,
     return;
   }
 
-  Node *new_node = node;
-  
   const CFRValues *sumprobs;
   if (base_mem_ && ! current_) sumprobs = dynamic_cbr_->Sumprobs();
   else                         sumprobs = trunk_sumprobs_.get();
-  shared_ptr<double []> **succ_reach_probs =
-    GetSuccReachProbs(new_node, gbd, trunk_hand_tree_.get(), base_buckets_, sumprobs, reach_probs,
-		      0, 0, pure_streets_[st]);
-  
-  int num_succs = new_node->NumSuccs();
+  const CanonicalCards *hands = trunk_hand_tree_->Hands(st, gbd);
+  shared_ptr<ReachProbs []> succ_reach_probs =
+    ReachProbs::CreateSuccReachProbs(node, gbd, gbd, hands, base_buckets_, sumprobs, reach_probs, 
+				     false);
+  int num_succs = node->NumSuccs();
   for (int s = 0; s < num_succs; ++s) {
-    string action = new_node->ActionName(s);
-    Walk(new_node->IthSucc(s), action_sequence + action, gbd, succ_reach_probs[s], st);
+    string action = node->ActionName(s);
+    Walk(node->IthSucc(s), action_sequence + action, gbd, succ_reach_probs[s], st);
   }
-  for (int s = 0; s < num_succs; ++s) {
-    delete [] succ_reach_probs[s];
-  }
-  delete [] succ_reach_probs;
 }
 
 void SubgameSolver::Walk(void) {
-  int num_players = Game::NumPlayers();
-  shared_ptr<double []> *reach_probs = new shared_ptr<double []>[num_players];
-  int max_card1 = Game::MaxCard() + 1;
-  int num_enc = max_card1 * max_card1;
-  const CanonicalCards *preflop_hands = trunk_hand_tree_->Hands(0, 0);
-  int num_hole_card_pairs = Game::NumHoleCardPairs(0);
-  for (int p = 0; p < num_players; ++p) {
-    reach_probs[p].reset(new double[num_enc]);
-    for (int i = 0; i < num_enc; ++i) reach_probs[p][i] = 0;
-    for (int i = 0; i < num_hole_card_pairs; ++i) {
-      const Card *cards = preflop_hands->Cards(i);
-      int enc = cards[0] * max_card1 + cards[1];
-      reach_probs[p][enc] = 1.0;
-    }
-  }
-  Walk(base_betting_trees_->Root(), "x", 0, reach_probs, 0);
-  delete [] reach_probs;
+  unique_ptr<ReachProbs> reach_probs(ReachProbs::CreateRoot());
+  Walk(base_betting_trees_->Root(), "x", 0, *reach_probs, 0);
 }
 
 static void Usage(const char *prog_name) {

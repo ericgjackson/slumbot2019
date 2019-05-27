@@ -1,7 +1,6 @@
 BettingAbstractionName big2asym
 Limit false
 StackSize 200
-Asymmetric false
 NoLimitTreeType 1
 MinBet 2
 OurMaxBets 5,5,2,2

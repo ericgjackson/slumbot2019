@@ -21,12 +21,14 @@ class CFRValues {
 	    const Buckets &buckets, const BettingTrees &betting_trees);
   virtual ~CFRValues(void);
   AbstractCFRStreetValues *StreetValues(int st) const {return street_values_[st];}
-  void AllocateAndClear(const BettingTree *betting_tree, CFRValueType value_type, int only_p);
-  void CreateStreetValues(int st, CFRValueType value_type);
+  void AllocateAndClear(const BettingTree *betting_tree, CFRValueType value_type, bool quantize,
+			int only_p);
+  void CreateStreetValues(int st, CFRValueType value_type, bool quantize);
   void Read(const char *dir, int it, const BettingTree *betting_tree,
-	    const std::string &action_sequence, int only_p, bool sumprobs);
+	    const std::string &action_sequence, int only_p, bool sumprobs, bool quantize);
   void ReadAsymmetric(const char *dir, int it, const BettingTrees &betting_trees,
-		      const std::string &action_sequence, int only_p, bool sumprobs);
+		      const std::string &action_sequence, int only_p, bool sumprobs,
+		      bool quantize);
   void Write(const char *dir, int it, Node *root, const std::string &action_sequence, int only_p,
 	     bool sumprobs) const;
   // Note: doesn't handle nodes with one succ

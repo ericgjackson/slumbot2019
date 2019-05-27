@@ -179,7 +179,7 @@ void CFRPSubgame::Go(void) {
     // Only need the opponent's sumprobs
     sumprobs_.reset(new CFRValues(sp_players.get(), subtree_streets_.get(), root_bd_, root_bd_st_,
 				  buckets_, subtrees_->GetBettingTree()));
-    sumprobs_->Read(dir, it_, subtrees_->GetBettingTree(), action_sequence_, -1, true);
+    sumprobs_->Read(dir, it_, subtrees_->GetBettingTree(), action_sequence_, -1, true, false);
   } else {
     // Need both players regrets
     regrets_.reset(new CFRValues(nullptr, subtree_streets_.get(), root_bd_, root_bd_st_, buckets_,
@@ -192,27 +192,29 @@ void CFRPSubgame::Go(void) {
       if (p_ == 1) {
 	// It 1 P1 phase: initialize P0 and P1 regrets
 	// Shouldn't I support doubles as well as ints based on setting inside CFRConfig?
-	regrets_->AllocateAndClear(subtrees_->GetBettingTree(), CFR_INT, -1);
+	regrets_->AllocateAndClear(subtrees_->GetBettingTree(), CFRValueType::CFR_INT, false, -1);
       } else {
 	// It 1 P0 phase: read P1 regrets from disk; initialize P0 regrets
-	regrets_->Read(dir, it_, subtrees_->GetBettingTree(), action_sequence_, 1, false);
-	regrets_->AllocateAndClear(subtrees_->GetBettingTree(), CFR_INT, 0);
+	regrets_->Read(dir, it_, subtrees_->GetBettingTree(), action_sequence_, 1, false, false);
+	regrets_->AllocateAndClear(subtrees_->GetBettingTree(), CFRValueType::CFR_INT, false, 0);
       }
     } else {
       if (p_ == 1) {
 	// Read regrets for both players from previous iteration
-	regrets_->Read(dir, it_ - 1, subtrees_->GetBettingTree(), action_sequence_, -1, false);
+	regrets_->Read(dir, it_ - 1, subtrees_->GetBettingTree(), action_sequence_, -1, false,
+		       false);
       } else {
 	// Read P1 regrets from current iteration
 	// Read P0 regrets from previous iteration
-	regrets_->Read(dir, it_, subtrees_->GetBettingTree(), action_sequence_, 1, false);
-	regrets_->Read(dir, it_ - 1, subtrees_->GetBettingTree(), action_sequence_, 0, false);
+	regrets_->Read(dir, it_, subtrees_->GetBettingTree(), action_sequence_, 1, false, false);
+	regrets_->Read(dir, it_ - 1, subtrees_->GetBettingTree(), action_sequence_, 0, false,
+		       false);
       }
     }
     if (it_ == 1) {
-      sumprobs_->AllocateAndClear(subtrees_->GetBettingTree(), CFR_INT, -1);
+      sumprobs_->AllocateAndClear(subtrees_->GetBettingTree(), CFRValueType::CFR_INT, false, -1);
     } else {
-      sumprobs_->Read(dir, it_ - 1, subtrees_->GetBettingTree(), action_sequence_, -1, true);
+      sumprobs_->Read(dir, it_ - 1, subtrees_->GetBettingTree(), action_sequence_, -1, true, false);
     }
   }
 
@@ -222,9 +224,9 @@ void CFRPSubgame::Go(void) {
     exit(-1);
   }
   // Should set action sequence
-  VCFRState state(p_, opp_probs_, hand_tree_.get(), 0, action_sequence_, root_bd_, root_bd_st_);
+  VCFRState state(p_, opp_probs_, hand_tree_.get(), action_sequence_, root_bd_, root_bd_st_);
   SetStreetBuckets(root_bd_st_, root_bd_, state);
-  final_vals_ = Process(subtrees_->Root(), 0, state, subtree_st - 1);
+  final_vals_ = Process(subtrees_->Root(), subtrees_->Root(), 0, state, subtree_st - 1);
 
   if (! value_calculation_) {
     Mkdir(dir);
@@ -233,8 +235,8 @@ void CFRPSubgame::Go(void) {
   }
 
   // This should delete the regrets and sumprobs, no?
-  regrets_.reset(nullptr);
-  sumprobs_.reset(nullptr);
+  regrets_.reset();
+  sumprobs_.reset();
 
   cfr_->Post(thread_index_);
 }

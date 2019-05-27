@@ -44,8 +44,7 @@ bool BettingTreeBuilder::FindReentrantNode(const string &key, shared_ptr<Node> *
   }
 }
 
-void BettingTreeBuilder::AddReentrantNode(const string &key,
-					  shared_ptr<Node> node) {
+void BettingTreeBuilder::AddReentrantNode(const string &key, shared_ptr<Node> node) {
   unsigned long long int h = HashKey(key);
   (*node_map_)[h] = node;
 }
@@ -61,15 +60,10 @@ static int NextPlayerToAct(int p, bool *folded) {
 }
 
 shared_ptr<Node>
-BettingTreeBuilder::CreateMPFoldSucc(int street,
-				     int last_bet_size,
-				     int bet_to,
-				     int num_street_bets,
-				     int num_bets,
-				     int player_acting,
-				     int num_players_to_act,
-				     bool *folded, int target_player,
-				     string *key, int *terminal_id) {
+BettingTreeBuilder::CreateMPFoldSucc(int street, int last_bet_size, int bet_to, int num_street_bets,
+				     int num_bets, int player_acting, int num_players_to_act,
+				     bool *folded, int target_player, string *key,
+				     int *terminal_id) {
   shared_ptr<Node> fold_succ;
   int max_street = Game::MaxStreet();
   int num_players = Game::NumPlayers();
@@ -100,12 +94,12 @@ BettingTreeBuilder::CreateMPFoldSucc(int street,
     // Subtract last_bet_size from bet_to so that we get the last amount
     // of chips that the last opponent put in.  Not sure this is useful
     // though, for multiplayer.
-    fold_succ.reset(new Node((*terminal_id)++, street, p, nullptr,
-			     nullptr, nullptr, 1, bet_to - last_bet_size));
+    fold_succ.reset(new Node((*terminal_id)++, street, p, nullptr, nullptr, nullptr, 1,
+			     bet_to - last_bet_size));
   } else if (num_players_to_act == 1 && street == max_street) {
     // Showdown
-    fold_succ.reset(new Node((*terminal_id)++, street, 255, nullptr, nullptr,
-			     nullptr, num_players_remaining - 1, bet_to));
+    fold_succ.reset(new Node((*terminal_id)++, street, 255, nullptr, nullptr, nullptr,
+			     num_players_remaining - 1, bet_to));
   } else {
     // Hand is not over
     unique_ptr<bool []> new_folded(new bool[num_players]);
@@ -115,18 +109,15 @@ BettingTreeBuilder::CreateMPFoldSucc(int street,
     new_folded[player_acting] = true;
     if (num_players_to_act == 1) {
       // This fold completes the street
-      fold_succ = CreateMPStreet(street + 1, bet_to, num_bets,
-				 new_folded.get(), target_player, &new_key,
-				 terminal_id);
+      fold_succ = CreateMPStreet(street + 1, bet_to, num_bets, new_folded.get(), target_player,
+				 &new_key, terminal_id);
     } else {
       // This is a fold that does not end the street
       int next_player_to_act =
 	NextPlayerToAct((player_acting + 1) % num_players, new_folded.get());
-      fold_succ = CreateMPSubtree(street, last_bet_size, bet_to,
-				  num_street_bets, num_bets,
-				  next_player_to_act, num_players_to_act - 1,
-				  new_folded.get(), target_player, &new_key,
-				  terminal_id);
+      fold_succ = CreateMPSubtree(street, last_bet_size, bet_to, num_street_bets, num_bets,
+				  next_player_to_act, num_players_to_act - 1, new_folded.get(),
+				  target_player, &new_key, terminal_id);
     }
   }
   return fold_succ;
@@ -135,13 +126,9 @@ BettingTreeBuilder::CreateMPFoldSucc(int street,
 // num_players_to_act is (re)initialized when a player bets.  It gets
 // decremented every time a player calls or folds.  When it reaches zero
 // the action on the current street is complete.
-shared_ptr<Node> BettingTreeBuilder::CreateMPCallSucc(int street,
-						      int last_bet_size,
-						      int bet_to,
-						      int num_street_bets,
-						      int num_bets,
-						      int player_acting,
-						      int num_players_to_act,
+shared_ptr<Node> BettingTreeBuilder::CreateMPCallSucc(int street, int last_bet_size, int bet_to,
+						      int num_street_bets, int num_bets,
+						      int player_acting, int num_players_to_act,
 						      bool *folded, int target_player,
 						      string *key, int *terminal_id) {
   bool advance_street = (num_players_to_act == 1);
@@ -173,27 +160,23 @@ shared_ptr<Node> BettingTreeBuilder::CreateMPCallSucc(int street,
       NextPlayerToAct((player_acting + 1) % num_players, folded);
     // Shouldn't happen
     if (next_player_to_act == player_acting) exit(-1);
-    call_succ = CreateMPSubtree(street, 0, bet_to, num_street_bets,
-				num_bets, next_player_to_act,
-				num_players_to_act - 1,	folded, target_player,
-				&new_key, terminal_id);
+    call_succ = CreateMPSubtree(street, 0, bet_to, num_street_bets, num_bets, next_player_to_act,
+				num_players_to_act - 1,	folded, target_player, &new_key,
+				terminal_id);
   } else {
     // This is a call on the final street
-    call_succ.reset(new Node((*terminal_id)++, street, 255, nullptr, nullptr,
-			     nullptr, num_players_remaining, bet_to));
+    call_succ.reset(new Node((*terminal_id)++, street, 255, nullptr, nullptr, nullptr,
+			     num_players_remaining, bet_to));
 
   }
   return call_succ;
 }
 
-// We are contemplating adding a bet.  We might or might not be facing a
-// previous bet.
-void BettingTreeBuilder::MPHandleBet(int street, int last_bet_size,
-				     int last_bet_to, int new_bet_to,
-				     int num_street_bets, int num_bets,
-				     int player_acting, int num_players_to_act,
-				     bool *folded, int target_player, string *key,
-				     int *terminal_id,
+// We are contemplating adding a bet.  We might or might not be facing a previous bet.
+void BettingTreeBuilder::MPHandleBet(int street, int last_bet_size, int last_bet_to, int new_bet_to,
+				     int num_street_bets, int num_bets, int player_acting,
+				     int num_players_to_act, bool *folded, int target_player,
+				     string *key, int *terminal_id,
 				     vector< shared_ptr<Node> > *bet_succs) {
   // New bet must be of size greater than zero
   if (new_bet_to <= last_bet_to) return;
@@ -202,14 +185,13 @@ void BettingTreeBuilder::MPHandleBet(int street, int last_bet_size,
 
   bool all_in_bet = (new_bet_to == betting_abstraction_.StackSize());
 
-  // Cannot make a bet that is smaller than the min bet (usually the big
-  // blind)
+  // Cannot make a bet that is smaller than the min bet (usually the big blind)
   if (new_bet_size < betting_abstraction_.MinBet() && ! all_in_bet) {
     return;
   }
 
-  // In general, cannot make a bet that is smaller than the previous
-  // bet size.  Exception is that you can always raise all-in
+  // In general, cannot make a bet that is smaller than the previous bet size.  Exception is that
+  // you can always raise all-in
   if (new_bet_size < last_bet_size && ! all_in_bet) {
     return;
   }
@@ -284,18 +266,13 @@ void BettingTreeBuilder::CreateMPSuccs(int street, int last_bet_size,
 
   bool our_bet = (target_player == player_acting);
   int all_in_bet_to = betting_abstraction_.StackSize();
-  bool *bet_to_seen = new bool[all_in_bet_to + 1];
-  for (int bt = 0; bt <= all_in_bet_to; ++bt) {
-    bet_to_seen[bt] = false;
-  }
+  unique_ptr<bool []> bet_to_seen(new bool[all_in_bet_to + 1]);
+  for (int bt = 0; bt <= all_in_bet_to; ++bt) bet_to_seen[bt] = false;
   
   if (num_street_bets < betting_abstraction_.MaxBets(street, our_bet)) {
-    if ((! betting_abstraction_.Asymmetric() &&
-	 betting_abstraction_.AlwaysAllIn()) ||
-	(betting_abstraction_.Asymmetric() && our_bet &&
-	 betting_abstraction_.OurAlwaysAllIn()) ||
-	(betting_abstraction_.Asymmetric() && ! our_bet &&
-	 betting_abstraction_.OppAlwaysAllIn())) {
+    if ((! betting_abstraction_.Asymmetric() && betting_abstraction_.AlwaysAllIn()) ||
+	(betting_abstraction_.Asymmetric() && our_bet && betting_abstraction_.OurAlwaysAllIn()) ||
+	(betting_abstraction_.Asymmetric() && ! our_bet && betting_abstraction_.OppAlwaysAllIn())) {
       // Allow an all-in bet
       bet_to_seen[all_in_bet_to] = true;
     }
@@ -340,21 +317,15 @@ void BettingTreeBuilder::CreateMPSuccs(int street, int last_bet_size,
   if (num_street_bets < betting_abstraction_.MaxBets(street, our_bet)) {
     const vector<double> &pot_fracs =
       betting_abstraction_.BetSizes(street, num_street_bets, our_bet, player_acting);
-    GetNewBetTos(bet_to, last_bet_size, pot_fracs, player_acting, target_player, bet_to_seen);
+    GetNewBetTos(bet_to, last_bet_size, pot_fracs, player_acting, target_player, bet_to_seen.get());
   }
-  vector<int> new_bet_tos;
-  for (int bt = 0; bt <= all_in_bet_to; ++bt) {
-    if (bet_to_seen[bt]) {
-      new_bet_tos.push_back(bt);
-    }
-  }  
-  delete [] bet_to_seen;
 
-  int num_bet_tos = new_bet_tos.size();
-  for (int i = 0; i < num_bet_tos; ++i) {
-    MPHandleBet(street, last_bet_size, bet_to, new_bet_tos[i], num_street_bets, num_bets,
-		player_acting, num_players_to_act, folded, target_player, key, terminal_id,
-		bet_succs);
+  for (int new_bet_to = 0; new_bet_to <= all_in_bet_to; ++new_bet_to) {
+    if (bet_to_seen[new_bet_to]) {
+      MPHandleBet(street, last_bet_size, bet_to, new_bet_to, num_street_bets, num_bets,
+		  player_acting, num_players_to_act, folded, target_player, key, terminal_id,
+		  bet_succs);
+    }
   }
 }
 

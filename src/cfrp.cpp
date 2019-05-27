@@ -45,6 +45,7 @@ using std::shared_ptr;
 using std::string;
 using std::unique_ptr;
 
+// Called from run_cfrp
 void CFRP::Initialize(void) {
   unique_ptr<bool []> streets;
   int max_street = Game::MaxStreet();
@@ -282,11 +283,11 @@ void CFRP::HalfIteration(int p) {
   if (subgame_street_ >= 0 && subgame_street_ <= Game::MaxStreet()) pre_phase_ = true;
   VCFRState state(p, hand_tree_.get());
   SetStreetBuckets(0, 0, state);
-  shared_ptr<double []> vals = Process(betting_trees_->Root(), 0, state, 0);
+  shared_ptr<double []> vals = Process(betting_trees_->Root(), betting_trees_->Root(), 0, state, 0);
   if (subgame_street_ >= 0 && subgame_street_ <= Game::MaxStreet()) {
     WaitForFinalSubgames();
     pre_phase_ = false;
-    vals = Process(betting_trees_->Root(), 0, state, 0);
+    vals = Process(betting_trees_->Root(), betting_trees_->Root(), 0, state, 0);
   }
 #if 0
   int num_hole_card_pairs = Game::NumHoleCardPairs(0);
@@ -342,8 +343,8 @@ void CFRP::ReadFromCheckpoint(int it) {
     sprintf(buf, ".p%u", target_p_);
     strcat(dir, buf);
   }
-  regrets_->Read(dir, it, betting_trees_->GetBettingTree(), "x", -1, false);
-  sumprobs_->Read(dir, it, betting_trees_->GetBettingTree(), "x", -1, true);
+  regrets_->Read(dir, it, betting_trees_->GetBettingTree(), "x", -1, false, false);
+  sumprobs_->Read(dir, it, betting_trees_->GetBettingTree(), "x", -1, true, false);
 }
 
 void CFRP::Run(int start_it, int end_it) {
@@ -360,19 +361,24 @@ void CFRP::Run(int start_it, int end_it) {
     bool double_regrets = cfr_config_.DoubleRegrets();
     bool double_sumprobs = cfr_config_.DoubleSumprobs();
     if (double_regrets) {
-      regrets_->AllocateAndClear(betting_trees_->GetBettingTree(), CFR_DOUBLE, -1);
+      regrets_->AllocateAndClear(betting_trees_->GetBettingTree(), CFRValueType::CFR_DOUBLE, false,
+				 -1);
     } else {
-      regrets_->AllocateAndClear(betting_trees_->GetBettingTree(), CFR_INT, -1);
+      regrets_->AllocateAndClear(betting_trees_->GetBettingTree(), CFRValueType::CFR_INT, false,
+				 -1);
     }
     if (double_sumprobs) {
-      sumprobs_->AllocateAndClear(betting_trees_->GetBettingTree(), CFR_DOUBLE, -1);
+      sumprobs_->AllocateAndClear(betting_trees_->GetBettingTree(), CFRValueType::CFR_DOUBLE, false,
+				  -1);
     } else {
-      sumprobs_->AllocateAndClear(betting_trees_->GetBettingTree(), CFR_INT, -1);
+      sumprobs_->AllocateAndClear(betting_trees_->GetBettingTree(), CFRValueType::CFR_INT, false,
+				  -1);
     }
   }
   if (bucketed_) {
     // Current strategy always uses doubles
-    current_strategy_->AllocateAndClear(betting_trees_->GetBettingTree(), CFR_DOUBLE, -1);
+    current_strategy_->AllocateAndClear(betting_trees_->GetBettingTree(), CFRValueType::CFR_DOUBLE,
+					false, -1);
   }
 
   if (subgame_street_ >= 0 && subgame_street_ <= Game::MaxStreet()) {

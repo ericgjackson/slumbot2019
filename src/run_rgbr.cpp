@@ -26,13 +26,13 @@ using std::vector;
 
 static void Usage(const char *prog_name) {
   fprintf(stderr, "USAGE: %s <game params> <card params> <betting params> "
-	  "<CFR params> <num threads> <it> [current|avg] (<streets>)\n",
+	  "<CFR params> <num threads> <it> [current|avg] [quantize|raw] (<streets>)\n",
 	  prog_name);
   exit(-1);
 }
 
 int main(int argc, char *argv[]) {
-  if (argc != 8 && argc != 9) Usage(argv[0]);
+  if (argc != 9 && argc != 10) Usage(argv[0]);
   Files::Init();
   unique_ptr<Params> game_params = CreateGameParams();
   game_params->ReadFromFile(argv[1]);
@@ -56,12 +56,17 @@ int main(int argc, char *argv[]) {
   if (carg == "current")  current = true;
   else if (carg == "avg") current = false;
   else                    Usage(argv[0]);
+  string qarg = argv[8];
+  bool quantize;
+  if (qarg == "quantize") quantize = true;
+  else if (qarg == "raw") quantize = false;
+  else                    Usage(argv[0]);
   int max_street = Game::MaxStreet();
   unique_ptr<bool []> streets(new bool[max_street + 1]);
-  if (argc == 9) {
+  if (argc == 10) {
     for (int st = 0; st <= max_street; ++st) streets[st] = false;
     vector<string> comps;
-    Split(argv[8], ',', false, &comps);
+    Split(argv[9], ',', false, &comps);
     int num = comps.size();
     for (int i = 0; i < num; ++i) {
       int st;
@@ -86,16 +91,14 @@ int main(int argc, char *argv[]) {
       exit(-1);
     }
     for (int target_p = 0; target_p < num_players; ++target_p) {
-      // betting_tree.reset(new BettingTree(*betting_abstraction, target_p));
-      RGBR rgbr(*card_abstraction, *betting_abstraction, *cfr_config, buckets, current, num_threads,
-		streets.get(), target_p);
+      RGBR rgbr(*card_abstraction, *betting_abstraction, *cfr_config, buckets, current, quantize,
+		num_threads, streets.get(), target_p);
       int responder_p = target_p^1;
       evs[responder_p] = rgbr.Go(it, responder_p);
     }
   } else {
-    // betting_tree.reset(new BettingTree(*betting_abstraction));
-    RGBR rgbr(*card_abstraction, *betting_abstraction, *cfr_config, buckets, current, num_threads,
-	      streets.get(), -1);
+    RGBR rgbr(*card_abstraction, *betting_abstraction, *cfr_config, buckets, current, quantize,
+	      num_threads, streets.get(), -1);
     for (int p = 0; p < num_players; ++p) {
       evs[p] = rgbr.Go(it, p);
     }

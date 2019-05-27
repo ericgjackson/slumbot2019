@@ -525,3 +525,44 @@ bool TwoSuccsCorrespond(Node *node1, int s1, Node *node2,
   Node *bc2 = b2->IthSucc(b2->CallSuccIndex());
   return (bc1->LastBetTo() == bc2->LastBetTo());
 }
+
+
+// Map from acting node succs onto opp node succs
+unique_ptr<int []> GetSuccMapping(Node *acting_node, Node *opp_node) {
+  int acting_num_succs = acting_node->NumSuccs();
+  int opp_num_succs = opp_node->NumSuccs();
+  unique_ptr<int []> succ_mapping(new int[acting_num_succs]);
+  for (int as = 0; as < acting_num_succs; ++as) {
+    int os = -1;
+    if (as == acting_node->CallSuccIndex()) {
+      for (int s = 0; s < opp_num_succs; ++s) {
+	if (s == opp_node->CallSuccIndex()) {
+	  os = s;
+	  break;
+	}
+      }
+    } else if (as == acting_node->FoldSuccIndex()) {
+      for (int s = 0; s < opp_num_succs; ++s) {
+	if (s == opp_node->FoldSuccIndex()) {
+	  os = s;
+	  break;
+	}
+      }
+    } else {
+      int bet_to = acting_node->IthSucc(as)->LastBetTo();
+      for (int s = 0; s < opp_num_succs; ++s) {
+	if (opp_node->IthSucc(s)->LastBetTo() == bet_to) {
+	  os = s;
+	  break;
+	}
+      }
+    }
+    if (os == -1) {
+      fprintf(stderr, "GetSuccMapping: no matching succ; ans %i ons %i as %i\n",
+	      acting_num_succs, opp_num_succs, as);
+      exit(-1);
+    }
+    succ_mapping[as] = os;
+  }
+  return succ_mapping;
+}

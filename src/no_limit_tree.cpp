@@ -94,8 +94,7 @@ void BettingTreeBuilder::GetNewBetTos(int old_bet_to, int last_bet_size,
       int new_bet_to = old_bet_to + bet_size;
       int new_pot_size = 2 * new_bet_to;
       if (betting_abstraction_.CloseToAllInFrac() > 0 &&
-	  new_pot_size >=
-	  2 * all_in_bet_to * betting_abstraction_.CloseToAllInFrac()) {
+	  new_pot_size >= 2 * all_in_bet_to * betting_abstraction_.CloseToAllInFrac()) {
 	// Don't add the bet, but add an all-in bet instead
 	bet_to_seen[all_in_bet_to] = true;
       } else if (new_bet_to > all_in_bet_to) {

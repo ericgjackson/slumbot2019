@@ -1,34 +1,73 @@
+Train and assess big sym system.
+1) Seems like exploitability gets substantially worse over time.  Confirm.
+2) Seems like head to head improves and is asymptoting.
+3) Would like to know if exploitability decreases when incorporating resolving.  Need
+   run_approx_rgbr to support resolving.
+4) Can I look at flop ranges and see if they look wacky?
+
+Why is turn resolving so much slower now?  Saw 22 seconds.  Maybe this is normal?  Get average of 5
+seconds because the all-ins are effectively instantaneous and drag down the average.  Could
+precompute solutions for most commonly reached nodes.
+
+Better approx RGBR calculation?
+
+Are we pruning in VCFR when no opponent hands reach?  We should, no?
+
+Process() in VCFR should not be public.  Add a new public method that is a wrapper around
+Process() and does some initial setup like creating the VCFRState and calling SetStreetBuckets().
+
+Use ReachProbs in VCFR?  Limit to opponent.
+
+Multithread run_approx_rgbr, head_to_head
+
+Can we get rid of two nodes in VCFR?
+
+Templating stuff is a mess.
+Ugliness in vcfr.cpp, cfr_utils.cpp.
+Dynamic casting.
+Don't want switch in inner loop (if ints, then this; if doubles, then this).
+Need fast implementation of RMProbs(), UpdateRegrets(), ProcessOppProbs().
+Maybe VCFR can just have i_regrets and d_regrets, and i_sumprobs and d_sumprobs, and use
+  the appropriate one.
+We need a switch, but we can do it outside of the inner loop.
+May need multiple implementations of OurChoice(), OppChoice().
+To keep number of implementations down, require regrets and sumprobs to either both be
+  doubles or both be ints.  Need to support chars?
+What if regrets and sumprobs are chars?  Cast to ints or doubles as needed.
+May need two implementations of OurChoice(), two of OppChoice().
+
 Build a new heads-up system:
 1) Will use base for preflop and flop; resolve turn and river
 2) Therefore null abstraction preflop and flop
 3) Therefore rich betting abstraction preflop and flop w/ one bet and raise turn and river
-4) Asymmetric betting abstraction with only one bet size for us
-5) Boosting?
-6) Reentrant on turn and river?
+4) Asymmetric betting abstraction with few bet sizes for us?  Seems like one is too few.
+5) Boosting?  Doesn't help by current measures.
+6) Reentrant on turn and river?  Doesn't gain much.
 7) Quantize on turn and river, at least.
 8) Don't save sumprobs for turn or river
 
-head_to_head now giving results for asymmetric, but I'm not sure if I believe them or not.
-Really big win for symmetric mb1b2 against asymmetric asyma.  OTOH, much smaller win
-for symmetric mb1b1aai against asymb.  Which I expect because all-ins should be less
-useful.
+Investigate board on ms3f1t1r1h5/nxhs3 which leads to such high exploitability.  Any lessons
+about card abstraction?
 
-Could try asymmetric system that doesn't give extra options to the opponent?  That's what
-testasym did.  That still doesn't prove things are fully working.  There could be a problem
-aligning succs, for example.  The test with mb1b1aai and asymb was better and gave a much
-smaller advantage to the symmetric player.  Is that conclusive?  Might be nice to have
-a made up bet size that is in the middle of valid bet sizes but which always leads to a
-terrible outcome for the bettor.  In that case the symmetric and asymmetric players should
-perform identically.
-
-Should we even save opponent sumprobs in asymmetric system?
+Rename run_tcfr to run_mccfr, change Algorithm setting from tcfr to mccfr.  Rename vcfr
+to reflect that CFR+ is the main algorithm.
 
 Evaluate char quantization for flop, turn and river.
 
-Evaluate boosting on game with many betting sequences (mb2b2aai).
+Get rid of old and new CFR directories.
+
+Evaluate boosting on game with many betting sequences (mb2b2aai).  Right now seeing no head
+to head advantage.  How can I test if there is an exploitability advantage?  Need approx
+RGBR program?
 
 Do I want to just use symmetric training so that I don't need to worry about what bet sizes
 are most important?
+
+Write show_joint_reach_probs program which shows joint reach probs of every terminal node.
+Should be able to reuse code from head_to_head.  Allow sampling of river boards.
+
+Write approx RGBR program.  Support more than two streets.  street_ may not be last street.
+Support subgame solving.
 
 Incorporate combined endgame solving into head_to_head; see how well it works.
 
@@ -59,9 +98,10 @@ Measure speed of turn resolving.  One bet size and one raise size for turn and r
 Add multithreading?  VCFR already supports spinning off threads.  Need to allow control of
 what street to split on.
 
-Switch to mb2b2ai as testbed.  May need more actions for tcfr to outperform ecfr.  May need
-more actions for boosting to help resolving.  May need more actions for combined resolved systems
-to outperform unsafe resolved systems.
+Switch to mb2b2ai as testbed.  More actions may mean:
+* TCFR outperforms ECFR
+* Boosting helps resolving (not seeing that yet)
+* Combined resolving may outperform unsafe resolving
 
 Create resolve params, use for things like head_to_head and solve_all_subgames.  Should help
 reduce length of command lines.

@@ -15,6 +15,7 @@
 #include "dynamic_cbr.h"
 #include "game.h"
 #include "hand_tree.h"
+#include "reach_probs.h"
 #include "subgame_utils.h"
 #include "vcfr_state.h"
 
@@ -48,9 +49,9 @@ shared_ptr<double []> DynamicCBR::Compute(Node *node, int p, const shared_ptr<do
   const CanonicalCards *hands = hand_tree->Hands(st, lbd);
   // Should set this appropriately
   string action_sequence = "x";
-  VCFRState state(p, opp_probs, hand_tree, 0, action_sequence, root_bd, root_bd_st);
+  VCFRState state(p, opp_probs, hand_tree, action_sequence, root_bd, root_bd_st);
   SetStreetBuckets(st, gbd, state);
-  shared_ptr<double []> vals = Process(node, lbd, state, st);
+  shared_ptr<double []> vals = Process(node, node, lbd, state, st);
   // Temporary?  Make our T values like T values constructed by build_cbrs,
   // by casting to float.
   for (int i = 0; i < num_hole_card_pairs; ++i) {
@@ -84,7 +85,7 @@ shared_ptr<double []> DynamicCBR::Compute(Node *node, int p, const shared_ptr<do
 // solving for P0.  We might say cfr_target_p is 0.  Then I want T-values for
 // P1.  So I pass in 1 to Compute(). We'll need the reach probs of P1's
 // opponent, who is P0.
-shared_ptr<double []> DynamicCBR::Compute(Node *node, shared_ptr<double []> *reach_probs, int gbd,
+shared_ptr<double []> DynamicCBR::Compute(Node *node, const ReachProbs &reach_probs, int gbd,
 					  HandTree *hand_tree, int root_bd_st, int root_bd,
 					  int target_p, bool cfrs, bool zero_sum, bool current,
 					  bool purify_opp) {
@@ -100,9 +101,9 @@ shared_ptr<double []> DynamicCBR::Compute(Node *node, shared_ptr<double []> *rea
     prob_method_ = ProbMethod::REGRET_MATCHING;
   }
   if (zero_sum) {
-    shared_ptr<double []> p0_cvs = Compute(node, 0, reach_probs[1], gbd, hand_tree, root_bd_st,
+    shared_ptr<double []> p0_cvs = Compute(node, 0, reach_probs.Get(1), gbd, hand_tree, root_bd_st,
 					   root_bd);
-    shared_ptr<double []> p1_cvs = Compute(node, 1, reach_probs[0], gbd, hand_tree, root_bd_st,
+    shared_ptr<double []> p1_cvs = Compute(node, 1, reach_probs.Get(0), gbd, hand_tree, root_bd_st,
 					   root_bd);
     int st = node->Street();
     int num_hole_card_pairs = Game::NumHoleCardPairs(st);
@@ -114,7 +115,8 @@ shared_ptr<double []> DynamicCBR::Compute(Node *node, shared_ptr<double []> *rea
     if (target_p == 1) return p1_cvs;
     else               return p0_cvs;
   } else {
-    return Compute(node, target_p, reach_probs[target_p^1], gbd, hand_tree, root_bd_st, root_bd);
+    return Compute(node, target_p, reach_probs.Get(target_p^1), gbd, hand_tree, root_bd_st,
+		   root_bd);
   }
 }
 

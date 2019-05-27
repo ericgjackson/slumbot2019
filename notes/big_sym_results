@@ -1,0 +1,89 @@
+
+holdem/a/big3sym/tcfrqccc
+
+1b in 119m
+1b-6b in 616m
+6b-10b in 539m
+10b-56b in 5654m
+
+run_approx_rgbr, sampling river
+6b
+sampling 1000, quantize (22m)
+  P1 BR val: 0.739812
+  P0 BR val: 0.348180
+  Exploitability: 272.00 mbb/g
+sampling 10000, quantize (188m)
+  P1 BR val: 0.738149
+  P0 BR val: 0.335553
+  Gap: 1.073701
+  Exploitability: 268.43 mbb/g
+
+10b
+sampling 1000, quantize (22m)
+  P1 BR val: 0.890965
+  P0 BR val: 0.428939
+  Exploitability: 329.98 mbb/g
+56b
+sampling 10000, quantize (194m)
+  P1 BR val: 1.239820
+  P0 BR val: 0.804100
+  Exploitability: 510.98 mbb/g
+
+Resolving rivers
+56b
+Sampling river, sampling 1 (6m20s)
+  P0 BR val: -0.213131
+  P1 BR val: 0.279158
+  Exploitability: 16.51 mbb/g
+Sampling river, sampling 10 (26m)
+  1274.2 secs spent resolving
+  Avg 0.02 secs per resolve (61860 resolves)
+  Exploitability: 18.01 mbb/g
+Sampling turn, sampling 1 (106m)
+  P0 BR val: 0.035877
+  P1 BR val: 0.137073
+  Avg 2.94 secs per resolve (2106 resolves)
+  Exploitability: 43.24 mbb/g
+  Exploitability is worse, but the test is much more severe - the best responder can
+  vary his strategy over the turn as well as the river.
+Sampling turn, sampling 6 (603m)
+  Avg 2.85 secs per resolve (12636 resolves)
+  P0 BR val: -0.197753
+  P1 BR val: 0.356053
+  Exploitability: 39.58 mbb/g
+
+
+head_to_head
+16g
+6b vs. 56b
+  1000 sampled max street boards (20m)
+  Avg B outcome: 0.208352 (104.2 mbb/g)
+  Avg P1 outcome: 0.272046 (136.0 mbb/g)
+51b vs. 56b
+  1000 sampled max street boards (19m)
+  Avg B outcome: 0.005300 (2.7 mbb/g)
+  Avg P1 outcome: 0.264601 (132.3 mbb/g)
+
+Base vs. resolve rivers
+56b vs. 56b
+  10 sampled max street boards (21m)
+  Avg B outcome: 0.106796 (53.4 mbb/g)
+  Avg P1 outcome: 0.268583 (134.3 mbb/g)
+  1134.1 secs spent resolving
+  Avg 0.05 secs per resolve (21540 resolves)
+
+Resolve rivers vs. resolve rivers
+6b vs. 56b
+  10 sampled max street boards (41m)
+  Avg B outcome: 0.151460 (75.7 mbb/g)
+  Avg P1 outcome: 0.267776 (133.9 mbb/g)
+  2255.5 secs spent resolving
+  Avg 0.05 secs per resolve (43080 resolves)
+
+Base vs. resolve turns
+56b vs. 56b
+  1 sampled max street boards (106m)
+  Avg B outcome: 0.197921 (99.0 mbb/g)
+  Avg P1 outcome: 0.175736 (87.9 mbb/g)
+  6213.1 secs spent resolving
+  Avg 6.41 secs per resolve (970 resolves)

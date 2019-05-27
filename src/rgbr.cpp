@@ -32,10 +32,11 @@ using std::shared_ptr;
 using std::unique_ptr;
 
 RGBR::RGBR(const CardAbstraction &ca, const BettingAbstraction &ba, const CFRConfig &cc,
-	   const Buckets &buckets, bool current, int num_threads, const bool *streets,
-	   int target_p) :
+	   const Buckets &buckets, bool current, bool quantize, int num_threads,
+	   const bool *streets, int target_p) :
   CFRP(ca, ba, cc, buckets, num_threads, target_p) {
   br_current_ = current;
+  quantize_ = quantize;
   value_calculation_ = true;
 
   int max_street = Game::MaxStreet();
@@ -95,15 +96,13 @@ double RGBR::Go(int it, int p) {
   if (br_current_) {
     regrets_.reset(new CFRValues(players.get(), streets, 0, 0, buckets_,
 				 betting_trees_->GetBettingTree()));
-    // Assumes symmetric
-    regrets_->Read(dir, it_, betting_trees_->GetBettingTree(), "x", -1, false);
-    sumprobs_.reset(nullptr);
+    regrets_->Read(dir, it_, betting_trees_->GetBettingTree(), "x", -1, false, quantize_);
+    sumprobs_.reset();
   } else {
     sumprobs_.reset(new CFRValues(players.get(), streets, 0, 0, buckets_,
 				  betting_trees_->GetBettingTree()));
-    // Assumes symmetric
-    sumprobs_->Read(dir, it_, betting_trees_->GetBettingTree(), "x", -1, true);
-    regrets_.reset(nullptr);
+    sumprobs_->Read(dir, it_, betting_trees_->GetBettingTree(), "x", -1, true, quantize_);
+    regrets_.reset();
   }
 
   unique_ptr<bool []> bucketed_streets(new bool[max_street + 1]);
@@ -130,13 +129,11 @@ double RGBR::Go(int it, int p) {
   if (subgame_street_ >= 0 && subgame_street_ <= max_street) pre_phase_ = true;
   VCFRState state(p, hand_tree_.get());
   SetStreetBuckets(0, 0, state);
-  // Assumes symmetric
-  shared_ptr<double []> vals = Process(betting_trees_->Root(), 0, state, 0);
+  shared_ptr<double []> vals = Process(betting_trees_->Root(), betting_trees_->Root(), 0, state, 0);
   if (subgame_street_ >= 0 && subgame_street_ <= max_street) {
     WaitForFinalSubgames();
     pre_phase_ = false;
-    // Assumes symmetric
-    vals = Process(betting_trees_->Root(), 0, state, 0);
+    vals = Process(betting_trees_->Root(), betting_trees_->Root(), 0, state, 0);
   }
   
   int num_hole_card_pairs = Game::NumHoleCardPairs(0);
@@ -152,8 +149,7 @@ double RGBR::Go(int it, int p) {
   
   int num_remaining = Game::NumCardsInDeck() -
     Game::NumCardsForStreet(0);
-  int num_opp_hole_card_pairs =
-    num_remaining * (num_remaining - 1) / 2;
+  int num_opp_hole_card_pairs = num_remaining * (num_remaining - 1) / 2;
   double sum = 0;
   for (int i = 0; i < num_hole_card_pairs; ++i) {
     sum += vals[i];
@@ -164,9 +160,19 @@ double RGBR::Go(int it, int p) {
 #endif
   }
   double overall = sum / (num_hole_card_pairs * num_opp_hole_card_pairs);
+#if 0
+  if (p == 1) {
+    Card aa_cards[2];
+    aa_cards[0] = MakeCard(12, 3);
+    aa_cards[1] = MakeCard(12, 2);
+    int aa_hcp = HCPIndex(0, aa_cards);
+    double aa_p1_val = vals[aa_hcp] / num_opp_hole_card_pairs;
+    printf("AA P1: %f (hcp %i)\n", aa_p1_val, aa_hcp);
+  }
+#endif
 
-  regrets_.reset(nullptr);
-  sumprobs_.reset(nullptr);
+  regrets_.reset();
+  sumprobs_.reset();
 
   return overall;
 }

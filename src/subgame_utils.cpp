@@ -28,6 +28,7 @@
 #include "game.h"
 #include "hand_tree.h"
 #include "io.h"
+#include "reach_probs.h"
 #include "resolving_method.h"
 
 using std::shared_ptr;
@@ -300,7 +301,7 @@ unique_ptr<CFRValues> ReadSubgame(const string &action_sequence, BettingTrees *s
 					       subtrees->GetBettingTree()));
   // Assume doubles
   for (int st = 0; st <= max_street; ++st) {
-    if (subgame_streets[st]) sumprobs->CreateStreetValues(st, CFR_DOUBLE);
+    if (subgame_streets[st]) sumprobs->CreateStreetValues(st, CFRValueType::CFR_DOUBLE, false);
   }
 
   for (int target_pa = 0; target_pa <= 1; ++target_pa) {
@@ -452,7 +453,7 @@ void FloorCVs(Node *subtree_root, double *opp_reach_probs, const CanonicalCards 
 }
 
 static void CalculateMeanCVs(double *p0_cvs, double *p1_cvs, int num_hole_card_pairs,
-			     shared_ptr<double []> *reach_probs, const CanonicalCards *hands,
+			     const ReachProbs &reach_probs, const CanonicalCards *hands,
 			     double *p0_mean_cv, double *p1_mean_cv) {
   int maxcard1 = Game::MaxCard() + 1;
   double sum_p0_cvs = 0, sum_p1_cvs = 0, sum_joint_probs = 0;
@@ -471,10 +472,10 @@ static void CalculateMeanCVs(double *p0_cvs, double *p1_cvs, int num_hole_card_p
 	continue;
       }
       int opp_enc = opp_hi * maxcard1 + opp_lo;
-      sum_p0_opp_probs += reach_probs[0][opp_enc];
+      sum_p0_opp_probs += reach_probs.Get(0, opp_enc);
     }
-    double p0_prob = reach_probs[0][our_enc];
-    double p1_prob = reach_probs[1][our_enc];
+    double p0_prob = reach_probs.Get(0, our_enc);
+    double p1_prob = reach_probs.Get(1, our_enc);
     sum_p0_cvs += p0_cvs[i] * p0_prob;
     sum_p1_cvs += p1_cvs[i] * p1_prob;
     sum_joint_probs += p1_prob * sum_p0_opp_probs;
@@ -484,7 +485,7 @@ static void CalculateMeanCVs(double *p0_cvs, double *p1_cvs, int num_hole_card_p
 }
 
 void ZeroSumCVs(double *p0_cvs, double *p1_cvs, int num_hole_card_pairs,
-		shared_ptr<double []> *reach_probs, const CanonicalCards *hands) {
+		const ReachProbs &reach_probs, const CanonicalCards *hands) {
   double p0_mean_cv, p1_mean_cv;
   CalculateMeanCVs(p0_cvs, p1_cvs, num_hole_card_pairs, reach_probs, hands, &p0_mean_cv,
 		   &p1_mean_cv);
@@ -507,8 +508,8 @@ void ZeroSumCVs(double *p0_cvs, double *p1_cvs, int num_hole_card_pairs,
 	continue;
       }
       int opp_enc = opp_hi * maxcard1 + opp_lo;
-      sum_p0_opp_probs += reach_probs[0][opp_enc];
-      sum_p1_opp_probs += reach_probs[1][opp_enc];
+      sum_p0_opp_probs += reach_probs.Get(0, opp_enc);
+      sum_p1_opp_probs += reach_probs.Get(1, opp_enc);
     }
     p0_cvs[i] += adj * sum_p1_opp_probs;
     p1_cvs[i] += adj * sum_p0_opp_probs;

@@ -76,6 +76,7 @@ shared_ptr<double []> Showdown(Node *node, const CanonicalCards *hands, double *
       // fprintf(stderr, "vals[%u] %f sop %f\n", k, vals[k], sum_opp_probs);
     }
   }
+  // fprintf(stderr, "showdown %i vals[0] %f\n", node->TerminalID(), vals[0]);
 
   return vals;
 }
@@ -90,7 +91,7 @@ shared_ptr<double []> Fold(Node *node, int p, const CanonicalCards *hands, doubl
   if (p == node->PlayerActing()) {
     half_pot = node->LastBetTo();
   } else {
-    half_pot = -(double)node->LastBetTo();
+    half_pot = -node->LastBetTo();
   }
   int num_hole_card_pairs = hands->NumRaw();
   shared_ptr<double []> vals(new double[num_hole_card_pairs]);
@@ -239,13 +240,15 @@ void ProcessOppProbs(Node *node, const CanonicalCards *hands, int *street_bucket
 // Instantiate
 template void ProcessOppProbs<int>(Node *node, const CanonicalCards *hands, int *street_buckets,
 				   double *opp_probs, shared_ptr<double []> *succ_opp_probs,
-				   double *current_probs, int it, int soft_warmup, int hard_warmup,
-				   double sumprob_scaling, CFRStreetValues<int> *sumprobs);
+				   double *current_probs, int it, int soft_warmup,
+				   int hard_warmup, double sumprob_scaling,
+				   CFRStreetValues<int> *sumprobs);
 template void ProcessOppProbs<double>(Node *node, const CanonicalCards *hands,
 				      int *street_buckets, double *opp_probs,
-				      shared_ptr<double []> *succ_opp_probs, double *current_probs,
-				      int it, int soft_warmup, int hard_warmup,
-				      double sumprob_scaling, CFRStreetValues<double> *sumprobs);
+				      shared_ptr<double []> *succ_opp_probs,
+				      double *current_probs, int it, int soft_warmup,
+				      int hard_warmup, double sumprob_scaling,
+				      CFRStreetValues<double> *sumprobs);
 
 template <typename T1, typename T2>
 void ProcessOppProbs(Node *node, int lbd, const CanonicalCards *hands, bool bucketed,
@@ -302,26 +305,34 @@ ProcessOppProbs<int, int>(Node *node, int lbd, const CanonicalCards *hands, bool
 			  int soft_warmup, int hard_warmup, double sumprob_scaling,
 			  CFRStreetValues<int> *sumprobs);
 template void
-ProcessOppProbs<double, double>(Node *node, int lbd, const CanonicalCards *hands,
-				bool bucketed, int *street_buckets, double *opp_probs,
+ProcessOppProbs<double, double>(Node *node, int lbd, const CanonicalCards *hands, bool bucketed,
+				int *street_buckets, double *opp_probs,
 				shared_ptr<double []> *succ_opp_probs,
-				const CFRStreetValues<double> &cs_vals, int dsi, int it,
-				int soft_warmup, int hard_warmup, double sumprob_scaling,
-				CFRStreetValues<double> *sumprobs);
+				const CFRStreetValues<double> &cs_vals,
+				int dsi, int it, int soft_warmup, int hard_warmup,
+				double sumprob_scaling,	CFRStreetValues<double> *sumprobs);
 template void
 ProcessOppProbs<int, double>(Node *node, int lbd, const CanonicalCards *hands,
 			     bool bucketed, int *street_buckets, double *opp_probs,
 			     shared_ptr<double []> *succ_opp_probs,
-			     const CFRStreetValues<int> &cs_vals, int dsi, int it, int soft_warmup,
-			     int hard_warmup, double sumprob_scaling,
+			     const CFRStreetValues<int> &cs_vals, int dsi, int it,
+			     int soft_warmup, int hard_warmup, double sumprob_scaling,
 			     CFRStreetValues<double> *sumprobs);
 template void
 ProcessOppProbs<double, int>(Node *node, int lbd, const CanonicalCards *hands,
 			     bool bucketed, int *street_buckets, double *opp_probs,
 			     shared_ptr<double []> *succ_opp_probs,
-			     const CFRStreetValues<double> &cs_vals, int dsi, int it,
-			     int soft_warmup, int hard_warmup, double sumprob_scaling,
+			     const CFRStreetValues<double> &cs_vals, int dsi,
+			     int it, int soft_warmup, int hard_warmup,
+			     double sumprob_scaling,
 			     CFRStreetValues<int> *sumprobs);
+template void
+ProcessOppProbs<unsigned char, int>(Node *node, int lbd, const CanonicalCards *hands, bool bucketed,
+				    int *street_buckets, double *opp_probs,
+				    shared_ptr<double []> *succ_opp_probs,
+				    const CFRStreetValues<unsigned char> &cs_vals, int dsi, int it,
+				    int soft_warmup, int hard_warmup, double sumprob_scaling,
+				    CFRStreetValues<int> *sumprobs);
 
 #if 0
 // Abstracted, integer regrets

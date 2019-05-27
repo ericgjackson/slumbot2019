@@ -5,4 +5,51 @@ holdem5/nhs3/mb2b2aai
 tcfr base: See mb2b2aai_results
 
 tcfrb001
-1b in ???:
+1b in 123m: Exploitability: 1606.48 mbb/g
+  Almost the same as tcfr
+
+tcfr vs. tcfrb001
+1b vs. 1b:
+1 river board sampled (18s):
+  Avg B outcome: 0.009990 (5.0 mbb/g)
+  Avg P1 outcome: 0.425206 (212.6 mbb/g)
+10 river boards sampled (7s):
+  Avg B outcome: -0.012305 (-6.2 mbb/g)
+  Avg P1 outcome: 0.232820 (116.4 mbb/g)
+100 river boards sampled (23s):
+  Avg B outcome: -0.002685 (-1.3 mbb/g)
+  Avg P1 outcome: 0.268033 (134.0 mbb/g)
+1000 river boards sampled (2m57s):
+  Avg B outcome: 0.000148 (0.1 mbb/g)
+  Avg P1 outcome: 0.274682 (137.3 mbb/g)
+10000 river boards sampled ():
+  Avg B outcome: -0.000242 (-0.1 mbb/g)
+  Avg P1 outcome: 0.255535 (127.8 mbb/g)
+
+Resolving rivers for both sides
+1b vs. 1b:
+1 river board sampled (1m4s):
+  Avg B outcome: -0.003658 (-1.8 mbb/g)
+  Avg P1 outcome: 0.346813 (173.4 mbb/g)
+  58.7 secs spent resolving
+  Avg 0.01 secs per resolve (5092 resolves)
+10 river boards sampled (9m39s):
+  Avg B outcome: 0.015206 (7.6 mbb/g)
+  Avg P1 outcome: 0.233392 (116.7 mbb/g)
+  571.1 secs spent resolving
+  Avg 0.01 secs per resolve (50920 resolves)
+100 river boards sampled (111m):
+  Avg B outcome: -0.000637 (-0.3 mbb/g)
+  Avg P1 outcome: 0.200570 (100.3 mbb/g)
+  6626.0 secs spent resolving
+  Avg 0.01 secs per resolve (509200 resolves)
+Redo 100 river boards sampled (94m):
+  Avg B outcome: 0.003007 (1.5 mbb/g)
+  Avg P1 outcome: 0.254410 (127.2 mbb/g)
+  5591.4 secs spent resolving
+  Avg 0.01 secs per resolve (504108 resolves)
+200 river boards sampled (189m):
+  Avg B outcome: -0.002028 (-1.0 mbb/g)
+  Avg P1 outcome: 0.294157 (147.1 mbb/g)
+  11266.2 secs spent resolving
+  Avg 0.01 secs per resolve (1013308 resolves)

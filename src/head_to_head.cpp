@@ -1,4 +1,4 @@
-// head_to_head assesses head to head results between two systems with two nice features:
+// head_to_head assesses head to head performance between two systems with two nice features:
 // 1) You can sample final street boards evaluated leading to drastic speedups at the expense
 // of some accuracy.
 // 2) You can tell either or both systems to resolve subgames.
@@ -7,16 +7,11 @@
 // tracking each player's range at each node.  At terminal nodes we evaluate range vs. range EV.
 //
 // This works nicely with resolving.  We only need to resolve a given subgame at most once.  If we
-// sampling, we only resolve the subgames needed.
+// are sampling, we only resolve the subgames needed.
 //
 // I don't think I can support multiplayer.
 //
-// We don't support asymmetric abstractions.
-//
-// Currently only support resolving on max street.  Resolving prior to max street partially
-// supported.  Can we still sample final street boards?  I guess, but we will resolve the
-// entire turn subtree.  I need a hand tree for the resolve which is different from the
-// regular hand tree.
+// We support asymmetric abstractions now, I believe.
 //
 // Is there much wasted work recomputing reach probs for streets prior to the final street?
 // A bit, but maybe it's not significant.  May only be sampling some turn boards so it might
@@ -63,8 +58,9 @@
 #include "io.h"
 #include "params.h"
 #include "rand.h"
+#include "reach_probs.h"
 #include "sorting.h"
-#include "subgame_utils.h"
+#include "subgame_utils.h" // CreateSubtrees()
 #include "unsafe_eg_cfr.h"
 
 using std::pair;
@@ -79,19 +75,22 @@ public:
 	 const CardAbstraction &a_ca, const CardAbstraction &b_ca, const CFRConfig &a_cc,
 	 const CFRConfig &b_cc, int a_it, int b_it, int resolve_st, bool resolve_a, bool resolve_b,
 	 const CardAbstraction &as_ca, const BettingAbstraction &as_ba, const CFRConfig &as_cc,
-	 const CardAbstraction &bs_ca, const BettingAbstraction &bs_ba, const CFRConfig &bc_cc);
+	 const CardAbstraction &bs_ca, const BettingAbstraction &bs_ba, const CFRConfig &bc_cc,
+	 bool a_quantize, bool b_quantize);
   ~Player(void) {}
   void Go(int num_sampled_max_street_boards);
 private:
-  void Showdown(Node *a_node, Node *b_node, shared_ptr<double []> *reach_probs);
-  void Fold(Node *a_node, Node *b_node, shared_ptr<double []> *reach_probs);
+  void Showdown(Node *a_node, Node *b_node, const ReachProbs &reach_probs);
+  void Fold(Node *a_node, Node *b_node, const ReachProbs &reach_probs);
+#if 0
   shared_ptr<double []> **GetSuccReachProbs(Node *node, int gbd, const Buckets &buckets,
 					    const CFRValues *sumprobs,
 					    shared_ptr<double []> *reach_probs);
+#endif
   void Nonterminal(Node *a_node, Node *b_node, const string &action_sequence,
-		   shared_ptr<double []> *reach_probs);
+		   const ReachProbs &reach_probs);
   void Walk(Node *a_node, Node *b_node, const string &action_sequence,
-	    shared_ptr<double []> *reach_probs, int last_st);
+	    const ReachProbs &reach_probs, int last_st);
   void ProcessMaxStreetBoard(int msbd);
 
   const BettingAbstraction &a_betting_abstraction_;
@@ -110,9 +109,11 @@ private:
   bool resolve_a_;
   bool resolve_b_;
   // When we resolve a street, the board index may change.  This is why we have separate
-  // a_boards_ and b_boards_.  Only one player may be resolving.
-  unique_ptr<int []> a_boards_;
-  unique_ptr<int []> b_boards_;
+  // a boards and b boards.  Only one player may be resolving.
+  unique_ptr<int []> a_gbds_;
+  unique_ptr<int []> a_lbds_;
+  unique_ptr<int []> b_gbds_;
+  unique_ptr<int []> b_lbds_;
   // The number of times we sampled this board.
   int num_samples_;
   int msbd_;
@@ -140,14 +141,19 @@ Player::Player(const BettingAbstraction &a_ba, const BettingAbstraction &b_ba,
 	       const CFRConfig &b_cc, int a_it, int b_it, int resolve_st, bool resolve_a,
 	       bool resolve_b, const CardAbstraction &as_ca, const BettingAbstraction &as_ba,
 	       const CFRConfig &as_cc, const CardAbstraction &bs_ca,
-	       const BettingAbstraction &bs_ba, const CFRConfig &bs_cc):
+	       const BettingAbstraction &bs_ba, const CFRConfig &bs_cc, bool a_quantize,
+	       bool b_quantize) :
   a_betting_abstraction_(a_ba), b_betting_abstraction_(b_ba),
   a_subgame_betting_abstraction_(as_ba), b_subgame_betting_abstraction_(bs_ba) {
   int max_street = Game::MaxStreet();
-  a_boards_.reset(new int[max_street + 1]);
-  b_boards_.reset(new int[max_street + 1]);
-  a_boards_[0] = 0;
-  b_boards_[0] = 0;
+  a_gbds_.reset(new int[max_street + 1]);
+  a_lbds_.reset(new int[max_street + 1]);
+  b_gbds_.reset(new int[max_street + 1]);
+  b_lbds_.reset(new int[max_street + 1]);
+  a_gbds_[0] = 0;
+  a_lbds_[0] = 0;
+  b_gbds_[0] = 0;
+  b_lbds_[0] = 0;
   sum_b_outcomes_ = 0;
   sum_p0_outcomes_ = 0;
   sum_p1_outcomes_ = 0;
@@ -217,9 +223,9 @@ Player::Player(const BettingAbstraction &a_ba, const BettingAbstraction &b_ba,
 	  a_ba.BettingAbstractionName().c_str(),
 	  a_cc.CFRConfigName().c_str());
   if (a_ba.Asymmetric()) {
-    a_probs_->ReadAsymmetric(dir, a_it, *a_betting_trees_, "x", -1, true);
+    a_probs_->ReadAsymmetric(dir, a_it, *a_betting_trees_, "x", -1, true, a_quantize);
   } else {
-    a_probs_->Read(dir, a_it, a_betting_trees_->GetBettingTree(), "x", -1, true);
+    a_probs_->Read(dir, a_it, a_betting_trees_->GetBettingTree(), "x", -1, true, a_quantize);
   }
 
   if (a_ca.CardAbstractionName().c_str() == b_ca.CardAbstractionName() &&
@@ -236,9 +242,9 @@ Player::Player(const BettingAbstraction &a_ba, const BettingAbstraction &b_ba,
 	    Game::NumSuits(), Game::MaxStreet(), b_ba.BettingAbstractionName().c_str(),
 	    b_cc.CFRConfigName().c_str());
     if (b_ba.Asymmetric()) {
-      b_probs_->ReadAsymmetric(dir, b_it, *b_betting_trees_, "x", -1, true);
+      b_probs_->ReadAsymmetric(dir, b_it, *b_betting_trees_, "x", -1, true, b_quantize);
     } else {
-      b_probs_->Read(dir, b_it, b_betting_trees_->GetBettingTree(), "x", -1, true);
+      b_probs_->Read(dir, b_it, b_betting_trees_->GetBettingTree(), "x", -1, true, b_quantize);
     }
   }
 
@@ -254,11 +260,13 @@ Player::Player(const BettingAbstraction &a_ba, const BettingAbstraction &b_ba,
 }
 
 // Compute outcome from B's perspective
-void Player::Showdown(Node *a_node, Node *b_node, shared_ptr<double []> *reach_probs) {
+void Player::Showdown(Node *a_node, Node *b_node, const ReachProbs &reach_probs) {
   Card max_card1 = Game::MaxCard() + 1;
 
-  double *a_probs = b_pos_ == 0 ? reach_probs[1].get() : reach_probs[0].get();
-  double *b_probs = b_pos_ == 0 ? reach_probs[0].get() : reach_probs[1].get();
+  // double *a_probs = b_pos_ == 0 ? reach_probs[1].get() : reach_probs[0].get();
+  // double *b_probs = b_pos_ == 0 ? reach_probs[0].get() : reach_probs[1].get();
+  double *a_probs = reach_probs.Get(b_pos_^1).get();
+  double *b_probs = reach_probs.Get(b_pos_).get();
   unique_ptr<double []> cum_opp_card_probs(new double[52]);
   unique_ptr<double []> total_opp_card_probs(new double[52]);
   for (Card c = 0; c < max_card1; ++c) {
@@ -350,7 +358,7 @@ void Player::Showdown(Node *a_node, Node *b_node, shared_ptr<double []> *reach_p
 }
   
 // Compute outcome from B's perspective
-void Player::Fold(Node *a_node, Node *b_node, shared_ptr<double []> *reach_probs) {
+void Player::Fold(Node *a_node, Node *b_node, const ReachProbs &reach_probs) {
   Card max_card1 = Game::MaxCard() + 1;
 
   double half_pot = a_node->LastBetTo();
@@ -367,8 +375,10 @@ void Player::Fold(Node *a_node, Node *b_node, shared_ptr<double []> *reach_probs
   const CanonicalCards *hands = street_hands_[max_street].get();
   double sum_our_vals = 0, sum_joint_probs = 0;
 
-  double *a_probs = b_pos_ == 0 ? reach_probs[1].get() : reach_probs[0].get();
-  double *b_probs = b_pos_ == 0 ? reach_probs[0].get() : reach_probs[1].get();
+  // double *a_probs = b_pos_ == 0 ? reach_probs[1].get() : reach_probs[0].get();
+  // double *b_probs = b_pos_ == 0 ? reach_probs[0].get() : reach_probs[1].get();
+  double *a_probs = reach_probs.Get(b_pos_^1).get();
+  double *b_probs = reach_probs.Get(b_pos_).get();
   unique_ptr<double []> cum_opp_card_probs(new double[52]);
   unique_ptr<double []> total_opp_card_probs(new double[52]);
   for (Card c = 0; c < max_card1; ++c) {
@@ -418,6 +428,7 @@ void Player::Fold(Node *a_node, Node *b_node, shared_ptr<double []> *reach_probs
   sum_weights_ += wtd_sum_joint_probs;
 }
 
+#if 0
 // Hard-coded for heads-up
 shared_ptr<double []> **Player::GetSuccReachProbs(Node *node, int gbd, const Buckets &buckets,
 						  const CFRValues *sumprobs,
@@ -517,9 +528,10 @@ shared_ptr<double []> **Player::GetSuccReachProbs(Node *node, int gbd, const Buc
   
   return succ_reach_probs;
 }
+#endif
 
 void Player::Nonterminal(Node *a_node, Node *b_node, const string &action_sequence,
-			 shared_ptr<double []> *reach_probs) {
+			 const ReachProbs &reach_probs) {
   int st = a_node->Street();
   int pa = a_node->PlayerActing();
   // A and B may have different numbers of succs.  I think this may only be the case if either
@@ -540,40 +552,10 @@ void Player::Nonterminal(Node *a_node, Node *b_node, const string &action_sequen
 	    b_node->PlayerActing());
     exit(-1);
   }
-  unique_ptr<int []> succ_mapping(new int[acting_num_succs]);
-  for (int as = 0; as < acting_num_succs; ++as) {
-    int os = -1;
-    if (as == acting_node->CallSuccIndex()) {
-      for (int s = 0; s < opp_num_succs; ++s) {
-	if (s == opp_node->CallSuccIndex()) {
-	  os = s;
-	  break;
-	}
-      }
-    } else if (as == acting_node->FoldSuccIndex()) {
-      for (int s = 0; s < opp_num_succs; ++s) {
-	if (s == opp_node->FoldSuccIndex()) {
-	  os = s;
-	  break;
-	}
-      }
-    } else {
-      int bet_to = acting_node->IthSucc(as)->LastBetTo();
-      for (int s = 0; s < opp_num_succs; ++s) {
-	if (opp_node->IthSucc(s)->LastBetTo() == bet_to) {
-	  os = s;
-	  break;
-	}
-      }
-    }
-    if (os == -1) {
-      fprintf(stderr, "Player::Nonterminal no matching succ\n");
-      exit(-1);
-    }
-    succ_mapping[as] = os;
-  }
+  unique_ptr<int []> succ_mapping = GetSuccMapping(acting_node, opp_node);
   
-  shared_ptr<double []> **succ_reach_probs;
+  shared_ptr<ReachProbs []> succ_reach_probs;
+  // shared_ptr<double []> **succ_reach_probs;
   if (pa == b_pos_) {
     // This doesn't support multiplayer yet
     const CFRValues *sumprobs;
@@ -584,7 +566,10 @@ void Player::Nonterminal(Node *a_node, Node *b_node, const string &action_sequen
     }
     const Buckets &buckets =
       (resolve_b_ && st >= resolve_st_) ? *b_subgame_buckets_ : *b_base_buckets_;
-    succ_reach_probs = GetSuccReachProbs(b_node, b_boards_[st], buckets, sumprobs, reach_probs);
+    // succ_reach_probs = GetSuccReachProbs(b_node, b_boards_[st], buckets, sumprobs, reach_probs);
+    const CanonicalCards *hands = street_hands_[st].get();
+    succ_reach_probs = ReachProbs::CreateSuccReachProbs(b_node, b_gbds_[st], b_lbds_[st], hands,
+							buckets, sumprobs, reach_probs, false);
   } else {
     const CFRValues *sumprobs;
     if (resolve_a_ && st >= resolve_st_) {
@@ -594,7 +579,10 @@ void Player::Nonterminal(Node *a_node, Node *b_node, const string &action_sequen
     }
     const Buckets &buckets =
       (resolve_a_ && st >= resolve_st_) ? *a_subgame_buckets_ : *a_base_buckets_;
-    succ_reach_probs = GetSuccReachProbs(a_node, a_boards_[st], buckets, sumprobs, reach_probs);
+    // succ_reach_probs = GetSuccReachProbs(a_node, a_boards_[st], buckets, sumprobs, reach_probs);
+    const CanonicalCards *hands = street_hands_[st].get();
+    succ_reach_probs = ReachProbs::CreateSuccReachProbs(a_node, a_gbds_[st], a_lbds_[st], hands,
+							buckets, sumprobs, reach_probs, false);
   }
   for (int s = 0; s < acting_num_succs; ++s) {
     string action;
@@ -610,14 +598,16 @@ void Player::Nonterminal(Node *a_node, Node *b_node, const string &action_sequen
     }
     Walk(a_succ, b_succ, action_sequence + action, succ_reach_probs[s], st);
   }
+#if 0
   for (int s = 0; s < acting_num_succs; ++s) {
     delete [] succ_reach_probs[s];
   }
   delete [] succ_reach_probs;
+#endif
 }
  
 void Player::Walk(Node *a_node, Node *b_node, const string &action_sequence,
-		  shared_ptr<double []> *reach_probs, int last_st) {
+		  const ReachProbs &reach_probs, int last_st) {
   int st = a_node->Street();
   if (st > last_st && st == resolve_st_) {
     Node *next_a_node, *next_b_node;
@@ -641,7 +631,7 @@ void Player::Walk(Node *a_node, Node *b_node, const string &action_sequence,
 	int gbd;
 	if (st1 == max_street) gbd = msbd_;
 	else                   gbd = BoardTree::PredBoard(msbd_, st1);
-	a_boards_[st1] = BoardTree::LocalIndex(st, root_bd, st1, gbd);
+	a_lbds_[st1] = BoardTree::LocalIndex(st, root_bd, st1, gbd);
       }
     } else {
       next_a_node = a_node;
@@ -653,6 +643,9 @@ void Player::Walk(Node *a_node, Node *b_node, const string &action_sequence,
       int root_bd;
       if (st == max_street) root_bd = msbd_;
       else                  root_bd = BoardTree::PredBoard(msbd_, st);
+      printf("Resolving %s b_pos_ %i id %i lbt %i\n", action_sequence.c_str(), b_pos_,
+	     b_node->NonterminalID(), b_node->LastBetTo());
+      fflush(stdout);
       struct timespec start, finish;
       clock_gettime(CLOCK_MONOTONIC, &start);
       b_eg_cfr_->SolveSubgame(b_subtrees_.get(), root_bd, reach_probs, action_sequence,
@@ -666,7 +659,7 @@ void Player::Walk(Node *a_node, Node *b_node, const string &action_sequence,
 	int gbd;
 	if (st1 == max_street) gbd = msbd_;
 	else                   gbd = BoardTree::PredBoard(msbd_, st1);
-	b_boards_[st1] = BoardTree::LocalIndex(st, root_bd, st1, gbd);
+	b_lbds_[st1] = BoardTree::LocalIndex(st, root_bd, st1, gbd);
       }
     } else {
       next_b_node = b_node;
@@ -703,12 +696,16 @@ void Player::Walk(Node *a_node, Node *b_node, const string &action_sequence,
 void Player::ProcessMaxStreetBoard(int msbd) {
   int max_street = Game::MaxStreet();
   msbd_ = msbd;
-  a_boards_[max_street] = msbd_;
-  b_boards_[max_street] = msbd_;
+  a_gbds_[max_street] = msbd_;
+  a_lbds_[max_street] = msbd_;
+  b_gbds_[max_street] = msbd_;
+  b_lbds_[max_street] = msbd_;
   for (int st = 1; st < max_street; ++st) {
     int pbd = BoardTree::PredBoard(msbd_, st);
-    a_boards_[st] = pbd;
-    b_boards_[st] = pbd;
+    a_gbds_[st] = pbd;
+    a_lbds_[st] = pbd;
+    b_gbds_[st] = pbd;
+    b_lbds_[st] = pbd;
   }
 
   if (resolve_a_ || resolve_b_) {
@@ -740,8 +737,9 @@ void Player::ProcessMaxStreetBoard(int msbd) {
     cards[num_hole_cards + i] = board[i];
   }
 
-  // Maintaining reach probs for hole card pairs consistent with *max-street* board.
   int num_players = Game::NumPlayers();
+#if 0
+  // Maintaining reach probs for hole card pairs consistent with *max-street* board.
   int max_card1 = Game::MaxCard() + 1;
   int num_enc = max_card1 * max_card1;
   unique_ptr<shared_ptr<double []> []> reach_probs(new shared_ptr<double []>[num_players]);
@@ -758,11 +756,13 @@ void Player::ProcessMaxStreetBoard(int msbd) {
       }
     }
   }
+#endif
+  unique_ptr<ReachProbs> reach_probs(ReachProbs::CreateRoot());
   Node *a_root, *b_root;
   for (b_pos_ = 0; b_pos_ < num_players; ++b_pos_) {
     b_root = b_betting_trees_->Root(b_pos_);
     a_root = a_betting_trees_->Root(b_pos_^1);
-    Walk(a_root, b_root, "x", reach_probs.get(), 0);
+    Walk(a_root, b_root, "x", *reach_probs, 0);
   }
 }
 
@@ -804,10 +804,13 @@ void Player::Go(int num_sampled_max_street_boards) {
       ++max_street_board_samples[bd];
     }
 
+    int so_far = 0;
     for (int bd = 0; bd < num_max_street_boards; ++bd) {
       num_samples_ = max_street_board_samples[bd];
       if (num_samples_ == 0) continue;
       ProcessMaxStreetBoard(bd);
+      so_far += num_samples_;
+      fprintf(stderr, "Processed %i/%i\n", so_far, num_sampled_max_street_boards);
     }
   }
 
@@ -828,10 +831,10 @@ void Player::Go(int num_sampled_max_street_boards) {
 static void Usage(const char *prog_name) {
   fprintf(stderr, "USAGE: %s <game params> <A card params> <B card params> "
 	  "<A betting abstraction params> <B betting abstraction params> <A CFR params> "
-	  "<B CFR params> <A it> <B it> <num sampled max street boards> <resolve st> <resolve A> "
-	  "<resolve B> (<A resolve card params> <A resolve betting params> <A resolve CFR config>) "
-	  "(<B resolve card params> <B resolve betting params> <B resolve CFR config>)\n",
-	  prog_name);
+	  "<B CFR params> <A it> <B it> <num sampled max street boards> [quantize|raw] "
+	  "[quantize|raw] <resolve A> <resolve B> (<resolve st>) (<A resolve card params> "
+	  "<A resolve betting params> <A resolve CFR config>) (<B resolve card params> "
+	  "<B resolve betting params> <B resolve CFR config>)\n", prog_name);
   fprintf(stderr, "\n");
   fprintf(stderr, "Specify 0 for <num sampled max street boards> to not sample\n");
   fprintf(stderr, "<resolve A> and <resolve B> must be \"true\" or \"false\"\n");
@@ -839,7 +842,7 @@ static void Usage(const char *prog_name) {
 }
 
 int main(int argc, char *argv[]) {
-  if (argc != 14 && argc != 17 && argc != 20) Usage(argv[0]);
+  if (argc != 15 && argc != 19 && argc != 22) Usage(argv[0]);
   Files::Init();
   unique_ptr<Params> game_params = CreateGameParams();
   game_params->ReadFromFile(argv[1]);
@@ -869,48 +872,58 @@ int main(int argc, char *argv[]) {
   unique_ptr<CFRConfig>
     b_cfr_config(new CFRConfig(*b_cfr_params));
 
-  int a_it, b_it, num_sampled_max_street_boards, resolve_st;
+  int a_it, b_it, num_sampled_max_street_boards;
   if (sscanf(argv[8], "%i", &a_it) != 1)                           Usage(argv[0]);
   if (sscanf(argv[9], "%i", &b_it) != 1)                           Usage(argv[0]);
   if (sscanf(argv[10], "%i", &num_sampled_max_street_boards) != 1) Usage(argv[0]);
-  if (sscanf(argv[11], "%i", &resolve_st) != 1)                    Usage(argv[0]);
 
+  bool a_quantize = false, b_quantize = false;
+  string qa = argv[11];
+  if (qa == "quantize") a_quantize = true;
+  else if (qa == "raw") a_quantize = false;
+  else                  Usage(argv[0]);
+  string qb = argv[12];
+  if (qb == "quantize") b_quantize = true;
+  else if (qb == "raw") b_quantize = false;
+  else                  Usage(argv[0]);
+  
   bool resolve_a = false;
   bool resolve_b = false;
-  string ra = argv[12];
+  string ra = argv[13];
   if (ra == "true")       resolve_a = true;
   else if (ra == "false") resolve_a = false;
   else                    Usage(argv[0]);
-  string rb = argv[13];
+  string rb = argv[14];
   if (rb == "true")       resolve_b = true;
   else if (rb == "false") resolve_b = false;
   else                    Usage(argv[0]);
-  if (! resolve_a && ! resolve_b && resolve_st != -1) {
-    fprintf(stderr, "resolve_st should be -1 if not resolving either A or B\n");
-    exit(-1);
+
+  if (resolve_a && resolve_b && argc != 22)     Usage(argv[0]);
+  if (resolve_a && ! resolve_b && argc != 19)   Usage(argv[0]);
+  if (! resolve_a && resolve_b && argc != 19)   Usage(argv[0]);
+  if (! resolve_a && ! resolve_b && argc != 15) Usage(argv[0]);
+
+  int resolve_st = -1;
+  if (resolve_a || resolve_b) {
+    if (sscanf(argv[15], "%i", &resolve_st) != 1) Usage(argv[0]);
   }
-
-  if (resolve_a && resolve_b && argc != 20)     Usage(argv[0]);
-  if (resolve_a && ! resolve_b && argc != 17)   Usage(argv[0]);
-  if (! resolve_a && resolve_b && argc != 17)   Usage(argv[0]);
-  if (! resolve_a && ! resolve_b && argc != 14) Usage(argv[0]);
-
+  
   unique_ptr<CardAbstraction> a_subgame_card_abstraction, b_subgame_card_abstraction;
   unique_ptr<BettingAbstraction> a_subgame_betting_abstraction, b_subgame_betting_abstraction;
   unique_ptr<CFRConfig> a_subgame_cfr_config, b_subgame_cfr_config;
   if (resolve_a) {
     unique_ptr<Params> subgame_card_params = CreateCardAbstractionParams();
-    subgame_card_params->ReadFromFile(argv[14]);
+    subgame_card_params->ReadFromFile(argv[16]);
     a_subgame_card_abstraction.reset(new CardAbstraction(*subgame_card_params));
     unique_ptr<Params> subgame_betting_params = CreateBettingAbstractionParams();
-    subgame_betting_params->ReadFromFile(argv[15]);
+    subgame_betting_params->ReadFromFile(argv[17]);
     a_subgame_betting_abstraction.reset(new BettingAbstraction(*subgame_betting_params));
     unique_ptr<Params> subgame_cfr_params = CreateCFRParams();
-    subgame_cfr_params->ReadFromFile(argv[16]);
+    subgame_cfr_params->ReadFromFile(argv[18]);
     a_subgame_cfr_config.reset(new CFRConfig(*subgame_cfr_params));
   }
   if (resolve_b) {
-    int a = resolve_a ? 17 : 14;
+    int a = resolve_a ? 19 : 16;
     unique_ptr<Params> subgame_card_params = CreateCardAbstractionParams();
     subgame_card_params->ReadFromFile(argv[a]);
     b_subgame_card_abstraction.reset(new CardAbstraction(*subgame_card_params));
@@ -928,6 +941,6 @@ int main(int argc, char *argv[]) {
 		*b_card_abstraction, *a_cfr_config, *b_cfr_config, a_it, b_it, resolve_st,
 		resolve_a, resolve_b, *a_subgame_card_abstraction, *a_subgame_betting_abstraction,
 		*a_subgame_cfr_config, *b_subgame_card_abstraction, *b_subgame_betting_abstraction,
-		*b_subgame_cfr_config);
+		*b_subgame_cfr_config, a_quantize, b_quantize);
   player.Go(num_sampled_max_street_boards);
 }

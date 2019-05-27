@@ -1,0 +1,45 @@
+#!/bin/bash
+
+# You may want to pipe the output of this script to "egrep Exploitability"
+
+# Expect 2.86
+../bin/run_approx_rgbr ms1f1_params none_params mb1b1_params cfrps_params 200 raw 0 0
+
+# Expect 1.08
+../bin/run_approx_rgbr ms1f1_params none_params mb1b1_params cfrps_params 200 raw 1 0
+
+# Expect values like 0.93, 1.03, 1.12, 1.23, 1.32, etc.
+../bin/run_approx_rgbr ms1f1_params none_params mb1b1_params cfrps_params 200 raw 1 1
+
+# Expect 7.99
+../bin/run_approx_rgbr ms2f1t1h5_params none_params mb1b1_params cfrps_params 200 raw 0 0
+
+# Expect 4.19
+../bin/run_approx_rgbr ms2f1t1h5_params none_params mb1b1_params cfrps_params 200 raw 1 0
+
+# Expect 2.53
+../bin/run_approx_rgbr ms2f1t1h5_params none_params mb1b1_params cfrps_params 200 raw 2 0
+
+# Expect 32.21
+../bin/run_approx_rgbr ms3f1t1r1h5_params none_params mb1b1_params cfrps_params 200 raw 0 0
+
+# Expect 15.39
+ ../bin/run_approx_rgbr ms3f1t1r1h5_params none_params mb1b1_params cfrps_params 200 raw 1 0
+
+# Expect 10.36
+ ../bin/run_approx_rgbr ms3f1t1r1h5_params none_params mb1b1_params cfrps_params 200 raw 2 0
+ 
+# Expect 7.18
+ ../bin/run_approx_rgbr ms3f1t1r1h5_params none_params mb1b1_params cfrps_params 200 raw 3 0
+
+# Expect 189.58
+../bin/run_approx_rgbr ms3f1t1r1h5_params nxhs3_params mb1b1_params tcfr_params 6 raw 0 0
+
+# Expect 135.80
+../bin/run_approx_rgbr ms3f1t1r1h5_params nxhs3_params mb1b1_params tcfr_params 6 raw 1 0
+
+# Expect 108.64
+../bin/run_approx_rgbr ms3f1t1r1h5_params nxhs3_params mb1b1_params tcfr_params 6 raw 2 0
+
+# Expect 93.31
+../bin/run_approx_rgbr ms3f1t1r1h5_params nxhs3_params mb1b1_params tcfr_params 6 raw 3 0

@@ -15,6 +15,7 @@ class CFRConfig;
 class CFRValues;
 class HandTree;
 class Node;
+class ReachProbs;
 
 BettingTrees *CreateSubtrees(int st, int player_acting, int last_bet_to, int target_p,
 			     const BettingAbstraction &betting_abstraction);
@@ -58,6 +59,6 @@ void DeleteAllSubgames(const CardAbstraction &base_card_abstraction,
 void FloorCVs(Node *subtree_root, double *opp_reach_probs, const CanonicalCards *hands,
 	      double *cvs);
 void ZeroSumCVs(double *p0_cvs, double *p1_cvs, int num_hole_card_pairs,
-		std::shared_ptr<double []> *reach_probs, const CanonicalCards *hands);
+		const ReachProbs &reach_probs, const CanonicalCards *hands);
 
 #endif

@@ -10,6 +10,7 @@
 #include "cfrd_eg_cfr.h"
 #include "game.h"
 #include "hand_tree.h"
+#include "reach_probs.h"
 #include "resolving_method.h"
 #include "vcfr_state.h"
 
@@ -103,10 +104,9 @@ void CFRDEGCFR::HalfIteration(BettingTrees *subtrees, int target_p, VCFRState *s
   }
 }
 
-void CFRDEGCFR::SolveSubgame(BettingTrees *subtrees, int solve_bd,
-			     shared_ptr<double []> *reach_probs, const string &action_sequence,
-			     const HandTree *hand_tree, double *opp_cvs, int target_p,
-			     bool both_players, int num_its) {
+void CFRDEGCFR::SolveSubgame(BettingTrees *subtrees, int solve_bd, const ReachProbs &reach_probs,
+			     const string &action_sequence, const HandTree *hand_tree,
+			     double *opp_cvs, int target_p, bool both_players, int num_its) {
   int subtree_st = subtrees->Root()->Street();
   int num_players = Game::NumPlayers();
   int max_street = Game::MaxStreet();
@@ -117,7 +117,7 @@ void CFRDEGCFR::SolveSubgame(BettingTrees *subtrees, int solve_bd,
   }
   regrets_.reset(new CFRValues(nullptr, subtree_streets.get(), solve_bd, subtree_st, buckets_,
 			       subtrees->GetBettingTree()));
-  regrets_->AllocateAndClear(subtrees->GetBettingTree(), CFR_DOUBLE, -1);
+  regrets_->AllocateAndClear(subtrees->GetBettingTree(), CFRValueType::CFR_DOUBLE, false, -1);
 
   // Should honor sumprobs_streets_
 
@@ -127,7 +127,7 @@ void CFRDEGCFR::SolveSubgame(BettingTrees *subtrees, int solve_bd,
   }
   sumprobs_.reset(new CFRValues(players.get(), subtree_streets.get(), solve_bd, subtree_st,
 				buckets_, subtrees->GetBettingTree()));
-  sumprobs_->AllocateAndClear(subtrees->GetBettingTree(), CFR_DOUBLE, -1);
+  sumprobs_->AllocateAndClear(subtrees->GetBettingTree(), CFRValueType::CFR_DOUBLE, false, -1);
   
   int num_hole_card_pairs = Game::NumHoleCardPairs(subtree_st);
   cfrd_regrets_.reset(new double[num_hole_card_pairs * 2]);
@@ -138,7 +138,7 @@ void CFRDEGCFR::SolveSubgame(BettingTrees *subtrees, int solve_bd,
   
   VCFRState **initial_states = new VCFRState *[num_players];
   for (int p = 0; p < num_players; ++p) {
-    initial_states[p] = new VCFRState(p, reach_probs[p^1], hand_tree, 0, action_sequence, solve_bd,
+    initial_states[p] = new VCFRState(p, reach_probs.Get(p^1), hand_tree, action_sequence, solve_bd,
 				      subtree_st);
     SetStreetBuckets(subtree_st, solve_bd, *initial_states[p]);
   }

@@ -28,10 +28,40 @@ Essentially no difference
 
 ------------------------------------------------------------------
 
-Short quantize turn
+Short quantize flop and turn
 Char quantize river
 tcfrqssc_params
 7b in 180m: Exploitability: 187.27 mbb/g
 tcfr/7b vs. tcfrqssc/7b
 Avg B outcome: -0.019631 (-9.8 mbb/g)
 Avg P1 outcome: 0.598681 (299.3 mbb/g)
+tcfrqssc no worse than tcfrqsc
+
+------------------------------------------------------------------
+
+Char quantize flop, turn and river
+tcfrqccc_params
+1b: Exploitability: 185.50 mbb/g
+  tcfr:     Exploitability: 209.25 mbb/g
+  tcfrqsc:  Exploitability: 199.41 mbb/g
+  tcfrqssc: Exploitability: 200.06 mbb/g
+tcfr/1b vs. tcfrqccc/1b:
+  Avg B outcome: -0.021263 (-10.6 mbb/g)
+tcfr/1b vs. tcfrqssc/1b:
+  Avg B outcome: -0.014622 (-7.3 mbb/g)
+tcfr/1b vs. tcfrqsc/1b:
+  Avg B outcome: -0.014685 (-7.3 mbb/g)
+
+Explitability actually better (odd!)
+Head-to-head a bit worse.
+
+2b: Exploitability: 179.20 mbb/g
+  tcfr:     Exploitability: 197.93 mbb/g
+  tcfrqsc:  Exploitability: 191.94 mbb/g
+  tcfrqssc: Exploitability: 192.86 mbb/g
+tcfr/2b vs. tcfrqccc/2b:
+  Avg B outcome: -0.023840 (-11.9 mbb/g)
+tcfr/2b vs. tcfrqssc/2b:
+  Avg B outcome: -0.016834 (-8.4 mbb/g)
+tcfr/2b vs. tcfrqsc/2b:
+  Avg B outcome: -0.016799 (-8.4 mbb/g)

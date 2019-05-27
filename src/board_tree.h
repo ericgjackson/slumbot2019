@@ -16,9 +16,9 @@ public:
     return &boards_[st][bd * num_board_cards];
   }
   static int SuitGroups(int st, int bd) {return suit_groups_[st][bd];}
-  // The number of isomorphic variants of the current street addition to the
-  // board.  For example, for AcKcQc9d the number of variants is 3 because the
-  // 9d turns has three isomorphic variants (9d, 9h, 9s).
+  // The number of isomorphic variants of the current street addition to the board.  For example,
+  // for AcKcQc9d the number of variants is 3 because the 9d turns has three isomorphic variants
+  // (9d, 9h, 9s).
   static int NumVariants(int st, int bd) {return board_variants_[st][bd];}
   static int LocalIndex(int root_st, int root_bd, int st, int gbd);
   static int GlobalIndex(int root_st, int root_bd, int st, int lbd);

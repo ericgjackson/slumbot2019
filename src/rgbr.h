@@ -11,9 +11,12 @@ class CFRConfig;
 class RGBR : public CFRP {
 public:
   RGBR(const CardAbstraction &ca, const BettingAbstraction &ba, const CFRConfig &cc,
-       const Buckets &buckets, bool current, int num_threads, const bool *streets, int target_p);
+       const Buckets &buckets, bool current, bool quantize, int num_threads, const bool *streets,
+       int target_p);
   virtual ~RGBR(void);
   double Go(int it, int p);
+ private:
+  bool quantize_;
 };
 
 #endif

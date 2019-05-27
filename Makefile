@@ -10,18 +10,19 @@ HEADS =	src/fast_hash.h src/rand.h src/constants.h src/files.h src/cards.h src/i
 	src/hand_tree.h src/vcfr_state.h src/vcfr.h src/cfr_utils.h src/cfrp_subgame.h src/cfrp.h \
 	src/rgbr.h src/resolving_method.h src/subgame_utils.h src/dynamic_cbr.h src/eg_cfr.h \
 	src/unsafe_eg_cfr.h src/cfrd_eg_cfr.h src/combined_eg_cfr.h src/regret_compression.h \
-	src/tcfr.h src/rollout.h src/sparse_and_dense.h src/kmeans.h
+	src/tcfr.h src/rollout.h src/sparse_and_dense.h src/kmeans.h src/reach_probs.h
 
 # -Wl,--no-as-needed fixes my problem of undefined reference to
 # pthread_create (and pthread_join).  Comments I found on the web indicate
 # that these flags are a workaround to a gcc bug.
-# LIBRARIES = -lcompression -pthread -Wl,--no-as-needed
 LIBRARIES = -pthread -Wl,--no-as-needed
 
 LDFLAGS = 
 
 # Causes problems
 #  -fipa-pta
+# -ffast-math may need to be turned off for tests like std::isnan() to work
+# -ffast-math makes small changes to results of floating point calculations!
 CFLAGS = -std=c++11 -Wall -O3 -march=native -ffast-math -flto
 
 obj/%.o:	src/%.cpp $(HEADS)
@@ -37,7 +38,7 @@ OBJS =	obj/fast_hash.o obj/rand.o obj/files.o obj/cards.o obj/io.o obj/split.o o
 	obj/cfr_utils.o obj/vcfr.o obj/cfrp_subgame.o obj/cfrp.o obj/rgbr.o obj/resolving_method.o \
 	obj/subgame_utils.o obj/dynamic_cbr.o obj/eg_cfr.o obj/unsafe_eg_cfr.o obj/cfrd_eg_cfr.o \
 	obj/combined_eg_cfr.o obj/regret_compression.o obj/tcfr.o obj/rollout.o \
-	obj/sparse_and_dense.o obj/kmeans.o obj/mcts.o
+	obj/sparse_and_dense.o obj/kmeans.o obj/mcts.o obj/reach_probs.o
 
 bin/show_num_boards:	obj/show_num_boards.o $(OBJS) $(HEADS)
 	g++ $(LDFLAGS) $(CFLAGS) -o bin/show_num_boards obj/show_num_boards.o $(OBJS) $(LIBRARIES)
@@ -129,6 +130,8 @@ bin/eval_node:	obj/eval_node.o $(OBJS) $(HEADS)
 bin/sampled_br:	obj/sampled_br.o $(OBJS) $(HEADS)
 	g++ $(LDFLAGS) $(CFLAGS) -o bin/sampled_br obj/sampled_br.o $(OBJS) $(LIBRARIES)
 
+bin/run_approx_rgbr:	obj/run_approx_rgbr.o $(OBJS) $(HEADS)
+	g++ $(LDFLAGS) $(CFLAGS) -o bin/run_approx_rgbr obj/run_approx_rgbr.o $(OBJS) $(LIBRARIES)
+
 bin/x:	obj/x.o $(OBJS) $(HEADS)
 	g++ $(LDFLAGS) $(CFLAGS) -o bin/x obj/x.o $(OBJS) $(LIBRARIES)
-

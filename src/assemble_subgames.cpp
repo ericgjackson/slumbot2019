@@ -104,14 +104,14 @@ Assembler::Assembler(const BettingTrees &base_betting_trees,
     base_compressed_streets[st] = true;
   }
 
-  CFRValues base_sumprobs(nullptr, base_streets.get(), 0, 0, base_buckets, &base_betting_trees_);
+  CFRValues base_sumprobs(nullptr, base_streets.get(), 0, 0, base_buckets, base_betting_trees_);
   
   char read_dir[500], write_dir[500];
   sprintf(read_dir, "%s/%s.%i.%s.%i.%i.%i.%s.%s", Files::OldCFRBase(), Game::GameName().c_str(),
 	  Game::NumPlayers(), base_ca.CardAbstractionName().c_str(), Game::NumRanks(),
 	  Game::NumSuits(), Game::MaxStreet(), base_ba_.BettingAbstractionName().c_str(),
 	  base_cc_.CFRConfigName().c_str());
-  base_sumprobs.Read(read_dir, base_it, base_betting_trees_.Root(), "x", -1, true);
+  base_sumprobs.Read(read_dir, base_it, base_betting_trees_.GetBettingTree(), "x", -1, true, false);
   sprintf(write_dir, "%s/%s.%i.%s.%i.%i.%i.%s.%s", Files::NewCFRBase(), Game::GameName().c_str(),
 	  Game::NumPlayers(), merged_ca_.CardAbstractionName().c_str(), Game::NumRanks(),
 	  Game::NumSuits(), Game::MaxStreet(), subgame_ba_.BettingAbstractionName().c_str(),
@@ -136,9 +136,10 @@ Assembler::Assembler(const BettingTrees &base_betting_trees,
   }
 
   merged_sumprobs_.reset(new CFRValues(nullptr, subgame_streets.get(), 0, 0, merged_buckets,
-				       &subgame_betting_trees_));
+				       subgame_betting_trees_));
   for (int st = 0; st <= max_street; ++st) {
-    if (subgame_streets[st]) merged_sumprobs_->CreateStreetValues(st, CFR_DOUBLE);
+    if (subgame_streets[st]) merged_sumprobs_->CreateStreetValues(st, CFRValueType::CFR_DOUBLE,
+								  false);
   }
 }
 

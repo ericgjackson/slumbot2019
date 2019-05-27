@@ -109,5 +109,6 @@ class BettingTree {
 };
 
 bool TwoSuccsCorrespond(Node *node1, int s1, Node *node2, int s2);
+std::unique_ptr<int []> GetSuccMapping(Node *acting_node, Node *opp_node);
 
 #endif

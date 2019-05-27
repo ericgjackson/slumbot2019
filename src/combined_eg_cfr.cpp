@@ -10,6 +10,7 @@
 #include "combined_eg_cfr.h"
 #include "game.h"
 #include "hand_tree.h"
+#include "reach_probs.h"
 #include "resolving_method.h"
 #include "vcfr_state.h"
 
@@ -48,10 +49,10 @@ static void RegretsToProbs(double *regrets, int num_succs, int dsi, double *prob
 // the subgame.  Succ 1 corresponds to taking the T value.
 // Use "villain" to mean the player who is not the target player.
 void CombinedEGCFR::HalfIteration(BettingTrees *subtrees, int target_p, VCFRState *state,
-				  shared_ptr<double []> *reach_probs, double *opp_cvs) {
+				  const ReachProbs &reach_probs, double *opp_cvs) {
   int p = state->P();
   const HandTree *hand_tree = state->GetHandTree();
-  shared_ptr<double []> villain_reach_probs = reach_probs[target_p^1];
+  shared_ptr<double []> villain_reach_probs = reach_probs.Get(target_p^1);
   int subtree_st = subtrees->Root()->Street();
   int num_hole_card_pairs = Game::NumHoleCardPairs(subtree_st);
   int num_hole_cards = Game::NumCardsForStreet(0);
@@ -192,7 +193,7 @@ void CombinedEGCFR::HalfIteration(BettingTrees *subtrees, int target_p, VCFRStat
 }
 
 void CombinedEGCFR::SolveSubgame(BettingTrees *subtrees, int solve_bd,
-				 shared_ptr<double []> *reach_probs, const string &action_sequence,
+				 const ReachProbs &reach_probs, const string &action_sequence,
 				 const HandTree *hand_tree, double *opp_cvs, int target_p,
 				 bool both_players, int num_its) {
   int subtree_st = subtrees->Root()->Street();
@@ -205,7 +206,7 @@ void CombinedEGCFR::SolveSubgame(BettingTrees *subtrees, int solve_bd,
   }
   regrets_.reset(new CFRValues(nullptr, subtree_streets.get(), solve_bd, subtree_st, buckets_,
 			       subtrees->GetBettingTree()));
-  regrets_->AllocateAndClear(subtrees->GetBettingTree(), CFR_DOUBLE, -1);
+  regrets_->AllocateAndClear(subtrees->GetBettingTree(), CFRValueType::CFR_DOUBLE, false, -1);
 
   // Should honor sumprobs_streets_
 
@@ -215,7 +216,7 @@ void CombinedEGCFR::SolveSubgame(BettingTrees *subtrees, int solve_bd,
   }
   sumprobs_.reset(new CFRValues(players.get(), subtree_streets.get(), solve_bd, subtree_st,
 				buckets_, subtrees->GetBettingTree()));
-  sumprobs_->AllocateAndClear(subtrees->GetBettingTree(), CFR_DOUBLE, -1);
+  sumprobs_->AllocateAndClear(subtrees->GetBettingTree(), CFRValueType::CFR_DOUBLE, false, -1);
 
   int num_hole_card_pairs = Game::NumHoleCardPairs(subtree_st);
   combined_regrets_.reset(new double[num_hole_card_pairs * 2]);
@@ -226,7 +227,7 @@ void CombinedEGCFR::SolveSubgame(BettingTrees *subtrees, int solve_bd,
   
   VCFRState **initial_states = new VCFRState *[num_players];
   for (int p = 0; p < num_players; ++p) {
-    initial_states[p] = new VCFRState(p, reach_probs[p^1], hand_tree, 0, action_sequence, solve_bd,
+    initial_states[p] = new VCFRState(p, reach_probs.Get(p^1), hand_tree, action_sequence, solve_bd,
 				      subtree_st);
     SetStreetBuckets(subtree_st, solve_bd, *initial_states[p]);
   }

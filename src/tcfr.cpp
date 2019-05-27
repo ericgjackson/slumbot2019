@@ -1819,6 +1819,7 @@ void TCFR::Prepare(void) {
     fprintf(stderr, "Could not allocate\n");
     exit(-1);
   }
+  fprintf(stderr, "Allocated: %llu\n", allocation_size);
 
   unsigned long long int ***offsets =
     new unsigned long long int **[max_street + 1];

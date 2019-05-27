@@ -59,7 +59,7 @@ VCFRState::VCFRState(int p, const HandTree *hand_tree) {
 // sum_opp_probs_ to zero) because we know we will come across an opp-choice node before we need
 // those members.
 VCFRState::VCFRState(int p, const shared_ptr<double []> &opp_probs, const HandTree *hand_tree,
-		     int lbd, const string &action_sequence, int root_bd, int root_bd_st) {
+		     const string &action_sequence, int root_bd, int root_bd_st) {
   p_ = p;
   opp_probs_ = opp_probs;
   sum_opp_probs_ = 0;

@@ -23,8 +23,9 @@ void ProcessOppProbs(Node *node, const CanonicalCards *hands, int *street_bucket
 template <typename T1, typename T2>
 void ProcessOppProbs(Node *node, int lbd, const CanonicalCards *hands, bool bucketed,
 		     int *street_buckets, double *opp_probs,
-		     std::shared_ptr<double []> *succ_opp_probs, const CFRStreetValues<T1> &cs_vals,
-		     int dsi, int it, int soft_warmup, int hard_warmup, double sumprob_scaling,
+		     std::shared_ptr<double []> *succ_opp_probs,
+		     const CFRStreetValues<T1> &cs_vals, int dsi, int it, int soft_warmup,
+		     int hard_warmup, double sumprob_scaling,
 		     CFRStreetValues<T2> *sumprobs);
 void DeleteOldFiles(const CardAbstraction &ca, const BettingAbstraction &ba, const CFRConfig &cc,
 		    int it);

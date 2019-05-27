@@ -10,3 +10,19 @@ shouldn't be too different.
 Or even just look at the P0/P1 values during the training of the asymmetric system.
 What P1 can get when P1 is the target player should be as close as possible to what
 P1 can get when P0 is the target player.
+
+----------
+
+head_to_head now giving results for asymmetric, but I'm not sure if I believe them or not.
+Really big win for symmetric mb1b2 against asymmetric asyma.  OTOH, much smaller win
+for symmetric mb1b1aai against asymb.  Which I expect because all-ins should be less
+useful.
+
+Could try asymmetric system that doesn't give extra options to the opponent?  That's what
+testasym did.  That still doesn't prove things are fully working.  There could be a problem
+aligning succs, for example.  The test with mb1b1aai and asymb was better and gave a much
+smaller advantage to the symmetric player.  Is that conclusive?  Might be nice to have
+a made up bet size that is in the middle of valid bet sizes but which always leads to a
+terrible outcome for the bettor.  In that case the symmetric and asymmetric players should
+perform identically.
+

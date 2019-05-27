@@ -145,7 +145,7 @@ MCTS::MCTS(const CardAbstraction &ca, const BettingAbstraction &ba, const CFRCon
     strcat(dir, buf);
   }
 
-  sumprobs_->Read(dir, it_, betting_trees_.GetBettingTree(), "x", -1, true);
+  sumprobs_->Read(dir, it_, betting_trees_.GetBettingTree(), "x", -1, true, false);
   mcts_root_.reset(new MCTSNode(nullptr, betting_trees_.Root()));
 }
 

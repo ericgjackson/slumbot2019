@@ -16,7 +16,7 @@ using std::shared_ptr;
 // Can we skip this if no opp hands reach
 shared_ptr<double []> EGCFR::HalfIteration(BettingTrees *subtrees, const VCFRState &state) {
   Node *subtree_root = subtrees->Root();
-  return Process(subtree_root, 0, state, subtree_root->Street());
+  return Process(subtree_root, subtree_root, 0, state, subtree_root->Street());
 }
 
 EGCFR::EGCFR(const CardAbstraction &ca, const CardAbstraction &base_ca,

@@ -1,0 +1,83 @@
+BettingAbstractionName big3asym
+Limit false
+StackSize 200
+Asymmetric true
+NoLimitTreeType 1
+MinBet 2
+OurMaxBets 5,5,2,2
+OppMaxBets 5,5,2,2
+OurAlwaysAllIn true
+OppAlwaysAllIn true
+CloseToAllInFrac 0.5
+OurBetSizes 0.5,1.0;0.5,1.0;0.5,1.0;1.0;999.0|0.25,0.5,1.0;0.5,1.0;0.5,1.0;1.0;999.0|0.5;1.0|0.5;1.0
+OppBetSizes 0.5,1.0,2.0,3.0,5.0,10.0;0.5,1.0,2.0,3.0,5.0,10.0;0.5,1.0,2.0,3.0,5.0,10.0;1.0;999.0|0.25,0.5,1.0,2.0,3.0,5.0,10.0;0.5,1.0,2.0,3.0,5.0,10.0;0.5,1.0,2.0,3.0,5.0,10.0;1.0;999.0|0.5;1.0|0.5;1.0
+
+holdem/1/big3asym/tcfrqccc/p0
+
+P0 1b in 156m
+P1 1b in 150m
+P0 2b in 132m
+P1 2b in 135m
+P0 2b-5b in 402m
+P1 2b-5b in 404m
+P1 5b-7b in 269m
+P1 7b-10b in 403m
+P1 11b-14b in 411m
+P1 14b-15b in 135m
+P1 15b-18b in 385m
+P1 18b-21b in 385m
+
+1b vs. 21b
+Quantized
+22.2g
+head-to_head, 1 sampled max board (6m8s)
+  Avg B outcome: 0.340550 (170.3 mbb/g)
+  Avg P1 outcome: 0.188526 (94.3 mbb/g)
+head-to_head, 1000 sampled max boards (23m)
+  Avg B outcome: 0.473967 (237.0 mbb/g)
+  Avg P1 outcome: 0.221719 (110.9 mbb/g)
+
+20b vs. 21b
+head-to_head, 10000 sampled max boards (185m)
+  Avg B outcome: 0.004883 (2.4 mbb/g)
+  Avg P1 outcome: 0.265364 (132.7 mbb/g)
+
+21b vs. 21b, resolve rivers
+head-to_head, 1 sampled max board (5m51s)
+  Avg B outcome: 0.052066 (26.0 mbb/g)
+  Avg P1 outcome: 0.327682 (163.8 mbb/g)
+  131.8 secs spent resolving
+  Avg 0.05 secs per resolve (2442 resolves)
+  Redo:
+    Avg B outcome: 0.078816 (39.4 mbb/g)
+    Avg P1 outcome: 0.255606 (127.8 mbb/g)
+    Avg B outcome: 0.072517 (36.3 mbb/g)
+    Avg P1 outcome: 0.355054 (177.5 mbb/g)
+head-to_head, 10 sampled max boards (25m)
+  Avg B outcome: 0.085170 (42.6 mbb/g)
+  Avg P1 outcome: 0.298689 (149.3 mbb/g)
+  1294.8 secs spent resolving
+  Avg 0.05 secs per resolve (24420 resolves)
+
+21b vs. 21b, resolve turns
+head-to_head, 1 sampled board (88m)
+  Avg B outcome: 0.159566 (79.8 mbb/g)
+  Avg P1 outcome: 0.234494 (117.2 mbb/g)
+  5041.5 secs spent resolving
+  Avg 4.77 secs per resolve (1058 resolves)
+
+Am I surprised how slow 1000 sampled boards is (even without resolving)?  Is it needlessly slow
+because we redo a lot of work (traversing down the preflop, flop and turn, maintaining reach probs
+for both players)?
+
+Why are there 2442 resolves for a single sampled max board?
+  1221 for B in one position
+5393 river-initial nodes in P0 tree
+1790 river-initial nodes in P0 tree (excluding all-in situations)
+Maybe the issue is that the P0 tree shows some betting sequences that include a bet made by
+  the opponent that is only available as an opponent bet.
+head_to_head only walks actions that can be taken by a target player
+That's a problem, though, isn't it?
+We'll want to solve endgames that can be reached by the opponent pursuing a certain action.
+Need to save sumprobs for the opponent.
+Should probably just switch to a symmetric system.

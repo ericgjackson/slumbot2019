@@ -1,0 +1,169 @@
+ms1f1
+RGBR:
+  P0 best response: -0.135173 (-67.59 mbb/g)
+  P1 best response: 0.146597 (73.30 mbb/g)
+  Exploitability: 2.86 mbb/g
+run_approx_rgbr, preflop:
+  Identical to RGBR
+run_approx_rgbr, flop, sample all:
+  P0 BR val: -0.137344
+  P1 BR val: 0.141671
+  Exploitability: 1.08 mbb/g
+
+ms2f1t1h5
+RGBR:
+  P0 best response: -0.380264 (-190.13 mbb/g)
+  P1 best response: 0.412243 (206.12 mbb/g)
+  Exploitability: 7.99 mbb/g
+run_approx_rgbr, preflop:
+  Identical to RGBR
+run_approx_rgbr, flop, sample all:
+  P0 BR val: -0.384189
+  P1 BR val: 0.400951
+  Exploitability: 4.19 mbb/g
+run_approx_rgbr, turn, sample all:
+  P0 BR val: -0.387714
+  P1 BR val: 0.397819
+  Exploitability: 2.53 mbb/g
+run_approx_rgbr, flop, sample one, 1000 trials
+  Avg P1 BR val: 0.406847
+  Avg P1 BR val: 0.391846
+run_approx_rgbr, turn, sample one, 1000 trials
+  Avg P1 BR val: 0.418517
+  Avg P1 BR val: 0.382688
+
+ms3f1t1r1h5
+RGBR:
+  P0 best response: -0.529810 (-264.90 mbb/g)
+  P1 best response: 0.658667 (329.33 mbb/g)
+  Exploitability: 32.21 mbb/g
+run_approx_rgbr, preflop:
+  P0 BR val: -0.529810
+  P1 BR val: 0.658667
+  Exploitability: 32.21 mbb/g
+run_approx_rgbr, flop, sample all:
+  P0 BR val: -0.556953
+  P1 BR val: 0.618511
+  Exploitability: 15.39 mbb/g
+run_approx_rgbr, turn, sample all:
+  P0 BR val: -0.569050
+  P1 BR val: 0.610476
+  Exploitability: 10.36 mbb/g
+run_approx_rgbr, river, sample all:
+  P0 BR val: -0.575847
+  P1 BR val: 0.604570
+  Exploitability: 7.18 mbb/g
+run_approx_rgbr, flop, sample one, 1000 trials
+  Avg P1 BR val: 0.615949
+run_approx_rgbr, turn, sample one, 1000 trials
+  Avg P1 BR val: 0.616935
+  Redo: 0.599793, 0.620277
+  Avg exploitability: 10.3364, 10.3471
+run_approx_rgbr, river, sample one, 1000 trials
+  Avg P1 BR val: 0.6487
+  Avg P1 BR val: 0.607937
+  Avg P1 BR val: 0.586808
+run_approx_rgbr, river, sample one, 10000 trials
+  Avg P1 BR val: 0.594571
+
+ms3f1t1r1h5/nxhs3/tcfr/6
+RGBR:
+  P0 best response: -0.149856 (-74.93 mbb/g)
+  P1 best response: 0.908194 (454.10 mbb/g)
+  Exploitability: 189.58 mbb/g
+run_approx_rgbr, preflop, no sampling, raw:
+  P0 BR val: -0.149856
+  P1 BR val: 0.908194
+  Exploitability: 189.58 mbb/g
+run_approx_rgbr, flop, no sampling, raw:
+  P0 BR val: -0.287149
+  P1 BR val: 0.830348
+  Exploitability: 135.80 mbb/g
+run_approx_rgbr, turn, no sampling, raw:
+  P0 BR val: -0.340582
+  P1 BR val: 0.775129
+  Exploitability: 108.64 mbb/g
+run_approx_rgbr, river, no sampling, raw:
+  P0 BR val: -0.384214
+  P1 BR val: 0.757446
+  Exploitability: 93.31 mbb/g
+run_approx_rgbr, river, sample one, raw, 1000 trials
+  Avg exploitability: 93.9544
+  Outliers as high as 623.
+  Board 24 has worst exploitability: 2c 3d 3h
+
+Asymmetric
+ms3f1t1r1h5/none/asymc/cfrps/200
+RGBR:
+  P0 best response: -0.136995 (-68.50 mbb/g)
+  P1 best response: 0.565563 (282.78 mbb/g)
+  Exploitability: 107.14 mbb/g
+run_approx_rgbr, preflop, no sampling, raw:
+  P1 BR val: 0.565563
+  P0 BR val: -0.136995
+  Exploitability: 107.14 mbb/g
+run_approx_rgbr, flop, no sampling, raw:
+  P1 BR val: 0.466927
+  P0 BR val: -0.193659
+  Exploitability: 68.32 mbb/g
+run_approx_rgbr, turn, no sampling, raw:
+  P1 BR val: 0.435800
+  P0 BR val: -0.230300
+  Exploitability: 51.38 mbb/g
+run_approx_rgbr, river, no sampling, raw:
+  P1 BR val: 0.419073
+  P0 BR val: -0.271827
+  Exploitability: 36.81 mbb/g
+
+Big asymmetric
+holdem/a/big3asym/tcfrqccc/17
+Using 15.4g.  Is this what I expect?
+Now 11.2g.
+run_approx_rgbr, river, sampling one, quantize:
+  6m3s
+  P1 BR val: 0.775414
+  P0 BR val: 0.457947
+  Exploitability: 308.34 mbb/g
+run_approx_rgbr, river, sampling 100, quantize:
+  8m
+  P1 BR val: 1.051034
+  P0 BR val: 0.547128
+  Exploitability: 399.54 mbb/g
+run_approx_rgbr, river, sampling 1000, quantize:
+  28m
+  P1 BR val: 1.006919
+  P0 BR val: 0.519920
+  Exploitability: 381.71 mbb/g
+run_approx_rgbr, turn, sampling one, quantize:
+  6m10s - why so fast?
+  P1 BR val: 1.000819
+  P0 BR val: 0.800508
+  Exploitability: 450.33 mbb/g
+run_approx_rgbr, flop, sampling one, quantize:
+  12m16s
+  P1 BR val: 1.708684
+  P0 BR val: 1.329648
+  Exploitability: 759.58 mbb/g
+run_approx_rgbr, flop, sampling 10, quantize:
+  127m
+  P1 BR val: 1.640006
+  P0 BR val: 1.285188
+  Exploitability: 731.30 mbb/g
+
+
+holdem/a/big3asym/tcfrqccc/0
+run_approx_rgbr, flop, sampling one, quantize:
+  P1 BR val: 0.833938
+  P0 BR val: 0.532447
+  Exploitability: 341.60 mbb/g
+  Much better?!?  Maybe just flop variability.
+
+With resolving
+../bin/run_approx_rgbr2 ms1f1_params none_params mb1b1_params cfrps_params 200 raw 1 0 none_params mb1b1_params cfrps_params 
+P0 BR val: -0.138297
+P1 BR val: 0.140712
+Exploitability: 0.60 mbb/g
+Compare to solving all subgames with solve_all_subgames.
+RGBR of full game on merged resolved: 3.83
+Approx RGBR (flop, sampling all) of merged resolved: 0.60
+Good!

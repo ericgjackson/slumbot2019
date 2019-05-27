@@ -59,3 +59,30 @@ Like big2asym, but use opp's parameters for both players.
 8274 flop betting sequences
 With 8 bytes for regret and sumprob:
 85g for flop data
+
+big2sym
+Added CloseToAllInFrac 0.5
+3962 flop betting sequences
+
+big2sym
+Add bets and raises of 3x, 5x and 10x
+5674 flop betting sequences
+With 16 bytes for regret and sumprob: 117 gigs
+With 5 bytes for regret and sumprob: 36.5 gigs!
+Too big for our machine - but by how much?
+
+big3asym
+No 3x, 5x, 10x for us
+3894 flop betting sequences
+
+big3sym
+Get rid of bets and raises of 3x, 5x and 10x except for 5x preflop raise
+Only max 4 bets preflop and on flop
+Get rid of 1/2 pot 3rd bet
+Got rid of 2x opening bet
+2106 flop betting sequences
+With 5 bytes for regret and sumprob: 13.5 gigs
+Allocation size: 19363640664
+Process size 26.6g
+
+1286792 flop null buckets

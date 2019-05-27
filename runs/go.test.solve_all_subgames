@@ -1,0 +1,106 @@
+#!/bin/bash
+
+# You may want to pipe output of this script into "egrep Exploitability" and compare the displayed
+# values to the expected values.
+
+../bin/solve_all_subgames ms1f1_params none_params none_params mb1b1_params mb1b1_params cfrps_params cfrps_params 1 200 200 unsafe cbrs card zerosum avg null mem 8
+../bin/assemble_subgames ms1f1_params none_params none_params none_params mb1b1_params mb1b1_params cfrps_params cfrps_params cfrpsmu_params 1 200 200 unsafe
+# Expect 3.83
+../bin/run_rgbr ms1f1_params none_params mb1b1_params cfrpsmu_params 1 200 avg raw
+
+../bin/solve_all_subgames ms1f3_params none_params none_params mb1b1_params mb1b1_params cfrps_params cfrps_params 1 200 200 unsafe cbrs card zerosum avg null mem 8
+../bin/assemble_subgames ms1f3_params none_params none_params none_params mb1b1_params mb1b1_params cfrps_params cfrps_params cfrpsmu_params 1 200 200 unsafe
+# Expect 1.17.  Or 1.18 without --ffast-math.
+../bin/run_rgbr ms1f3_params none_params mb1b1_params cfrpsmu_params 1 200 avg raw
+
+../bin/solve_all_subgames ms2f1t1h5_params none_params none_params mb1b1_params mb1b1_params cfrps_params cfrps_params 1 200 200 unsafe cbrs card zerosum avg null mem 8
+../bin/assemble_subgames ms2f1t1h5_params none_params none_params none_params mb1b1_params mb1b1_params cfrps_params cfrps_params cfrpsmu_params 1 200 200 unsafe
+# Expect 13.77.  Or 14.10 without --fast-math.
+../bin/run_rgbr ms2f1t1h5_params none_params mb1b1_params cfrpsmu_params 1 200 avg raw
+
+../bin/solve_all_subgames ms2f1t1h5_params none_params none_params mb1b1_params mb1b1_params cfrps_params cfrps_params 2 200 200 unsafe cbrs card zerosum avg null mem 8
+../bin/assemble_subgames ms2f1t1h5_params none_params none_params none_params mb1b1_params mb1b1_params cfrps_params cfrps_params cfrpsmu_params 2 200 200 unsafe
+# Expect 43.72.  Or 43.67 without --fast-math.
+../bin/run_rgbr ms2f1t1h5_params none_params mb1b1_params cfrpsmu_params 1 200 avg raw
+
+../bin/solve_all_subgames ms3f1t1r1h5_params none_params none_params mb1b1_params mb1b1_params cfrps_params cfrps_params 1 200 200 unsafe cbrs card zerosum avg null mem 8
+../bin/assemble_subgames ms3f1t1r1h5_params none_params none_params none_params mb1b1_params mb1b1_params cfrps_params cfrps_params cfrpsmu_params 1 200 200 unsafe
+# Expect 21.57.  Or 21.2 without --fast-math.
+../bin/run_rgbr ms3f1t1r1h5_params none_params mb1b1_params cfrpsmu_params 1 200 avg raw
+
+../bin/solve_all_subgames ms3f1t1r1h5_params none_params none_params mb1b1_params mb1b1_params cfrps_params cfrps_params 2 200 200 unsafe cbrs card zerosum avg null mem 8
+../bin/assemble_subgames ms3f1t1r1h5_params none_params none_params none_params mb1b1_params mb1b1_params cfrps_params cfrps_params cfrpsmu_params 2 200 200 unsafe
+# Expect 30.01.  Or 29.96 without --fast-math.
+../bin/run_rgbr ms3f1t1r1h5_params none_params mb1b1_params cfrpsmu_params 1 200 avg raw
+
+../bin/solve_all_subgames ms3f1t1r1h5_params none_params none_params mb1b1_params mb1b1_params cfrps_params cfrps_params 3 200 200 unsafe cbrs card zerosum avg null mem 8
+../bin/assemble_subgames ms3f1t1r1h5_params none_params none_params none_params mb1b1_params mb1b1_params cfrps_params cfrps_params cfrpsmu_params 3 200 200 unsafe
+# Expect 84.53.  Or 84.35 without --fast-math.
+../bin/run_rgbr ms3f1t1r1h5_params none_params mb1b1_params cfrpsmu_params 1 200 avg raw
+
+../bin/solve_all_subgames ms3f1t1r1h5_params nxhs3_params none_params mb1b1_params mb1b1_params tcfr_params cfrps_params 1 6 200 unsafe cbrs card zerosum avg null mem 8
+../bin/assemble_subgames ms3f1t1r1h5_params nxhs3_params none_params nullnone1_params mb1b1_params mb1b1_params tcfr_params cfrps_params cfrpsmu_params 1 6 200 unsafe
+# Expect 39.69.  Or 39.61 without --fast-math.
+../bin/run_rgbr ms3f1t1r1h5_params nullnone1_params mb1b1_params cfrpsmu_params 1 200 avg raw
+
+../bin/solve_all_subgames ms3f1t1r1h5_params nxhs3_params none_params mb1b1_params mb1b1_params tcfr_params cfrps_params 2 6 200 unsafe cbrs card zerosum avg null mem 8
+../bin/assemble_subgames ms3f1t1r1h5_params nxhs3_params none_params nullnone2_params mb1b1_params mb1b1_params tcfr_params cfrps_params cfrpsmu_params 2 6 200 unsafe
+# Expect 79.43.  Or 79.61 without --fast-math.
+../bin/run_rgbr ms3f1t1r1h5_params nullnone2_params mb1b1_params cfrpsmu_params 1 200 avg raw
+
+../bin/solve_all_subgames ms3f1t1r1h5_params nxhs3_params none_params mb1b1_params mb1b1_params tcfr_params cfrps_params 3 6 200 unsafe cbrs card zerosum avg null mem 8
+../bin/assemble_subgames ms3f1t1r1h5_params nxhs3_params none_params nullnone3_params mb1b1_params mb1b1_params tcfr_params cfrps_params cfrpsmu_params 3 6 200 unsafe
+# Expect 137.45.  Or 137.09 without --fast-math.
+../bin/run_rgbr ms3f1t1r1h5_params nullnone3_params mb1b1_params cfrpsmu_params 1 200 avg raw
+
+# Combined method
+
+./bin/solve_all_subgames ms1f1_params none_params none_params mb1b1_params mb1b1_params cfrps_params cfrps_params 1 200 200 combined cbrs card zerosum avg null mem 8
+../bin/assemble_subgames ms1f1_params none_params none_params none_params mb1b1_params mb1b1_params cfrps_params cfrps_params cfrpsmc_params 1 200 200 combined
+# Expect 2.92
+../bin/run_rgbr ms1f1_params none_params mb1b1_params cfrpsmc_params 1 200 avg raw
+
+../bin/solve_all_subgames ms1f3_params none_params none_params mb1b1_params mb1b1_params cfrps_params cfrps_params 1 200 200 combined cbrs card zerosum avg null mem 8
+../bin/assemble_subgames ms1f3_params none_params none_params none_params mb1b1_params mb1b1_params cfrps_params cfrps_params cfrpsmc_params 1 200 200 combined
+# Expect 1.61
+../bin/run_rgbr ms1f3_params none_params mb1b1_params cfrpsmc_params 1 200 avg raw
+
+../bin/solve_all_subgames ms2f1t1h5_params none_params none_params mb1b1_params mb1b1_params cfrps_params cfrps_params 1 200 200 combined cbrs card zerosum avg null mem 8
+../bin/assemble_subgames ms2f1t1h5_params none_params none_params none_params mb1b1_params mb1b1_params cfrps_params cfrps_params cfrpsmc_params 1 200 200 combined
+# Expect 11.86
+../bin/run_rgbr ms2f1t1h5_params none_params mb1b1_params cfrpsmc_params 1 200 avg raw
+
+../bin/solve_all_subgames ms2f1t1h5_params none_params none_params mb1b1_params mb1b1_params cfrps_params cfrps_params 2 200 200 combined cbrs card zerosum avg null mem 8
+../bin/assemble_subgames ms2f1t1h5_params none_params none_params none_params mb1b1_params mb1b1_params cfrps_params cfrps_params cfrpsmc_params 2 200 200 combined
+# Expect 11.20
+../bin/run_rgbr ms2f1t1h5_params none_params mb1b1_params cfrpsmc_params 1 200 avg raw
+
+../bin/solve_all_subgames ms3f1t1r1h5_params none_params none_params mb1b1_params mb1b1_params cfrps_params cfrps_params 1 200 200 combined cbrs card zerosum avg null mem 8
+../bin/assemble_subgames ms3f1t1r1h5_params none_params none_params none_params mb1b1_params mb1b1_params cfrps_params cfrps_params cfrpsmc_params 1 200 200 combined
+# Expect 28.30
+../bin/run_rgbr ms3f1t1r1h5_params none_params mb1b1_params cfrpsmc_params 1 200 avg raw
+
+../bin/solve_all_subgames ms3f1t1r1h5_params none_params none_params mb1b1_params mb1b1_params cfrps_params cfrps_params 2 200 200 combined cbrs card zerosum avg null mem 8
+../bin/assemble_subgames ms3f1t1r1h5_params none_params none_params none_params mb1b1_params mb1b1_params cfrps_params cfrps_params cfrpsmc_params 2 200 200 combined
+# Expect 26.59
+../bin/run_rgbr ms3f1t1r1h5_params none_params mb1b1_params cfrpsmc_params 1 200 avg raw
+
+../bin/solve_all_subgames ms3f1t1r1h5_params none_params none_params mb1b1_params mb1b1_params cfrps_params cfrps_params 3 200 200 combined cbrs card zerosum avg null mem 8
+../bin/assemble_subgames ms3f1t1r1h5_params none_params none_params none_params mb1b1_params mb1b1_params cfrps_params cfrps_params cfrpsmc_params 3 200 200 combined
+# Expect 31.28
+../bin/run_rgbr ms3f1t1r1h5_params none_params mb1b1_params cfrpsmc_params 1 200 avg raw
+
+../bin/solve_all_subgames ms3f1t1r1h5_params nxhs3_params none_params mb1b1_params mb1b1_params tcfr_params cfrps_params 1 6 200 combined cbrs card zerosum avg null mem 8
+../bin/assemble_subgames ms3f1t1r1h5_params nxhs3_params none_params nullnone1_params mb1b1_params mb1b1_params tcfr_params cfrps_params cfrpsmc_params 1 6 200 combined
+# Expect 34.79
+../bin/run_rgbr ms3f1t1r1h5_params nullnone1_params mb1b1_params cfrpsmc_params 1 200 avg raw
+
+../bin/solve_all_subgames ms3f1t1r1h5_params nxhs3_params none_params mb1b1_params mb1b1_params tcfr_params cfrps_params 2 6 200 combined cbrs card zerosum avg null mem 8
+../bin/assemble_subgames ms3f1t1r1h5_params nxhs3_params none_params nullnone2_params mb1b1_params mb1b1_params tcfr_params cfrps_params cfrpsmc_params 2 6 200 combined
+# Expect 41.24
+../bin/run_rgbr ms3f1t1r1h5_params nullnone2_params mb1b1_params cfrpsmc_params 1 200 avg raw
+
+../bin/solve_all_subgames ms3f1t1r1h5_params nxhs3_params none_params mb1b1_params mb1b1_params tcfr_params cfrps_params 3 6 200 combined cbrs card zerosum avg null mem 8
+../bin/assemble_subgames ms3f1t1r1h5_params nxhs3_params none_params nullnone3_params mb1b1_params mb1b1_params tcfr_params cfrps_params cfrpsmc_params 3 6 200 combined
+# Expect 54.19
+../bin/run_rgbr ms3f1t1r1h5_params nullnone3_params mb1b1_params cfrpsmc_params 1 200 avg raw

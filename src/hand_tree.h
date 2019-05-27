@@ -12,6 +12,7 @@ public:
   const CanonicalCards *Hands(int st, int lbd) const {
     return hands_[st][lbd];
   }
+  int FinalSt(void) const {return final_st_;}
 private:
   int root_st_;
   int root_bd_;

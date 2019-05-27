@@ -1,0 +1,15 @@
+#!/bin/bash
+
+# Expect :
+#   Avg B outcome: 0.001598 (0.8 mbb/g)
+#   Avg P1 outcome: 0.595717 (297.9 mbb/g)
+time ../bin/head_to_head ms3f1t1r1h5_params nxhs3_params nxhs3_params mb1b1_params mb1b1_params tcfr_params tcfr_params 5 6 0 raw raw false false
+
+# Expect similar
+time ../bin/head_to_head ms3f1t1r1h5_params nxhs3_params nxhs3_params mb1b1_params mb1b1_params tcfr_params tcfr_params 5 6 100 raw raw false false
+
+# Expect:
+#  Avg B outcome: 0.037805 (18.9 mbb/g)
+#  Avg P1 outcome: 0.590508 (295.3 mbb/g)
+#  Avg 0.01 secs per resolve (26190 resolves)
+time ../bin/head_to_head ms3f1t1r1h5_params nxhs3_params nxhs3_params mb1b1_params mb1b1_params tcfr_params tcfr_params 6 6 0 raw raw false true 3 none_params mb1b1_params cfrps_params 

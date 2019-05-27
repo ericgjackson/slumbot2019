@@ -10,6 +10,7 @@ class CanonicalCards;
 class CardAbstraction;
 class HandTree;
 class Node;
+class ReachProbs;
 
 class DynamicCBR : public VCFR {
 public:
@@ -17,7 +18,7 @@ public:
 	     const Buckets &buckets, int num_threads);
   DynamicCBR(void);
   ~DynamicCBR(void);
-  std::shared_ptr<double []> Compute(Node *node, std::shared_ptr<double []> *reach_probs, int gbd,
+  std::shared_ptr<double []> Compute(Node *node, const ReachProbs &reach_probs, int gbd,
 				     HandTree *hand_tree, int root_bd_st, int root_bd,
 				     int target_p, bool cfrs, bool zero_sum, bool current,
 				     bool purify_opp);

@@ -42,5 +42,173 @@ Avg B outcome: 0.004659 (2.3 mbb/g)
 
 ------------------------------------------------------------------------------
 
-------------------------------------------------------------------------------
+run_approx_rgbr not working
 
+run_approx_rgbr
+AA P1: -0.019896 (hcp 1325)
+run_rgbr
+AA P1: 6.830358 (hcp 1325)
+
+Several possible issues:
+1) Mapping hole card pair indices from next street to prior street.
+2) Scaling as is done in VCFR::StreetInitial().
+
+Can we just reuse VCFR code?  At least for the "post" phase.  
+Will need to modify Showdown() and Fold() to multiply EVs by num_samples?  Maybe can be
+done at pre/post transition.
+
+What about the "pre" phase?  Need to weight our EVs by probs.
+
+When do I iterate over sampled boards?
+
+Do I need to use global hand tree in run_approx_rgbr?  sumprobs are indexed according to
+those global board indices, no?
+
+How can I fix the scaling in StreetInitial() to allow for possibility of sampling?
+We currently scale in two ways:
+1) By prev_hand_variants.  I think I can leave this as is.  It reflects that AdAc represents
+six variants of a pair of aces.
+2) By Game::StreetPermutations(nst).  This will do the wrong thing if we are merely sampling
+some of the boards on the next street.
+
+Might be easy to fix for our simple one street test case.
+
+We also scale up by board_samples_[ngbd].  Is that correct?  I think so.
+
+Ugh, total_num_samples (52) doesn't match scale_down (48) currently.
+
+Currently we iterate over 13 boards, scaling up each hand value by 4.  So we have a sum
+of 52 values that we scale down by 48.
+
+Suppose I sampled one board and I scaled up our result by 13?  Don't need to do this at
+terminal nodes; can do it in street-initial.
+
+ms1f1 is now working
+
+ms2f1t1h5 working with street 1
+Weird that there are only five distinct P0/P1 BR values.
+ms2f1t1h5 not working with street 2
+
+I think are problem is the scaling in flop-initial nodes when we are sampling turn boards.
+Also: aren't we processing a lot of flop boards that we don't sample any corresponding turn
+board for?  Maybe that's necessary because we have to evaluate the flop terminal nodes.
+Two parts to the scaling:
+1) Board variants.  This part might be OK.
+2) Scaling down by Game::StreetPermutations(nst).
+(2) is the problematic one.
+
+For nst == street_ case:
+Suppose we sample:
+AcKcQcJd (4)
+AcKcQcJc (1)
+We scale up by 49.0/5.0
+Then we divide by 45.0.
+Then we have values for AcKcQc.
+
+Now suppose we are at a flop-initial node.
+I am going to want to divide by 48.0, the number of cards that could come on the flop.
+This assumes a one card flop.
+If I've only observed one flop, do I need to scale up that flop's value?
+But we have the EVs for all flops from the terminal nodes on the flop.
+
+I think I only want to evaluate flops that are consistent with some turn board.
+
+../bin/run_approx_rgbr ms2f1t1h5_params none_params mb1b1_params cfrps_params 200 1 100
+Exploitability: 4.19 mbb/g
+../bin/run_rgbr ms2f1t1h5_params none_params mb1b1_params cfrps_params 1 200 avg
+Exploitability: 7.99 mbb/g
+
+I thought overweighting should be 1.0 if we are sampling every board.
+nst 2 nbp 19 tns 76 pbd 0
+2c
+There are 19 cards that can come on the turn.  20 card deck, 1 card on the flop.
+Why is tns 76?  Expect 19.
+2c3d: count 3
+2c4d: count 3
+2c5d: count 3
+2c6d: count 3
+2c2d: count 3
+2c3c: count 1
+2c4c: count 1
+2c5d: count 1
+2c6c: count 1
+
+Board counts for flop are based on board counts for turn.
+Turn board count for 2c3d is 12, not 3.
+
+When street_ == 1:
+Num board permutations is 20
+Total num samples is 20
+2c: 4
+
+When street_ == 2:
+Flop board is 2c
+I don't want to add up counts of 2c3d, etc.
+int board_variants = BoardTree::NumVariants(nst, ngbd);
+
+Now getting problem at flop initial node
+Num board permutations is 20
+Total num samples is 95
+2c has total num samples of 19
+Preflop board 0 has total number samples of 5 * 19 = 95
+
+Now getting overweighting to be 1.0 as desired.
+But P0 and P1 values and exploitability are not correct.
+Exploitability must be less than the real exploitability of 7.99
+It must be less than the flop exploitability of 4.19.
+
+If I set best-response streets all to false, I should mimic results of head_to_head.
+Differ at CC
+Do not differ at CC/CC
+
+num_samples is wrong
+int num_samples = board_samples_[nst][ngbd];
+When sampling flop, num_samples is 4.
+When sampling turn, num_samples is 19.
+
+When sampling on the turn, board_samples[1] has two different meanings.
+1) First is for overweighting different boards in inner loop of StreetInitial():
+   int num_samples = board_samples_[nst][ngbd];
+2) Second is for overweighting:
+    double d_total_num_samples = board_samples_[pst][pbd];
+    if (d_total_num_samples > 0) {
+      int num_board_permutations = Game::StreetPermutations3(nst);
+      double overweighting = num_board_permutations / d_total_num_samples;
+    }
+I had thought the right way to calculate the flop number-of-samples was to sum up the
+turn number-of-samples for the turn continuations of the given flop board.  This is
+probably right for (2), but not for (1)?
+
+What is the right weighting for a turn board if we are sampling only some river extensions?
+Maybe it's just num variants?
+
+Tests:
+Best-responding and just calculating head-to-head
+Sampling all vs. sampling some
+Sampling on every street
+
+Full RGBR:
+Exploitability: 7.99 mbb/g
+P0 best response: -0.380264 (-190.13 mbb/g)
+P1 best response: 0.412243 (206.12 mbb/g)
+
+Approx RGBR
+Preflop, sample all: Exploitability: 7.99 mbb/g
+Flop, sample all:    Exploitability: 4.19 mbb/g
+  P0 BR val: -0.384189
+  P1 BR val: 0.400951
+Turn, sample all:    Exploitability: 2.53 mbb/g
+  P0 BR val: -0.387714
+  P1 BR val: 0.397819
+Flop, sample 1
+  1000 trials
+  P1 BR value: 0.400952
+Turn, sample 1
+  1000 trials
+  P1 BR value: 0.397165
+  Close enough?
+
+--------------------------------------------
+
+run_approx_rgbr2
+PreResponder no longer derives from VCFR

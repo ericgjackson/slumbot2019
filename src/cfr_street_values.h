@@ -32,7 +32,8 @@ class AbstractCFRStreetValues {
 template <typename T>
 class CFRStreetValues : public AbstractCFRStreetValues {
 public:
-  CFRStreetValues(int st, const bool *players, int num_holdings, int *num_nonterminals);
+  CFRStreetValues(int st, const bool *players, int num_holdings, int *num_nonterminals,
+		  CFRValueType file_value_type);
   virtual ~CFRStreetValues(void);
   CFRValueType MyType(void) const;
   bool Players(int p) const {return players_[p];}
@@ -55,12 +56,14 @@ public:
 		 const CFRStreetValues<T> *subgame_values, const Buckets &buckets);
 protected:
   void AllocateAndClear2(Node *node, int p);
+  unsigned char ***GetUnsignedCharData(void);
   
   int st_;
   std::unique_ptr<bool []> players_;
   int num_holdings_;
   std::unique_ptr<int []> num_nonterminals_;
   T ***data_;
+  CFRValueType file_value_type_;
 };
 
 #endif

@@ -102,18 +102,46 @@ CFRValues::~CFRValues(void) {
 
 // Shouldn't we respect only_p?
 void CFRValues::AllocateAndClear(const BettingTree *betting_tree, CFRValueType value_type,
-				 int only_p) {
+				 bool quantize, int only_p) {
   int max_street = Game::MaxStreet();
   int num_players = Game::NumPlayers();
   for (int st = 0; st <= max_street; ++st) {
     if (streets_[st]) {
       int num_holdings = num_holdings_[st];
-      if (value_type == CFR_INT) {
-	street_values_[st] = new CFRStreetValues<int>(st, players_.get(), num_holdings,
-						      num_nonterminals_.get());
-      } else if (value_type == CFR_DOUBLE) {
-	street_values_[st] = new CFRStreetValues<double>(st, players_.get(), num_holdings,
-							 num_nonterminals_.get());
+      if (value_type == CFRValueType::CFR_INT) {
+	if (quantize) {
+	  street_values_[st] =
+	    new CFRStreetValues<unsigned char>(st, players_.get(), num_holdings,
+					       num_nonterminals_.get(), value_type);
+	} else {
+	  street_values_[st] =
+	    new CFRStreetValues<int>(st, players_.get(), num_holdings, num_nonterminals_.get(),
+				     value_type);
+	}
+      } else if (value_type == CFRValueType::CFR_DOUBLE) {
+	if (quantize) {
+	  street_values_[st] =
+	    new CFRStreetValues<unsigned char>(st, players_.get(), num_holdings,
+					       num_nonterminals_.get(), value_type);
+	} else {
+	  street_values_[st] =
+	    new CFRStreetValues<double>(st, players_.get(), num_holdings,
+					num_nonterminals_.get(), value_type);
+	}
+      } else if (value_type == CFRValueType::CFR_CHAR) {
+	street_values_[st] =
+	  new CFRStreetValues<unsigned char>(st, players_.get(), num_holdings,
+					     num_nonterminals_.get(), value_type);
+      } else if (value_type == CFRValueType::CFR_SHORT) {
+	if (quantize) {
+	  street_values_[st] =
+	    new CFRStreetValues<unsigned char>(st, players_.get(), num_holdings,
+					       num_nonterminals_.get(), value_type);
+	} else {
+	  street_values_[st] =
+	    new CFRStreetValues<unsigned short>(st, players_.get(), num_holdings,
+						num_nonterminals_.get(), value_type);
+	}
       } else {
 	fprintf(stderr, "CFRValues::AllocateAndClear() unexpected value type %i\n",
 		(int)value_type);
@@ -128,22 +156,41 @@ void CFRValues::AllocateAndClear(const BettingTree *betting_tree, CFRValueType v
   }
 }
 
-void CFRValues::CreateStreetValues(int st, CFRValueType value_type) {
+void CFRValues::CreateStreetValues(int st, CFRValueType value_type, bool quantize) {
   if (street_values_[st] == nullptr) {
-    if (value_type == CFR_CHAR) {
+    if (value_type == CFRValueType::CFR_CHAR) {
       street_values_[st] =
 	new CFRStreetValues<unsigned char>(st, players_.get(), num_holdings_[st],
-					   num_nonterminals_.get());
-    } else if (value_type == CFR_SHORT) {
-      street_values_[st] =
-	new CFRStreetValues<unsigned short>(st, players_.get(), num_holdings_[st],
-					    num_nonterminals_.get());
-    } else if (value_type == CFR_INT) {
-      street_values_[st] = new CFRStreetValues<int>(st, players_.get(), num_holdings_[st],
-						    num_nonterminals_.get());
-    } else if (value_type == CFR_DOUBLE) {
-      street_values_[st] = new CFRStreetValues<double>(st, players_.get(), num_holdings_[st],
-						       num_nonterminals_.get());
+					   num_nonterminals_.get(), value_type);
+    } else if (value_type == CFRValueType::CFR_SHORT) {
+      if (quantize) {
+	street_values_[st] =
+	  new CFRStreetValues<unsigned char>(st, players_.get(), num_holdings_[st],
+					     num_nonterminals_.get(), value_type);
+      } else {
+	street_values_[st] =
+	  new CFRStreetValues<unsigned short>(st, players_.get(), num_holdings_[st],
+					      num_nonterminals_.get(), value_type);
+      }
+    } else if (value_type == CFRValueType::CFR_INT) {
+      if (quantize) {
+	street_values_[st] =
+	  new CFRStreetValues<unsigned char>(st, players_.get(), num_holdings_[st],
+					     num_nonterminals_.get(), value_type);
+      } else {
+	street_values_[st] = new CFRStreetValues<int>(st, players_.get(), num_holdings_[st],
+						      num_nonterminals_.get(), value_type);
+      }
+    } else if (value_type == CFRValueType::CFR_DOUBLE) {
+      if (quantize) {
+	street_values_[st] =
+	  new CFRStreetValues<unsigned char>(st, players_.get(), num_holdings_[st],
+					     num_nonterminals_.get(), value_type);
+      } else {
+	street_values_[st] =
+	  new CFRStreetValues<double>(st, players_.get(), num_holdings_[st],
+				      num_nonterminals_.get(), value_type);
+      }
     } else {
       fprintf(stderr, "Unknown value type\n");
       exit(-1);
@@ -179,20 +226,19 @@ Reader *CFRValues::InitializeReader(const char *dir, int p, int st, int it,
     unsigned char suffix;
     if (t == 0) {
       suffix = 'd';
-      *value_type = CFR_DOUBLE;
+      *value_type = CFRValueType::CFR_DOUBLE;
     } else if (t == 1) {
       suffix = 'i';
-      *value_type = CFR_INT;
+      *value_type = CFRValueType::CFR_INT;
     } else if (t == 2) {
       suffix = 'c';
-      *value_type = CFR_CHAR;
+      *value_type = CFRValueType::CFR_CHAR;
     } else if (t == 3) {
       suffix = 's';
-      *value_type = CFR_SHORT;
+      *value_type = CFRValueType::CFR_SHORT;
     }
-    sprintf(buf, "%s/%s.%s.%u.%u.%u.%u.p%u.%c", dir,
-	    sumprobs ? "sumprobs" : "regrets", action_sequence.c_str(),
-	    root_bd_st, root_bd, st, it, p, suffix);
+    sprintf(buf, "%s/%s.%s.%u.%u.%u.%u.p%u.%c", dir, sumprobs ? "sumprobs" : "regrets",
+	    action_sequence.c_str(), root_bd_st, root_bd, st, it, p, suffix);
     if (FileExists(buf)) break;
   }
   if (t == 4) {
@@ -205,7 +251,7 @@ Reader *CFRValues::InitializeReader(const char *dir, int p, int st, int it,
 }
 
 void CFRValues::Read(const char *dir, int it, const BettingTree *betting_tree,
-		     const string &action_sequence, int only_p, bool sumprobs) {
+		     const string &action_sequence, int only_p, bool sumprobs, bool quantize) {
   int num_players = Game::NumPlayers();
   Reader ***readers = new Reader **[num_players];
   void ***decompressors = nullptr;
@@ -230,7 +276,7 @@ void CFRValues::Read(const char *dir, int it, const BettingTree *betting_tree,
       readers[p][st] = InitializeReader(dir, p, st, it, action_sequence, root_bd_st_, root_bd_,
 					sumprobs, &value_type);
       if (street_values_[st] == nullptr) {
-	CreateStreetValues(st, value_type);
+	CreateStreetValues(st, value_type, quantize);
       }
     }
   }
@@ -264,7 +310,8 @@ void CFRValues::Read(const char *dir, int it, const BettingTree *betting_tree,
 // P0 system and P1's values to be the values trained for a target P1 system.
 // Be careful to use the right version of Read() for your needs.
 void CFRValues::ReadAsymmetric(const char *dir, int it, const BettingTrees &betting_trees,
-			       const string &action_sequence, int only_p, bool sumprobs) {
+			       const string &action_sequence, int only_p, bool sumprobs,
+			       bool quantize) {
   int num_players = Game::NumPlayers();
   Reader ***readers = new Reader **[num_players];
   void ***decompressors = nullptr;
@@ -291,7 +338,7 @@ void CFRValues::ReadAsymmetric(const char *dir, int it, const BettingTrees &bett
       readers[p][st] = InitializeReader(asym_dir, p, st, it, action_sequence, root_bd_st_, root_bd_,
 					sumprobs, &value_type);
       if (street_values_[st] == nullptr) {
-	CreateStreetValues(st, value_type);
+	CreateStreetValues(st, value_type, quantize);
       }
     }
   }
@@ -392,10 +439,10 @@ Writer ***CFRValues::InitializeWriters(const char *dir, int it, const string &ac
       }
       CFRValueType value_type = street_values->MyType();
       char suffix;
-      if (value_type == CFR_CHAR)        suffix = 'c';
-      else if (value_type == CFR_SHORT)  suffix = 's';
-      else if (value_type == CFR_INT)    suffix = 'i';
-      else if (value_type == CFR_DOUBLE) suffix = 'd';
+      if (value_type == CFRValueType::CFR_CHAR)        suffix = 'c';
+      else if (value_type == CFRValueType::CFR_SHORT)  suffix = 's';
+      else if (value_type == CFRValueType::CFR_INT)    suffix = 'i';
+      else if (value_type == CFRValueType::CFR_DOUBLE) suffix = 'd';
       sprintf(buf, "%s/%s.%s.%u.%u.%u.%u.p%u.%c", dir,
 	      sumprobs ? "sumprobs" : "regrets", action_sequence.c_str(),
 	      root_bd_st_, root_bd_, st, it, p, suffix);

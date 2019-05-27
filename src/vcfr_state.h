@@ -9,7 +9,7 @@ class HandTree;
 class VCFRState {
  public:
   VCFRState(int p, const HandTree *hand_tree);
-  VCFRState(int p, const std::shared_ptr<double []> &opp_probs, const HandTree *hand_tree, int lbd,
+  VCFRState(int p, const std::shared_ptr<double []> &opp_probs, const HandTree *hand_tree, 
 	    const std::string &action_sequence, int root_bd, int root_bd_st);
   VCFRState(const VCFRState &pred, Node *node, int s);
   VCFRState(const VCFRState &pred, Node *node, int s, const std::shared_ptr<double []> &opp_probs,

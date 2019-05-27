@@ -1,0 +1,35 @@
+ms3f1t1r1h5
+head_to_head 200 vs. 400:
+raw vs. raw: Avg B outcome: 0.008514 (4.3 mbb/g)
+quantize vs. quantize: Avg B outcome: 0.005841 (2.9 mbb/g)
+
+raw rgbr:      Exploitability: 32.21 mbb/g
+quantize rgbr: Exploitability: 32.84 mbb/g
+
+approx rgbr
+Preflop, no sampling, raw:
+  Exploitability: 32.21 mbb/g
+Preflop, no sampling, quantize:
+  Exploitability: 32.84 mbb/g
+
+ms3f1t1r1h5/nxhs3/tcfr/6
+Preflop, no sampling, raw:
+  Exploitability: 189.58 mbb/g
+Preflop, no sampling, quantize:
+  Exploitability: 191.59 mbb/g
+Flop, no sampling, raw:
+  Exploitability: 135.80 mbb/g
+Turn, no sampling, raw:
+  Exploitability: 108.64 mbb/g
+River, no sampling, raw:
+  Exploitability: 93.31 mbb/g
+River, no sampling, quantize:
+  Exploitability: 93.60 mbb/g
+
+rgbr, raw
+Exploitability: 189.58 mbb/g
+rgbr, quantize
+Exploitability: 191.59 mbb/g
+
+
+

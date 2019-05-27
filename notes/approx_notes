@@ -1,0 +1,25 @@
+run_approx_rgbr with resolving is not a very good test.  The best-responder is limited to
+pursuing the avenues that the system has optimized on.  It would be much better if the
+best-responder could vary his strategy in the trunk.
+
+Can MCTS give us an approx RGBR value?
+
+I think MCTS must yield inflated best-response values; i.e., it is biased in favor of the
+best-responder.  That is because the best-responder takes advantage of sampling variance.
+Suppose you only sampled one flop which is Tc7c2d.  The best-responder will learn to raise
+all sorts of weak hands like T7o, T2o and 72o because it knows they will "hit".
+
+This assume MCTS samples from the chance actions.  The descriptions of MCTS I have found
+on the web don't talk about chance actions.  But I think they must.
+
+What else can we do?
+
+1) Compare achievable values for hands (by best responder) to baseline values.  Baseline value
+is the value achieved by the target system playing against itself.
+
+2) Compute best-response value achievable by a single hole card pair.  Compare it to the
+baseline value.  Will this be much faster?  Consider that we still have an O(n) computation
+at terminal nodes as we do now.
+
+3) Can we limit the actions taken by the best responder?  Just allow call, fold, the smallest
+bet size and all-in?
