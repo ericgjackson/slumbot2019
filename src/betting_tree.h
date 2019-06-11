@@ -37,9 +37,10 @@ public:
   int CallSuccIndex(void) const;
   int FoldSuccIndex(void) const;
   int DefaultSuccIndex(void) const;
+  bool StreetInitial(void) const;
   std::string ActionName(int s);
   void PrintTree(int depth, const std::string &name,
-		 std::vector< std::vector< std::vector<bool> > > *seen, int last_street);
+		 std::vector< std::vector< std::vector<bool> > > *seen, int last_street) const;
   bool HasCallSucc(void) const {return (bool)(flags_ & kHasCallSuccFlag);}
   bool HasFoldSucc(void) const {return (bool)(flags_ & kHasFoldSuccFlag);}
   int ID(void) const {return id_;}
@@ -82,20 +83,16 @@ class BettingTree {
   // For cloning a (sub)tree
   BettingTree(Node *subtree_root);
   virtual ~BettingTree(void) {}
-  void Display(void);
-  void GetStreetInitialNodes(int street, std::vector<Node *> *nodes);
+  void Display(void) const;
   Node *Root(void) const {return root_.get();}
   int NumTerminals(void) const {return num_terminals_;}
   Node *Terminal(int i) const {return terminals_[i];}
   int NumNonterminals(int p, int st) const;
-  // int **NumNonterminals(void) const {return num_nonterminals_;}
   int InitialStreet(void) const {return initial_street_;}
 
  private:
   void FillTerminalArray(void);
   void FillTerminalArray(Node *node);
-  void GetStreetInitialNodes(Node *node, int street,
-			     std::vector<Node *> *nodes);
   std::shared_ptr<Node> Clone(Node *old_n, int *num_terminals);
   void Initialize(int target_player, const BettingAbstraction &ba);
   std::shared_ptr<Node> Read(Reader *reader,

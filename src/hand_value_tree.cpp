@@ -21,6 +21,7 @@ int *****HandValueTree::tree5_ = NULL;
 int ******HandValueTree::tree6_ = NULL;
 int *******HandValueTree::tree7_ = NULL;
 
+// Note: currently you need to make sure that this is called from only one thread.
 void HandValueTree::Create(void) {
   // Check if already created
   if (num_cards_ != 0) return;
@@ -41,6 +42,10 @@ void HandValueTree::Create(void) {
   else if (num_cards_ == 5) ReadFive();
   else if (num_cards_ == 6) ReadSix();
   else if (num_cards_ == 7) ReadSeven();
+}
+
+bool HandValueTree::Created(void) {
+  return num_cards_ != 0;
 }
 
 #if 0

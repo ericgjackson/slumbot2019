@@ -1,12 +1,14 @@
 #include <math.h> // lrint()
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h> // usleep()
 
 #include <memory>
 #include <string>
 #include <vector>
 
 #include "betting_tree.h"
+#include "betting_trees.h"
 #include "board_tree.h"
 #include "buckets.h"
 #include "canonical_cards.h"
@@ -228,8 +230,7 @@ void VCFR::UpdateRegretsBucketed(Node *node, int *street_buckets, double *vals,
   }
 }
 
-shared_ptr<double []> VCFR::OurChoice(Node *p0_node, Node *p1_node, int lbd,
-				      const VCFRState &state) {
+shared_ptr<double []> VCFR::OurChoice(Node *p0_node, Node *p1_node, int gbd, VCFRState *state) {
   int pa = p0_node->PlayerActing();
   Node *node = pa == 0 ? p0_node : p1_node;
   Node *responding_node = pa == 0 ? p1_node : p0_node;
@@ -237,19 +238,36 @@ shared_ptr<double []> VCFR::OurChoice(Node *p0_node, Node *p1_node, int lbd,
   int num_succs = node->NumSuccs();
   int num_hole_card_pairs = Game::NumHoleCardPairs(st);
   int nt = node->NonterminalID();
+  int lbd = state->LocalBoardIndex(st, gbd);
   unique_ptr<int []> succ_mapping = GetSuccMapping(node, responding_node);
   shared_ptr<double []> vals;
   unique_ptr< shared_ptr<double []> []> succ_vals(new shared_ptr<double []> [num_succs]);
   for (int s = 0; s < num_succs; ++s) {
     int p0_s = pa == 0 ? s : succ_mapping[s];
     int p1_s = pa == 0 ? succ_mapping[s] : s;
-    VCFRState succ_state(state, node, s);
-    succ_vals[s] = Process(p0_node->IthSucc(p0_s), p1_node->IthSucc(p1_s), lbd, succ_state, st);
+    VCFRState succ_state(*state, node, s);
+    succ_vals[s] = Process(p0_node->IthSucc(p0_s), p1_node->IthSucc(p1_s), gbd, &succ_state, st);
+#if 0
+    bool debug1 = state->ActionSequence() == "x" && state->P() == 1;
+    if (debug1) {
+      fprintf(stderr, "Root s %i succ_vals[s][6] %f\n", s, succ_vals[s][6]);
+    }
+    bool debug2 = state->ActionSequence() == "xb4cc" && state->P() == 1;
+    if (debug2) {
+      const CanonicalCards *hands = state->GetHandTree()->Hands(st, gbd);
+      for (int i = 0; i < num_hole_card_pairs; ++i) {
+	const Card *cards = hands->Cards(i);
+	if (cards[0] == MakeCard(1, 0) && cards[1] == MakeCard(0, 0)) {
+	  fprintf(stderr, "xb4cc gbd %i s %i succ_vals[s][%i] %f\n", gbd, s, i, succ_vals[s][i]);
+	}
+      }
+    }
+#endif
   }
   if (num_succs == 1) {
     vals = succ_vals[0];
   } else {
-    int *street_buckets = state.StreetBuckets(st);
+    int *street_buckets = state->StreetBuckets(st);
     vals.reset(new double[num_hole_card_pairs]);
     for (int i = 0; i < num_hole_card_pairs; ++i) vals[i] = 0;
     if (best_response_streets_[st]) {
@@ -290,14 +308,12 @@ shared_ptr<double []> VCFR::OurChoice(Node *p0_node, Node *p1_node, int lbd,
 	}
 	unique_ptr<double []> current_probs(new double[num_succs]);
 	if (bucketed) {
-	  for (int i = 0; i < num_hole_card_pairs; ++i) {
-	    int b = street_buckets[i];
-	    street_values->RMProbs(pa, nt, b * num_succs, num_succs, dsi, current_probs.get());
-	    for (int s = 0; s < num_succs; ++s) {
-	      vals[i] += succ_vals[s][i] * current_probs[s];
-	    }
-	  }
+	  street_values->ComputeOurValsBucketed(pa, nt, num_hole_card_pairs, num_succs, dsi,
+						succ_vals.get(), street_buckets, vals);
 	} else {
+	  street_values->ComputeOurVals(pa, nt, num_hole_card_pairs, num_succs, dsi,
+					succ_vals.get(), lbd, vals);
+#if 0
 	  for (int i = 0; i < num_hole_card_pairs; ++i) {
 	    int offset = lbd * num_hole_card_pairs * num_succs + i * num_succs;
 	    street_values->RMProbs(pa, nt, offset, num_succs, dsi, current_probs.get());
@@ -305,11 +321,12 @@ shared_ptr<double []> VCFR::OurChoice(Node *p0_node, Node *p1_node, int lbd,
 	      vals[i] += succ_vals[s][i] * current_probs[s];
 	    }
 	  }
+#endif
 	}
       }
       if (! value_calculation_ && ! pre_phase_) {
 	if (bucketed) {
-	  UpdateRegretsBucketed(node, state.StreetBuckets(st), vals.get(), succ_vals.get());
+	  UpdateRegretsBucketed(node, state->StreetBuckets(st), vals.get(), succ_vals.get());
 	} else {
 	  // Need values for current board if this is unabstracted system
 	  UpdateRegrets(node, lbd, vals.get(), succ_vals.get());
@@ -321,23 +338,22 @@ shared_ptr<double []> VCFR::OurChoice(Node *p0_node, Node *p1_node, int lbd,
   return vals;
 }
 
-shared_ptr<double []> VCFR::OppChoice(Node *p0_node, Node *p1_node, int lbd,
-				      const VCFRState &state) {
+shared_ptr<double []> VCFR::OppChoice(Node *p0_node, Node *p1_node, int gbd, VCFRState *state) {
   int pa = p0_node->PlayerActing();
   Node *node = pa == 0 ? p0_node : p1_node;
   Node *responding_node = pa == 0 ? p1_node : p0_node;
   int st = node->Street();
   int num_succs = node->NumSuccs();
   int num_hole_card_pairs = Game::NumHoleCardPairs(st);
-  const HandTree *hand_tree = state.GetHandTree();
-  const CanonicalCards *hands = hand_tree->Hands(st, lbd);
+  const CanonicalCards *hands = state->Hands(st, gbd);
+  int lbd = state->LocalBoardIndex(st, gbd);
   int num_hole_cards = Game::NumCardsForStreet(0);
   int max_card1 = Game::MaxCard() + 1;
   int num_enc;
   if (num_hole_cards == 1) num_enc = max_card1;
   else                     num_enc = max_card1 * max_card1;
 
-  const shared_ptr<double []> &opp_probs = state.OppProbs();
+  const shared_ptr<double []> &opp_probs = state->OppProbs();
   unique_ptr<shared_ptr<double []> []> succ_opp_probs(new shared_ptr<double []> [num_succs]);
   if (num_succs == 1) {
     succ_opp_probs[0].reset(new double[num_enc]);
@@ -345,7 +361,7 @@ shared_ptr<double []> VCFR::OppChoice(Node *p0_node, Node *p1_node, int lbd,
       succ_opp_probs[0][i] = opp_probs[i];
     }
   } else {
-    int *street_buckets = state.StreetBuckets(st);
+    int *street_buckets = state->StreetBuckets(st);
     for (int s = 0; s < num_succs; ++s) {
       succ_opp_probs[s].reset(new double[num_enc]);
       for (int i = 0; i < num_enc; ++i) succ_opp_probs[s][i] = 0;
@@ -477,20 +493,33 @@ shared_ptr<double []> VCFR::OppChoice(Node *p0_node, Node *p1_node, int lbd,
 
   unique_ptr<int []> succ_mapping = GetSuccMapping(node, responding_node);
   shared_ptr<double []> vals;
-  double succ_sum_opp_probs;
+  // double succ_sum_opp_probs;
   for (int s = 0; s < num_succs; ++s) {
+#if 0
     shared_ptr<double []> succ_total_card_probs(new double[max_card1]);
     CommonBetResponseCalcs(st, hands, succ_opp_probs[s].get(), &succ_sum_opp_probs,
 			   succ_total_card_probs.get());
     if (prune_ && succ_sum_opp_probs == 0) {
       continue;
     }
+#endif
     int p0_s = pa == 0 ? s : succ_mapping[s];
     int p1_s = pa == 0 ? succ_mapping[s] : s;
-    VCFRState succ_state(state, node, s, succ_opp_probs[s], succ_sum_opp_probs,
-			 succ_total_card_probs);
-    shared_ptr<double []> succ_vals = Process(p0_node->IthSucc(p0_s), p1_node->IthSucc(p1_s), lbd,
-					      succ_state, st);
+    VCFRState succ_state(*state, node, s, succ_opp_probs[s]);
+    shared_ptr<double []> succ_vals = Process(p0_node->IthSucc(p0_s), p1_node->IthSucc(p1_s), gbd,
+					      &succ_state, st);
+#if 0
+    bool debug = state->ActionSequence() == "xb4ccb12" && state->P() == 1 && gbd == 7;
+    if (debug) {
+      const CanonicalCards *hands = state->GetHandTree()->Hands(st, gbd);
+      for (int i = 0; i < num_hole_card_pairs; ++i) {
+	const Card *cards = hands->Cards(i);
+	if (cards[0] == MakeCard(1, 0) && cards[1] == MakeCard(0, 0)) {
+	  fprintf(stderr, "xb4ccb12 gbd %i s %i succ_vals[%i] %f\n", gbd, s, i, succ_vals[i]);
+	}
+      }
+    }
+#endif
     if (vals == nullptr) {
       vals = succ_vals;
     } else {
@@ -510,121 +539,154 @@ shared_ptr<double []> VCFR::OppChoice(Node *p0_node, Node *p1_node, int lbd,
   return vals;
 }
 
-class VCFRThread {
-public:
-  VCFRThread(VCFR *vcfr, int thread_index, int num_threads, Node *p0_node, Node *p1_node, int p,
-	     const string &action_sequence, const shared_ptr<double []> &opp_probs,
-	     const HandTree *hand_tree, int *prev_canons);
-  ~VCFRThread(void) {}
-  void Run(void);
-  void Join(void);
-  void Go(void);
-  shared_ptr<double []> RetVals(void) const {return ret_vals_;}
-private:
-  VCFR *vcfr_;
-  int thread_index_;
-  int num_threads_;
-  Node *p0_node_;
-  Node *p1_node_;
-  int p_;
-  const string &action_sequence_;
-  shared_ptr<double []> opp_probs_;
-  const HandTree *hand_tree_;
-  int *prev_canons_;
-  shared_ptr<double []> ret_vals_;
-  pthread_t pthread_id_;
-};
+using std::queue;
+using std::shared_ptr;
+using std::unique_ptr;
 
-VCFRThread::VCFRThread(VCFR *vcfr, int thread_index, int num_threads, Node *p0_node,
-		       Node *p1_node, int p, const string &action_sequence,
-		       const shared_ptr<double []> &opp_probs, const HandTree *hand_tree,
-		       int *prev_canons) :
-  action_sequence_(action_sequence) {
-  vcfr_ = vcfr;
-  thread_index_ = thread_index;
-  num_threads_ = num_threads;
-  p0_node_ = p0_node;
-  p1_node_ = p1_node;
-  p_ = p;
-  opp_probs_ = opp_probs;
-  hand_tree_ = hand_tree;
-  prev_canons_ = prev_canons;
+Request::Request(RequestType t, Node *p0_node, Node *p1_node, int gbd, const VCFRState *pred_state,
+		 int *prev_canons) : request_type_(t), p0_node_(p0_node), p1_node_(p1_node),
+				     gbd_(gbd), pred_state_(pred_state), prev_canons_(prev_canons) {
 }
 
-static void *vcfr_thread_run(void *v_t) {
-  VCFRThread *t = (VCFRThread *)v_t;
-  t->Go();
+VCFRWorker::VCFRWorker(VCFR *vcfr) : vcfr_(vcfr) {
+}
+
+// Should be sure to call this while the worker is idle
+void VCFRWorker::Reset(int pst) {
+  int num_prev_hole_card_pairs = Game::NumHoleCardPairs(pst);
+  vals_.reset(new double[num_prev_hole_card_pairs]);
+  for (int i = 0; i < num_prev_hole_card_pairs; ++i) vals_[i] = 0;
+}
+
+void VCFRWorker::HandleRequest(const Request &request) {
+  Node *p0_node = request.P0Node();
+  Node *p1_node = request.P1Node();
+  int ngbd = request.GBD();
+  const VCFRState &pred_state = request.PredState();
+  int *prev_canons = request.PrevCanons();
+  int nst = p0_node->Street();
+  if (vals_.get() == nullptr) {
+    fprintf(stderr, "vals_ uninitialized\n");
+    exit(-1);
+  }
+  shared_ptr<double []> bd_vals = vcfr_->ProcessSubgame(p0_node, p1_node, ngbd, pred_state);
+  const CanonicalCards *hands = pred_state.Hands(nst, ngbd);
+  int board_variants = BoardTree::NumVariants(nst, ngbd);
+  int num_hands = hands->NumRaw();
+  int max_card1 = Game::MaxCard() + 1;
+  for (int nhcp = 0; nhcp < num_hands; ++nhcp) {
+    const Card *cards = hands->Cards(nhcp);
+    Card hi = cards[0];
+    Card lo = cards[1];
+    int enc = hi * max_card1 + lo;
+    int prev_canon = prev_canons[enc];
+    vals_[prev_canon] += board_variants * bd_vals[nhcp];
+  }
+}
+
+void VCFRWorker::MainLoop(void) {
+  queue<Request> *request_queue = vcfr_->GetRequestQueue();
+  pthread_mutex_t *queue_mutex = vcfr_->GetQueueMutex();
+  pthread_cond_t *queue_not_empty = vcfr_->GetQueueNotEmpty();
+  pthread_cond_t *queue_not_full = vcfr_->GetQueueNotFull();
+
+  while (true) {
+    pthread_mutex_lock(queue_mutex);
+
+    // Wait while the queue is empty.
+    while (request_queue->empty()) {
+      pthread_cond_wait(queue_not_empty, queue_mutex);
+    }
+
+    Request request = request_queue->front();
+    request_queue->pop();
+
+    pthread_cond_signal(queue_not_full);
+    pthread_mutex_unlock(queue_mutex);
+    if (request.GetRequestType() == RequestType::QUIT) {
+      vcfr_->IncrementNumDone();
+      break;
+    }
+
+    HandleRequest(request);
+    vcfr_->IncrementNumDone();
+  }
+}
+
+static void *worker_thread_run(void *v_w) {
+  VCFRWorker *w = (VCFRWorker *)v_w;
+  w->MainLoop();
   return NULL;
 }
 
-void VCFRThread::Run(void) {
-  pthread_create(&pthread_id_, NULL, vcfr_thread_run, this);
+void VCFRWorker::Run(void) {
+  pthread_create(&pthread_id_, NULL, worker_thread_run, this);
 }
 
-void VCFRThread::Join(void) {
-  pthread_join(pthread_id_, NULL); 
+void VCFRWorker::Join(void) {
+  pthread_join(pthread_id_, NULL);
 }
 
-void VCFRThread::Go(void) {
-  int st = p0_node_->Street();
-  int pst = st - 1;
-  int num_boards = BoardTree::NumBoards(st);
-  int num_prev_hole_card_pairs = Game::NumHoleCardPairs(pst);
-  Card max_card1 = Game::MaxCard() + 1;
-  ret_vals_.reset(new double[num_prev_hole_card_pairs]);
-  for (int i = 0; i < num_prev_hole_card_pairs; ++i) ret_vals_[i] = 0;
-  for (int bd = thread_index_; bd < num_boards; bd += num_threads_) {
-    VCFRState state(p_, opp_probs_, hand_tree_, action_sequence_, 0, 0);
-    // Initialize buckets for this street
-    vcfr_->SetStreetBuckets(st, bd, state);
-    shared_ptr<double []> bd_vals = vcfr_->Process(p0_node_, p1_node_, bd, state, st);
-    const CanonicalCards *hands = hand_tree_->Hands(st, bd);
-    int board_variants = BoardTree::NumVariants(st, bd);
-    int num_hands = hands->NumRaw();
-    for (int h = 0; h < num_hands; ++h) {
-      const Card *cards = hands->Cards(h);
-      Card hi = cards[0];
-      Card lo = cards[1];
-      int enc = hi * max_card1 + lo;
-      int prev_canon = prev_canons_[enc];
-      ret_vals_[prev_canon] += board_variants * bd_vals[h];
-    }
+void VCFR::SpawnWorkers(void) {
+  workers_.reset(new unique_ptr<VCFRWorker>[num_threads_]);
+  for (int i = 0; i < num_threads_; ++i) {
+    workers_[i].reset(new VCFRWorker(this));
+    workers_[i]->Run();
   }
 }
 
-// Divide work at a street-initial node between multiple threads.  Spawns
-// the threads, joins them, aggregates the resulting CVs.
-// Only support splitting on the flop for now.
-// Ugly that we pass prev_canons in.
-void VCFR::Split(Node *p0_node, Node *p1_node, int p, const shared_ptr<double []> &opp_probs,
-		 const HandTree *hand_tree, const string &action_sequence, int *prev_canons,
+void VCFR::IncrementNumDone(void) {
+  pthread_mutex_lock(&num_done_mutex_);
+  ++num_done_;
+  pthread_mutex_unlock(&num_done_mutex_);
+}
+
+void VCFR::Split(Node *p0_node, Node *p1_node, int pgbd, VCFRState *state, int *prev_canons,
 		 double *vals) {
   int nst = p0_node->Street();
   int pst = nst - 1;
-  int prev_num_hole_card_pairs = Game::NumHoleCardPairs(pst);
-  for (int i = 0; i < prev_num_hole_card_pairs; ++i) vals[i] = 0;
-  unique_ptr<unique_ptr<VCFRThread> []> threads(new unique_ptr<VCFRThread>[num_threads_]);
+
+  // Reset the workers; i.e., initialize all values to zero
+  // Can only do this while workers are idle
   for (int t = 0; t < num_threads_; ++t) {
-    threads[t].reset(new VCFRThread(this, t, num_threads_, p0_node, p1_node, p, action_sequence,
-				    opp_probs, hand_tree, prev_canons));
+    workers_[t]->Reset(pst);
   }
-  for (int t = 1; t < num_threads_; ++t) {
-    threads[t]->Run();
+  
+  num_done_ = 0;
+  int ngbd_begin = BoardTree::SuccBoardBegin(pst, pgbd, nst);
+  int ngbd_end = BoardTree::SuccBoardEnd(pst, pgbd, nst);
+  for (int ngbd = ngbd_begin; ngbd < ngbd_end; ++ngbd) {
+    // Push onto the queue under mutex protection
+    pthread_mutex_lock(&queue_mutex_);
+    // Wait until there’s room in the queue.
+    while (request_queue_.size() == kRequestQueueMaxSize) {
+      pthread_cond_wait(&queue_not_full_, &queue_mutex_);
+    }
+    Request request(RequestType::PROCESS, p0_node, p1_node, ngbd, state, prev_canons);
+    request_queue_.push(request);
+    // Inform waiting threads that queue has a request
+    pthread_cond_signal(&queue_not_empty_);
+    pthread_mutex_unlock(&queue_mutex_);
   }
-  // Do first thread in main thread
-  threads[0]->Go();
-  for (int t = 1; t < num_threads_; ++t) {
-    threads[t]->Join();
+
+  // There should be a better way to do this without a busy loop
+  int num_requests = ngbd_end - ngbd_begin;
+  while (true) {
+    // No mutex needed, right?
+    if (num_done_ == num_requests) break;
+    usleep(1);
   }
+
+  int num_prev_hole_card_pairs = Game::NumHoleCardPairs(pst);
   for (int t = 0; t < num_threads_; ++t) {
-    shared_ptr<double []> t_vals = threads[t]->RetVals();
-    for (int i = 0; i < prev_num_hole_card_pairs; ++i) {
+    double *t_vals = workers_[t]->Vals();
+    for (int i = 0; i < num_prev_hole_card_pairs; ++i) {
       vals[i] += t_vals[i];
     }
   }
 }
 
-void VCFR::SetStreetBuckets(int st, int gbd, const VCFRState &state) {
+void VCFR::SetStreetBuckets(int st, int gbd, VCFRState *state) {
   if (buckets_.None(st)) return;
   int num_board_cards = Game::NumBoardCards(st);
   const Card *board = BoardTree::Board(st, gbd);
@@ -632,13 +694,10 @@ void VCFR::SetStreetBuckets(int st, int gbd, const VCFRState &state) {
   for (int i = 0; i < num_board_cards; ++i) {
     cards[i + 2] = board[i];
   }
-  int lbd = BoardTree::LocalIndex(state.RootBdSt(), state.RootBd(), st, gbd);
-
-  const HandTree *hand_tree = state.GetHandTree();
-  const CanonicalCards *hands = hand_tree->Hands(st, lbd);
+  const CanonicalCards *hands = state->Hands(st, gbd);
   int max_street = Game::MaxStreet();
   int num_hole_card_pairs = Game::NumHoleCardPairs(st);
-  int *street_buckets = state.StreetBuckets(st);
+  int *street_buckets = state->StreetBuckets(st);
   for (int i = 0; i < num_hole_card_pairs; ++i) {
     unsigned int h;
     if (st == max_street) {
@@ -656,8 +715,8 @@ void VCFR::SetStreetBuckets(int st, int gbd, const VCFRState &state) {
   }
 }
 
-shared_ptr<double []> VCFR::StreetInitial(Node *p0_node, Node *p1_node, int plbd,
-					  const VCFRState &state) {
+shared_ptr<double []> VCFR::StreetInitial(Node *p0_node, Node *p1_node, int pgbd,
+					  VCFRState *state) {
   int nst = p0_node->Street();
   int pst = nst - 1;
   int prev_num_hole_card_pairs = Game::NumHoleCardPairs(pst);
@@ -665,7 +724,7 @@ shared_ptr<double []> VCFR::StreetInitial(Node *p0_node, Node *p1_node, int plbd
   // Move this to CFRP class
   if (nst == subgame_street_ && ! subgame_) {
     if (pre_phase_) {
-      SpawnSubgame(p0_node, p1_node, plbd, state.ActionSequence(), state.OppProbs());
+      SpawnSubgame(p0_node, p1_node, plbd, state->ActionSequence(), state->OppProbs());
       // Code expects values to be returned so we return all zeroes
       shared_ptr<double []> vals(new double[prev_num_hole_card_pairs]);
       for (int i = 0; i < prev_num_hole_card_pairs; ++i) vals[i] = 0;
@@ -683,8 +742,7 @@ shared_ptr<double []> VCFR::StreetInitial(Node *p0_node, Node *p1_node, int plbd
     }
   }
 #endif
-  const HandTree *hand_tree = state.GetHandTree();
-  const CanonicalCards *pred_hands = hand_tree->Hands(pst, plbd);
+  const CanonicalCards *pred_hands = state->Hands(pst, pgbd);
   Card max_card = Game::MaxCard();
   int num_encodings = (max_card + 1) * (max_card + 1);
   unique_ptr<int []> prev_canons(new int[num_encodings]);
@@ -708,25 +766,19 @@ shared_ptr<double []> VCFR::StreetInitial(Node *p0_node, Node *p1_node, int plbd
     }
   }
 
-  // Move this to CFRP class?
-  if (nst == 1 && subgame_street_ == -1 && num_threads_ > 1) {
-    // Currently only flop supported
-    Split(p0_node, p1_node, state.P(), state.OppProbs(), state.GetHandTree(),
-	  state.ActionSequence(), prev_canons.get(), vals.get());
+  if (nst == split_street_ && subgame_street_ == -1 && num_threads_ > 1) {
+    // By default, split on the flop.
+    Split(p0_node, p1_node, pgbd, state, prev_canons.get(), vals.get());
   } else {
-    int pgbd = BoardTree::GlobalIndex(state.RootBdSt(), state.RootBd(), pst, plbd);
     int ngbd_begin = BoardTree::SuccBoardBegin(pst, pgbd, nst);
     int ngbd_end = BoardTree::SuccBoardEnd(pst, pgbd, nst);
     for (int ngbd = ngbd_begin; ngbd < ngbd_end; ++ngbd) {
-      int nlbd = BoardTree::LocalIndex(state.RootBdSt(), state.RootBd(), nst, ngbd);
-
-      const CanonicalCards *hands = hand_tree->Hands(nst, nlbd);
-    
+      const CanonicalCards *hands = state->Hands(nst, ngbd);
       SetStreetBuckets(nst, ngbd, state);
       // I can pass unset values for sum_opp_probs and total_card_probs.  I
       // know I will come across an opp choice node before getting to a terminal
       // node.
-      shared_ptr<double []> next_vals = Process(p0_node, p1_node, nlbd, state, nst);
+      shared_ptr<double []> next_vals = Process(p0_node, p1_node, ngbd, state, nst);
 
       int board_variants = BoardTree::NumVariants(nst, ngbd);
       int num_next_hands = hands->NumRaw();
@@ -734,8 +786,8 @@ shared_ptr<double []> VCFR::StreetInitial(Node *p0_node, Node *p1_node, int plbd
 	const Card *cards = hands->Cards(nh);
 	Card hi = cards[0];
 	Card lo = cards[1];
-	int encoding = hi * (max_card + 1) + lo;
-	int prev_canon = prev_canons[encoding];
+	int enc = hi * (max_card + 1) + lo;
+	int prev_canon = prev_canons[enc];
 	vals[prev_canon] += board_variants * next_vals[nh];
       }
     }
@@ -760,58 +812,120 @@ shared_ptr<double []> VCFR::StreetInitial(Node *p0_node, Node *p1_node, int plbd
   return vals;
 }
 
-shared_ptr<double []> VCFR::Process(Node *p0_node, Node *p1_node, int lbd, const VCFRState &state,
+void VCFR::InitializeOppData(VCFRState *state, int st, int gbd) {
+  if (state->SumOppProbs() != -1) return;
+  const CanonicalCards *hands = state->Hands(st, gbd);
+  state->AllocateTotalCardProbs();
+  double sum_opp_probs;
+  CommonBetResponseCalcs(st, hands, state->OppProbs().get(), &sum_opp_probs,
+			 state->TotalCardProbs().get());
+  state->SetSumOppProbs(sum_opp_probs);
+}
+
+shared_ptr<double []> VCFR::Process(Node *p0_node, Node *p1_node, int gbd, VCFRState *state,
 				    int last_st) {
   int st = p0_node->Street();
   if (p0_node->Terminal()) {
+    InitializeOppData(state, st, gbd);
     if (p0_node->NumRemaining() == 1) {
-      return Fold(p0_node, state.P(), state.GetHandTree()->Hands(st, lbd), state.OppProbs().get(),
-		  state.SumOppProbs(), state.TotalCardProbs().get());
+      return Fold(p0_node, state->P(), state->Hands(st, gbd), state->OppProbs().get(),
+		  state->SumOppProbs(), state->TotalCardProbs().get());
     } else {
-      return Showdown(p0_node, state.GetHandTree()->Hands(st, lbd), state.OppProbs().get(),
-		      state.SumOppProbs(), state.TotalCardProbs().get());
+#if 0
+      if (state->ActionSequence() == "xb4ccb12c" && state->P() == 1 && gbd == 7) {
+	fprintf(stderr, "xb4ccb12c p 1 gbd 7 sop %f\n", state->SumOppProbs());
+      }
+#endif
+      return Showdown(p0_node, state->Hands(st, gbd), state->OppProbs().get(),
+		      state->SumOppProbs(), state->TotalCardProbs().get());
     }
   }
   if (st > last_st) {
-    return StreetInitial(p0_node, p1_node, lbd, state);
+    return StreetInitial(p0_node, p1_node, gbd, state);
   }
   shared_ptr<double []> vals;
-  if (p0_node->PlayerActing() == state.P()) {
-    vals = OurChoice(p0_node, p1_node, lbd, state);
+  if (p0_node->PlayerActing() == state->P()) {
+    vals = OurChoice(p0_node, p1_node, gbd, state);
   } else {
-    vals = OppChoice(p0_node, p1_node, lbd, state);
+    vals = OppChoice(p0_node, p1_node, gbd, state);
   }
   return vals;
 }
 
+// Must be called on the root of the entire tree
+shared_ptr<double []> VCFR::ProcessRoot(const BettingTrees *betting_trees, int p,
+					HandTree *hand_tree) {
+  VCFRState state(p, hand_tree);
+  SetStreetBuckets(0, 0, &state);
+  return Process(betting_trees->Root(), betting_trees->Root(), 0, &state, 0);
+}
+
+// Two implementations of ProcessSubgame().  One if you have a VCFRState object to work from,
+// one if you don't.
+shared_ptr<double []> VCFR::ProcessSubgame(Node *p0_node, Node *p1_node, int gbd, 
+					   const VCFRState &pred_state) {
+  // It's important to create a new state object, I think.  In the case of multithreading, we don't
+  // want multiple threads modifying the same state object.
+  VCFRState state(pred_state.P(), pred_state.OppProbs(), pred_state.GetHandTree(),
+		  pred_state.ActionSequence());
+  int st = p0_node->Street();
+  SetStreetBuckets(st, gbd, &state);
+  return Process(p0_node, p1_node, gbd, &state, st);
+}
+
+shared_ptr<double []> VCFR::ProcessSubgame(Node *p0_node, Node *p1_node, int gbd, int p,
+					   shared_ptr<double []> opp_probs,
+					   const HandTree *hand_tree,
+					   const string &action_sequence) {
+  VCFRState state(p, opp_probs, hand_tree, action_sequence);
+  int st = p0_node->Street();
+  SetStreetBuckets(st, gbd, &state);
+  return Process(p0_node, p1_node, gbd, &state, st);
+}
+
 void VCFR::SetCurrentStrategy(Node *node) {
   if (node->Terminal()) return;
+  if (value_calculation_) {
+    fprintf(stderr, "Don't call SetCurrentStrategy when doing value calculation?\n");
+    exit(-1);
+  }
   int num_succs = node->NumSuccs();
   int st = node->Street();
   int nt = node->NonterminalID();
   int dsi = node->DefaultSuccIndex();
-  int p = node->PlayerActing();
+  int pa = node->PlayerActing();
 
   // In RGBR calculation, for example, only want to set for opp
-  if (current_strategy_->StreetValues(st)->Players(p) && ! buckets_.None(st) &&
+  if (current_strategy_->StreetValues(st)->Players(pa) && ! buckets_.None(st) &&
       node->LastBetTo() < card_abstraction_.BucketThreshold(st) &&
       num_succs > 1) {
     int num_buckets = buckets_.NumBuckets(st);
+    // Only need to support regrets
+#if 0
     AbstractCFRStreetValues *street_values;
     if (value_calculation_ && ! br_current_) {
+      // Shouldn't get here
       street_values = sumprobs_->StreetValues(st);
     } else {
       street_values = regrets_->StreetValues(st);
     }
+#endif
+    AbstractCFRStreetValues *street_regrets = regrets_->StreetValues(st);
+    // Current strategy is always doubles
     CFRStreetValues<double> *d_current_strategy_vals =
       dynamic_cast<CFRStreetValues<double> *>(
 	       current_strategy_->StreetValues(st));
+    double *all_cs_probs = d_current_strategy_vals->AllValues(pa, nt);
+    street_regrets->SetCurrentAbstractedStrategy(pa, nt, num_buckets, num_succs, dsi,
+						 all_cs_probs);
+#if 0
     unique_ptr<double []> current_probs(new double[num_succs]);
     for (int b = 0; b < num_buckets; ++b) {
-      street_values->RMProbs(p, nt, b * num_succs, num_succs, dsi,
+      street_values->RMProbs(pa, nt, b * num_succs, num_succs, dsi,
 			     current_probs.get());
       d_current_strategy_vals->Set(p, nt, b, num_succs, current_probs.get());
     }
+#endif
   }
   for (int s = 0; s < num_succs; ++s) {
     SetCurrentStrategy(node->IthSucc(s));
@@ -820,10 +934,10 @@ void VCFR::SetCurrentStrategy(Node *node) {
 
 VCFR::VCFR(const CardAbstraction &ca, const BettingAbstraction &ba, const CFRConfig &cc,
 	   const Buckets &buckets, int num_threads) :
-  card_abstraction_(ca), betting_abstraction_(ba), cfr_config_(cc),
-  buckets_(buckets) {
+  card_abstraction_(ca), betting_abstraction_(ba), cfr_config_(cc), buckets_(buckets) {
   num_threads_ = num_threads;
   subgame_street_ = cfr_config_.SubgameStreet();
+  split_street_ = 1; // Default
   soft_warmup_ = cfr_config_.SoftWarmup();
   hard_warmup_ = cfr_config_.HardWarmup();
   nn_regrets_ = cfr_config_.NNR();
@@ -922,4 +1036,41 @@ VCFR::VCFR(const CardAbstraction &ca, const BettingAbstraction &ba, const CFRCon
       sumprob_scaling_[s] = sv[s];
     }
   }
+
+  pthread_mutex_init(&queue_mutex_, NULL);
+  pthread_mutex_init(&num_done_mutex_, NULL);
+  pthread_cond_init(&queue_not_empty_, NULL);
+  pthread_cond_init(&queue_not_full_, NULL);
+  SpawnWorkers();
 }
+
+VCFR::~VCFR(void) {
+  num_done_ = 0;
+  // Add num_threads_ quit requests to the queue
+  for (int t = 0; t < num_threads_; ++t) {
+    pthread_mutex_lock(&queue_mutex_);
+    // Wait until there’s room in the queue.
+    while (request_queue_.size() == kRequestQueueMaxSize) {
+      pthread_cond_wait(&queue_not_full_, &queue_mutex_);
+    }
+    Request request(RequestType::QUIT, nullptr, nullptr, -1, nullptr, nullptr);
+    request_queue_.push(request);
+    // Inform waiting threads that queue has a request
+    pthread_cond_signal(&queue_not_empty_);
+    pthread_mutex_unlock(&queue_mutex_);
+  }
+  // There should be a better way to do this without a busy loop
+  while (true) {
+    // No mutex needed, right?
+    if (num_done_ == num_threads_) break;
+    usleep(1);
+  }
+  for (int t = 0; t < num_threads_; ++t) {
+    workers_[t]->Join();
+  }
+  pthread_mutex_destroy(&queue_mutex_);
+  pthread_mutex_destroy(&num_done_mutex_);
+  pthread_cond_destroy(&queue_not_empty_);
+  pthread_cond_destroy(&queue_not_full_);
+}
+

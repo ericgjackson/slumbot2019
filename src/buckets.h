@@ -8,6 +8,7 @@ class CardAbstraction;
 class Buckets {
 public:
   Buckets(const CardAbstraction &ca, bool numb_only);
+  Buckets(void);
   ~Buckets(void);
   bool None(int st) const {return none_[st];}
   // Use an unsigned int for hands.  For full holdem, the number of hands exceeds kMaxInt.
@@ -22,6 +23,7 @@ public:
   int NumBuckets(int st) const {return num_buckets_[st];}
 private:
   std::unique_ptr<bool []> none_;
+  // Should make these unique pointers, no?
   unsigned short **short_buckets_;
   int **int_buckets_;
   std::unique_ptr<int []> num_buckets_;

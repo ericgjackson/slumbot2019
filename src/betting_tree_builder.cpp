@@ -131,4 +131,3 @@ BettingTreeBuilder::BettingTreeBuilder(const BettingAbstraction &ba, int target_
   target_player_ = target_player;
   Initialize();
 }
-

@@ -7,10 +7,12 @@
 #include "board_tree.h"
 #include "buckets.h"
 #include "cfr_street_values.h"
+#include "cfr_utils.h"
 #include "cfr_value_type.h"
 #include "game.h"
 #include "io.h"
 
+using std::shared_ptr;
 using std::unique_ptr;
 
 void AbstractCFRStreetValues::MergeInto(Node *full_node, Node *subgame_node, int root_bd_st,
@@ -73,11 +75,29 @@ CFRStreetValues<T>::CFRStreetValues(int st, const bool *players, int num_holding
 }
 
 template <typename T>
+CFRStreetValues<T>::CFRStreetValues(CFRStreetValues<T> *p0_values, CFRStreetValues<T> *p1_values) {
+  st_ = p0_values->Street();
+  players_.reset(new bool[2]);
+  players_[0] = true;
+  players_[1] = true;
+  num_holdings_ = p0_values->NumHoldings();
+  num_nonterminals_.reset(new int[2]);
+  num_nonterminals_[0] = p0_values->NumNonterminals(0);
+  num_nonterminals_[1] = p1_values->NumNonterminals(1);
+  data_ = new T **[2];
+  data_[0] = p0_values->data_[0];
+  p0_values->data_[0] = nullptr;
+  data_[1] = p1_values->data_[1];
+  p1_values->data_[1] = nullptr;
+}
+
+template <typename T>
 CFRStreetValues<T>::~CFRStreetValues(void) {
   // This can happen for values for an all-in subtree.
   if (data_ == nullptr) return;
   int num_players = Game::NumPlayers();
   for (int p = 0; p < num_players; ++p) {
+    if (data_[p] == nullptr) continue;
     int num_nt = num_nonterminals_[p];
     for (int i = 0; i < num_nt; ++i) {
       delete [] data_[p][i];
@@ -205,6 +225,39 @@ void CFRStreetValues<T>::PureProbs(int p, int nt, int offset, int num_succs,
   for (int s = 0; s < num_succs; ++s) {
     probs[s] = s == best_s ? 1.0 : 0.0;
   }
+}
+
+// Uses the current strategy (from regrets or sumprobs) to compute the weighted average of
+// the successor values.  This version for systems employing card abstraction.
+template <typename T>
+void CFRStreetValues<T>::ComputeOurValsBucketed(int pa, int nt, int num_hole_card_pairs,
+						int num_succs, int dsi,
+						shared_ptr<double []> *succ_vals,
+						int *street_buckets, shared_ptr<double []> vals)
+  const {
+  const T *all_cs_vals = data_[pa][nt];
+  ::ComputeOurValsBucketed(all_cs_vals, num_hole_card_pairs, num_succs, dsi, succ_vals,
+			   street_buckets, vals);
+}
+
+// Uses the current strategy (from regrets or sumprobs) to compute the weighted average of
+// the successor values.  This version for systems employing no card abstraction.
+template <typename T>
+void CFRStreetValues<T>::ComputeOurVals(int pa, int nt, int num_hole_card_pairs, int num_succs,
+					int dsi, shared_ptr<double []> *succ_vals, int lbd,
+					shared_ptr<double []> vals)
+  const {
+  const T *all_cs_vals = data_[pa][nt];
+  ::ComputeOurVals(all_cs_vals, num_hole_card_pairs, num_succs, dsi, succ_vals, lbd, vals);
+}
+
+// Set the current strategy probs from the regrets.  Used for abstracted systems in CFR+.
+template <typename T>
+void CFRStreetValues<T>::SetCurrentAbstractedStrategy(int pa, int nt, int num_buckets,
+						      int num_succs, int dsi,
+						      double *all_cs_probs) const {
+  const T *all_regrets = data_[pa][nt];
+  ::SetCurrentAbstractedStrategy(all_regrets, num_buckets, num_succs, dsi, all_cs_probs);
 }
 
 template <typename T>
@@ -413,6 +466,12 @@ void CFRStreetValues<T>::ReadNode(Node *node, Reader *reader, void *decompressor
     } else {
       for (int a = 0; a < num_actions; ++a) {
 	reader->ReadOrDie(&data_[p][nt][a]);
+#if 0
+	if (node->Street() == 3 && p == 0) {
+	  printf("nt %i h %i s %i d %f\n", nt, a / num_succs, a % num_succs,
+		 (double)data_[p][nt][a]);
+	}
+#endif
       }
     }
   }

@@ -2,6 +2,7 @@
 #include <stdlib.h>
 
 #include <memory>
+#include <string>
 
 #include "betting_trees.h"
 #include "board_tree.h"
@@ -12,11 +13,18 @@
 #include "vcfr.h"
 
 using std::shared_ptr;
+using std::string;
 
-// Can we skip this if no opp hands reach
-shared_ptr<double []> EGCFR::HalfIteration(BettingTrees *subtrees, const VCFRState &state) {
+// Can we skip this if no opp hands reach?
+// We assume a hand tree was created for this subgame.  (Note that we get the board, gbd, from
+// the hand tree's root board.)  Is that safe?
+shared_ptr<double []> EGCFR::HalfIteration(BettingTrees *subtrees, int p,
+					   shared_ptr<double []> opp_probs,
+					   const HandTree *hand_tree,
+					   const string &action_sequence) {
   Node *subtree_root = subtrees->Root();
-  return Process(subtree_root, subtree_root, 0, state, subtree_root->Street());
+  int gbd = hand_tree->RootBd();
+  return ProcessSubgame(subtree_root, subtree_root, gbd, p, opp_probs, hand_tree, action_sequence);
 }
 
 EGCFR::EGCFR(const CardAbstraction &ca, const CardAbstraction &base_ca,

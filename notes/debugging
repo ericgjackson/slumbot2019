@@ -210,5 +210,79 @@ Turn, sample 1
 
 --------------------------------------------
 
-run_approx_rgbr2
-PreResponder no longer derives from VCFR
+solve_all_subgames
+Old code with one thread
+New code with eight threads
+
+New
+Sometimes: it_ 1 p 1 st 2 nt 0 ngbd 0 enc 62 vals[152] 392.983981
+Sometimes: it_ 1 p 1 st 2 nt 0 ngbd 0 enc 62 vals[152] 130.994660
+2c 2d
+nlbd 0 rootbdst 1 rootbd 0
+hand tree root st 1 root bd 0
+Old
+it_ 1 p 1 st 2 nt 0 ngbd 0 enc 152 vals[62] 130.994660
+2c 2d
+nlbd 0 rootbdst 1 rootbd 0
+hand tree root st 1 root bd 0
+
+OK, the hands are the same.  But sometimes I get 130.99 and sometimes I get 392.98 in vcfr2.
+
+--------------------------------
+
+----------------------------------------
+
+Compare solve_all_subgames between old and new multithreading
+
+ms2f1t1h5/1
+  Old: 0.907s
+  New: 2.2s
+ms3f1t1r1h5/1
+  Old: 22.284s
+  New: 26.64s
+ms3f1t1r1h5/2
+  Old: 22.135s
+  New: 58.5s
+  Why so much worse?
+ms3f1t1r1h5/nxhs3/1
+  Old: 22.807s, 22.743s
+  New: 28.852s, 28.591s
+ms3f1t1r1h5/nxhs3/2
+  Old: 22.120s
+  New: 59.3s, 1m0.798s
+
+------------------------------
+
+run_cfrp with old and new multithreading.
+
+ms1f3/none/mb1b1
+Old code:
+200 its in 42.6s
+Exploitability: 1.43 mbb/g
+New code:
+200 its in 43.5s
+Exploitability: 1.43 mbb/g
+Surprised no change in exploitability.
+
+holdem5
+New:
+  200 its in 7m1s
+  Exploitability: 29.47 mbb/g
+Old:
+  200 its in 7m25s
+  Exploitability: 29.47 mbb/g
+
+
+I still it weird that the exploitability doesn't change at all.
+
+Folded VCFR2 into VCFR, reran:
+
+200 its in 7m3s
+  Hmm, was 6m27s in my notes, but above I got 7m25s.
+  Exploitability: 29.47 mbb/g
+
+Redo with new RMProbs(), ComputeOurValues().
+200 its in 6m38s
+
+----------------------------------
+

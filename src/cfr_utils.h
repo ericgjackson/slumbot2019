@@ -9,6 +9,19 @@ class CardAbstraction;
 class CFRConfig;
 class Node;
 
+template <typename T> void RMProbs(const T *vals, int num_succs, int dsi, double *probs);
+template <typename T> void ComputeOurValsBucketed(const T *all_cs_vals, int num_hole_card_pairs,
+						  int num_succs, int dsi,
+						  std::shared_ptr<double []> *succ_vals,
+						  int *street_buckets,
+						  std::shared_ptr<double []> vals);
+template <typename T> void ComputeOurVals(const T *all_cs_vals, int num_hole_card_pairs,
+					  int num_succs, int dsi,
+					  std::shared_ptr<double []> *succ_vals, int lbd,
+					  std::shared_ptr<double []> vals);
+template <typename T> void SetCurrentAbstractedStrategy(const T *all_regrets, int num_buckets,
+							int num_succs, int dsi,
+							double *all_cs_probs);
 std::shared_ptr<double []> Showdown(Node *node, const CanonicalCards *hands, double *opp_probs,
 				    double sum_opp_probs, double *total_card_probs);
 std::shared_ptr<double []> Fold(Node *node, int p, const CanonicalCards *hands, double *opp_probs,

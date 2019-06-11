@@ -929,6 +929,7 @@ void GetDirectoryListing(const char *dir, vector<string> *listing) {
   closedir(dfd);
 }
 
+// Can handle files or directories
 static void RecursivelyDelete(const string &path) {
   if (! IsADirectory(path.c_str())) {
     // fprintf(stderr, "Removing file %s\n", path.c_str());
@@ -946,6 +947,8 @@ static void RecursivelyDelete(const string &path) {
 }
 
 void RecursivelyDeleteDirectory(const char *dir) {
+  // Succeed silently if directory doesn't exist
+  if (! FileExists(dir)) return;
   if (! IsADirectory(dir)) {
     fprintf(stderr, "Path supplied is not a directory: %s\n", dir);
     return;

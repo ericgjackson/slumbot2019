@@ -1,0 +1,11 @@
+# One bet and bet size preflop, flop and turn
+# Two bets and two bet sizes on river
+BettingAbstractionName mb2b2r
+Limit false
+StackSize 400
+Asymmetric false
+NoLimitTreeType 1
+MinBet 2
+AlwaysAllIn false
+MaxBets 1,1,1,2
+BetSizes 1.0|1.0|1.0|0.5,1.0;0.5,1.0

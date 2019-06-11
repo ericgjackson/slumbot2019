@@ -15,6 +15,8 @@ poker games
 
 ## Prerequisites
 
+You should have a version of gcc that supports C++ 17.
+
 Set up a "static" directory and a "cfr" directory with enough disk space available.
 Specify these paths in files.cpp.
 

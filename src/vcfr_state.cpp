@@ -39,6 +39,11 @@ static shared_ptr<double []> AllocateOppProbs(void) {
   return opp_probs;
 }
 
+void VCFRState::AllocateTotalCardProbs(void) {
+  int max_card1 = Game::MaxCard() + 1;
+  total_card_probs_.reset(new double[max_card1]);
+}
+
 // Called at the root of the tree.
 VCFRState::VCFRState(int p, const HandTree *hand_tree) {
   p_ = p;
@@ -46,27 +51,28 @@ VCFRState::VCFRState(int p, const HandTree *hand_tree) {
   street_buckets_ = AllocateStreetBuckets();
   action_sequence_ = "x";
   hand_tree_ = hand_tree;
-  root_bd_ = 0;
-  root_bd_st_ = 0;
-  int max_card1 = Game::MaxCard() + 1;
-  total_card_probs_.reset(new double[max_card1]);
+  total_card_probs_ = nullptr;
+  // Signifies opp data is uninitialized
+  sum_opp_probs_ = -1;
+#if 0
   const CanonicalCards *hands = hand_tree_->Hands(0, 0);
   // We need to initialize total_card_probs_ and sum_opp_probs_ because an open fold is allowed.
   CommonBetResponseCalcs(0, hands, opp_probs_.get(), &sum_opp_probs_, total_card_probs_.get());
+#endif
 }
   
 // Called at an internal street-initial node.  We do not initialize total_card_probs_ (and set
 // sum_opp_probs_ to zero) because we know we will come across an opp-choice node before we need
 // those members.
 VCFRState::VCFRState(int p, const shared_ptr<double []> &opp_probs, const HandTree *hand_tree,
-		     const string &action_sequence, int root_bd, int root_bd_st) {
+		     const string &action_sequence) {
   p_ = p;
   opp_probs_ = opp_probs;
-  sum_opp_probs_ = 0;
+  total_card_probs_ = nullptr;
+  // Signifies opp data is uninitialized
+  sum_opp_probs_ = -1;
   hand_tree_ = hand_tree;
   action_sequence_ = action_sequence;
-  root_bd_ = root_bd;
-  root_bd_st_ = root_bd_st;
   street_buckets_ = AllocateStreetBuckets();
 }
 
@@ -76,8 +82,6 @@ VCFRState::VCFRState(const VCFRState &pred, Node *node, int s) {
   opp_probs_ = pred.OppProbs();
   hand_tree_ = pred.GetHandTree();
   action_sequence_ = pred.ActionSequence() + node->ActionName(s);
-  root_bd_ = pred.RootBd();
-  root_bd_st_ = pred.RootBdSt();
   street_buckets_ = pred.AllStreetBuckets();
   total_card_probs_ = pred.TotalCardProbs();
   sum_opp_probs_ = pred.SumOppProbs();
@@ -85,17 +89,15 @@ VCFRState::VCFRState(const VCFRState &pred, Node *node, int s) {
 
 // Create a new VCFRState corresponding to taking an opponent action.
 VCFRState::VCFRState(const VCFRState &pred, Node *node, int s,
-		     const shared_ptr<double []> &opp_probs, double sum_opp_probs,
-		     const shared_ptr<double []> &total_card_probs) {
+		     const shared_ptr<double []> &opp_probs) {
   p_ = pred.P();
   opp_probs_ = opp_probs;
   hand_tree_ = pred.GetHandTree();
   action_sequence_ = pred.ActionSequence() + node->ActionName(s);
-  root_bd_ = pred.RootBd();
-  root_bd_st_ = pred.RootBdSt();
   street_buckets_ = pred.AllStreetBuckets();
-  sum_opp_probs_ = sum_opp_probs;
-  total_card_probs_ = total_card_probs;
+  // Signifies opp data is uninitialized
+  sum_opp_probs_ = -1;
+  total_card_probs_ = nullptr;
 }
 
 int *VCFRState::StreetBuckets(int st) const {

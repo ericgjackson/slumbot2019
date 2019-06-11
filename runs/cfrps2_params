@@ -1,0 +1,8 @@
+# Identical to cfrps; just a new name for experiments
+CFRConfigName cfrps2
+Algorithm cfrp
+NNR true
+RegretFloors 0,0,0,0
+RegretScaling 16,16,16,16
+SumprobScaling 16,16,16,16
+SoftWarmup 100

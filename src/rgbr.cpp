@@ -114,6 +114,8 @@ double RGBR::Go(int it, int p) {
 
   delete [] streets;
 
+  // Some of this logic is replicated in CFRP::HalfIteration().
+  
   if (subgame_street_ >= 0 && subgame_street_ <= max_street) {
     // subgame_running_ should be false for all threads
     // active_subgames_ should be nullptr for all threads
@@ -127,24 +129,25 @@ double RGBR::Go(int it, int p) {
   }
 
   if (subgame_street_ >= 0 && subgame_street_ <= max_street) pre_phase_ = true;
-  VCFRState state(p, hand_tree_.get());
-  SetStreetBuckets(0, 0, state);
-  shared_ptr<double []> vals = Process(betting_trees_->Root(), betting_trees_->Root(), 0, state, 0);
+  shared_ptr<double []> vals = ProcessRoot(betting_trees_.get(), p, hand_tree_.get());
   if (subgame_street_ >= 0 && subgame_street_ <= max_street) {
     WaitForFinalSubgames();
     pre_phase_ = false;
-    vals = Process(betting_trees_->Root(), betting_trees_->Root(), 0, state, 0);
+    vals = ProcessRoot(betting_trees_.get(), p, hand_tree_.get());
   }
   
   int num_hole_card_pairs = Game::NumHoleCardPairs(0);
 
 #if 0
-  for (int i = 0; i < num_hole_card_pairs; ++i) {
-    const Card *hole_cards = hands->Cards(i);
-    OutputTwoCards(hole_cards);
-    printf(" %f (i %u)\n", vals[i], i);
+  if (p == 1) {
+    const CanonicalCards *hands = hand_tree_->Hands(0, 0);
+    for (int i = 0; i < num_hole_card_pairs; ++i) {
+      const Card *hole_cards = hands->Cards(i);
+      OutputTwoCards(hole_cards);
+      printf(" %f (i %u)\n", vals[i], i);
+    }
+    fflush(stdout);
   }
-  fflush(stdout);
 #endif
   
   int num_remaining = Game::NumCardsInDeck() -

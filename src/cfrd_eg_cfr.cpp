@@ -45,10 +45,10 @@ static void RegretsToProbs(double *regrets, int num_succs, int dsi, double *prob
   }
 }
 
-void CFRDEGCFR::HalfIteration(BettingTrees *subtrees, int target_p, VCFRState *state,
-			      double *opp_cvs) {
-  int p = state->P();
-  const HandTree *hand_tree = state->GetHandTree();
+void CFRDEGCFR::HalfIteration(BettingTrees *subtrees, int target_p, int p,
+			      shared_ptr<double []> opp_probs, const HandTree *hand_tree,
+			      const string &action_sequence, double *opp_cvs) {
+  int root_bd = hand_tree->RootBd();
   int subtree_st = subtrees->Root()->Street();
   int num_hole_card_pairs = Game::NumHoleCardPairs(subtree_st);
   int num_hole_cards = Game::NumCardsForStreet(0);
@@ -57,7 +57,7 @@ void CFRDEGCFR::HalfIteration(BettingTrees *subtrees, int target_p, VCFRState *s
   if (num_hole_cards == 1) num_enc = max_card1;
   else                     num_enc = max_card1 * max_card1;
   shared_ptr<double []> villain_probs(new double[num_enc]);
-  const CanonicalCards *hands = hand_tree->Hands(subtree_st, 0);
+  const CanonicalCards *hands = hand_tree->Hands(subtree_st, root_bd);
   // bool nonneg = nn_regrets_ && regret_floors_[subtree_st] >= 0;
   double probs[2];
   for (int i = 0; i < num_hole_card_pairs; ++i) {
@@ -74,12 +74,12 @@ void CFRDEGCFR::HalfIteration(BettingTrees *subtrees, int target_p, VCFRState *s
     villain_probs[enc] = probs[0];
   }
   if (p == target_p) {
-    state->SetOppProbs(villain_probs);
-    EGCFR::HalfIteration(subtrees, *state);
+    EGCFR::HalfIteration(subtrees, p, villain_probs, hand_tree, action_sequence);
   } else {
     // Opponent phase.  The target player plays his fixed range to the subgame.  The target
-    // player's fixed range is embedded in the opp_probs in state.
-    shared_ptr<double []> vals = EGCFR::HalfIteration(subtrees, *state);
+    // player's fixed range is embedded in opp_probs.
+    shared_ptr<double []> vals = EGCFR::HalfIteration(subtrees, p, opp_probs, hand_tree,
+						      action_sequence);
     for (int i = 0; i < num_hole_card_pairs; ++i) {
       double *regrets = cfrd_regrets_.get() + i * 2;
       const Card *cards = hands->Cards(i);
@@ -136,21 +136,11 @@ void CFRDEGCFR::SolveSubgame(BettingTrees *subtrees, int solve_bd, const ReachPr
     cfrd_regrets_[i * 2 + 1] = 0;
   }
   
-  VCFRState **initial_states = new VCFRState *[num_players];
-  for (int p = 0; p < num_players; ++p) {
-    initial_states[p] = new VCFRState(p, reach_probs.Get(p^1), hand_tree, action_sequence, solve_bd,
-				      subtree_st);
-    SetStreetBuckets(subtree_st, solve_bd, *initial_states[p]);
-  }
   for (it_ = 1; it_ <= num_its; ++it_) {
     // Go from high to low to mimic slumbot2017 code
     for (int p = (int)num_players - 1; p >= 0; --p) {
-      HalfIteration(subtrees, target_p, initial_states[p], opp_cvs);
+      HalfIteration(subtrees, target_p, p, reach_probs.Get(p^1), hand_tree, action_sequence,
+		    opp_cvs);
     }
   }
-
-  for (int p = 0; p < num_players; ++p) {
-    delete initial_states[p];
-  }
-  delete [] initial_states;
 }

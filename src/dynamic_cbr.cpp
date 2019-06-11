@@ -40,18 +40,15 @@ DynamicCBR::~DynamicCBR(void) {
 // So we must map our global board index gbd into a local board index lbd
 // whenever we access hand_tree or the probabilities inside sumprobs.
 shared_ptr<double []> DynamicCBR::Compute(Node *node, int p, const shared_ptr<double []> &opp_probs,
-					  int gbd, HandTree *hand_tree, int root_bd_st,
-					  int root_bd) {
+					  int gbd, const HandTree *hand_tree) {
   int st = node->Street();
   // time_t start_t = time(NULL);
   int num_hole_card_pairs = Game::NumHoleCardPairs(st);
-  int lbd = BoardTree::LocalIndex(root_bd_st, root_bd, st, gbd);
-  const CanonicalCards *hands = hand_tree->Hands(st, lbd);
+  const CanonicalCards *hands = hand_tree->Hands(st, gbd);
   // Should set this appropriately
   string action_sequence = "x";
-  VCFRState state(p, opp_probs, hand_tree, action_sequence, root_bd, root_bd_st);
-  SetStreetBuckets(st, gbd, state);
-  shared_ptr<double []> vals = Process(node, node, lbd, state, st);
+  shared_ptr<double []> vals = ProcessSubgame(node, node, gbd, p, opp_probs, hand_tree,
+					      action_sequence);
   // Temporary?  Make our T values like T values constructed by build_cbrs,
   // by casting to float.
   for (int i = 0; i < num_hole_card_pairs; ++i) {
@@ -86,9 +83,8 @@ shared_ptr<double []> DynamicCBR::Compute(Node *node, int p, const shared_ptr<do
 // P1.  So I pass in 1 to Compute(). We'll need the reach probs of P1's
 // opponent, who is P0.
 shared_ptr<double []> DynamicCBR::Compute(Node *node, const ReachProbs &reach_probs, int gbd,
-					  HandTree *hand_tree, int root_bd_st, int root_bd,
-					  int target_p, bool cfrs, bool zero_sum, bool current,
-					  bool purify_opp) {
+					  const HandTree *hand_tree, int target_p, bool cfrs,
+					  bool zero_sum, bool current, bool purify_opp) {
   cfrs_ = cfrs;
   br_current_ = current;
   if (purify_opp) {
@@ -101,22 +97,16 @@ shared_ptr<double []> DynamicCBR::Compute(Node *node, const ReachProbs &reach_pr
     prob_method_ = ProbMethod::REGRET_MATCHING;
   }
   if (zero_sum) {
-    shared_ptr<double []> p0_cvs = Compute(node, 0, reach_probs.Get(1), gbd, hand_tree, root_bd_st,
-					   root_bd);
-    shared_ptr<double []> p1_cvs = Compute(node, 1, reach_probs.Get(0), gbd, hand_tree, root_bd_st,
-					   root_bd);
+    shared_ptr<double []> p0_cvs = Compute(node, 0, reach_probs.Get(1), gbd, hand_tree);
+    shared_ptr<double []> p1_cvs = Compute(node, 1, reach_probs.Get(0), gbd, hand_tree);
     int st = node->Street();
     int num_hole_card_pairs = Game::NumHoleCardPairs(st);
-    // Don't pass in bd.  This is a local hand tree specific to the current
-    // board.
-    int lbd = BoardTree::LocalIndex(root_bd_st, root_bd, st, gbd);
-    const CanonicalCards *hands = hand_tree->Hands(st, lbd);
+    const CanonicalCards *hands = hand_tree->Hands(st, gbd);
     ZeroSumCVs(p0_cvs.get(), p1_cvs.get(), num_hole_card_pairs, reach_probs, hands);
     if (target_p == 1) return p1_cvs;
     else               return p0_cvs;
   } else {
-    return Compute(node, target_p, reach_probs.Get(target_p^1), gbd, hand_tree, root_bd_st,
-		   root_bd);
+    return Compute(node, target_p, reach_probs.Get(target_p^1), gbd, hand_tree);
   }
 }
 

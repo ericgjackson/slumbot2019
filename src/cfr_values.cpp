@@ -71,7 +71,6 @@ CFRValues::CFRValues(const bool *players, const bool *streets, int root_bd, int 
       }
     }
   }
-
 }
 
 // For asymmetric systems.
@@ -95,18 +94,64 @@ CFRValues::CFRValues(const bool *players, const bool *streets, int root_bd, int 
   }
 }
 
+CFRValues::CFRValues(const CFRValues &p0_values, const CFRValues &p1_values) {
+  root_bd_st_ = p0_values.RootSt();
+  root_bd_ = p0_values.RootBd();
+  int num_players = Game::NumPlayers();
+  players_.reset(new bool[num_players]);
+  for (int p = 0; p < num_players; ++p) {
+    players_[p] = p0_values.Player(p);
+  }
+  int max_street = Game::MaxStreet();
+  streets_.reset(new bool[max_street + 1]);
+  for (int st = 0; st <= max_street; ++st) {
+    streets_[st] = p0_values.Street(st);
+  }
+  num_holdings_.reset(new int[max_street + 1]);
+  for (int st = 0; st <= max_street; ++st) {
+    if (! streets_[st]) {
+      num_holdings_[st] = 0;
+      continue;
+    }
+    num_holdings_[st] = p0_values.NumHoldings(st);
+  }
+  street_values_.reset(new AbstractCFRStreetValues *[max_street + 1]);
+  for (int st = 0; st <= max_street; ++st) {
+    if (! streets_[st]) {
+      street_values_[st] = nullptr;
+      continue;
+    }
+    CFRValueType t = p0_values.StreetValues(st)->MyType();
+    if (t == CFRValueType::CFR_INT) {
+      street_values_[st] =
+	new CFRStreetValues<int>(
+			 dynamic_cast<CFRStreetValues<int> *>(p0_values.StreetValues(st)),
+			 dynamic_cast<CFRStreetValues<int> *>(p1_values.StreetValues(st)));
+    } else if (t == CFRValueType::CFR_DOUBLE) {
+      street_values_[st] =
+	new CFRStreetValues<double>(
+			 dynamic_cast<CFRStreetValues<double> *>(p0_values.StreetValues(st)),
+			 dynamic_cast<CFRStreetValues<double> *>(p1_values.StreetValues(st)));
+    } else {
+      fprintf(stderr, "Unsupported type\n");
+      exit(-1);
+    }
+  }
+  // Don't need to fill out num_nonterminals_
+}
+
 CFRValues::~CFRValues(void) {
   int max_street = Game::MaxStreet();
   for (int st = 0; st <= max_street; ++st) delete street_values_[st];
 }
 
-// Shouldn't we respect only_p?
-void CFRValues::AllocateAndClear(const BettingTree *betting_tree, CFRValueType value_type,
+void CFRValues::AllocateAndClear(const BettingTree *betting_tree, CFRValueType *value_types,
 				 bool quantize, int only_p) {
   int max_street = Game::MaxStreet();
   int num_players = Game::NumPlayers();
   for (int st = 0; st <= max_street; ++st) {
     if (streets_[st]) {
+      CFRValueType value_type = value_types[st];
       int num_holdings = num_holdings_[st];
       if (value_type == CFRValueType::CFR_INT) {
 	if (quantize) {
@@ -154,6 +199,17 @@ void CFRValues::AllocateAndClear(const BettingTree *betting_tree, CFRValueType v
       }
     }
   }
+}
+
+// Shouldn't we respect only_p?
+void CFRValues::AllocateAndClear(const BettingTree *betting_tree, CFRValueType value_type,
+				 bool quantize, int only_p) {
+  int max_street = Game::MaxStreet();
+  unique_ptr<CFRValueType []> value_types(new CFRValueType[max_street + 1]);
+  for (int st = 0; st <= max_street; ++st) {
+    value_types[st] = value_type;
+  }
+  AllocateAndClear(betting_tree, value_types.get(), quantize, only_p);
 }
 
 void CFRValues::CreateStreetValues(int st, CFRValueType value_type, bool quantize) {

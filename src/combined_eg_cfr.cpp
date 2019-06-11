@@ -48,10 +48,10 @@ static void RegretsToProbs(double *regrets, int num_succs, int dsi, double *prob
 // Simulate dummy root node with two succs.  Succ 0 corresponds to playing to
 // the subgame.  Succ 1 corresponds to taking the T value.
 // Use "villain" to mean the player who is not the target player.
-void CombinedEGCFR::HalfIteration(BettingTrees *subtrees, int target_p, VCFRState *state,
-				  const ReachProbs &reach_probs, double *opp_cvs) {
-  int p = state->P();
-  const HandTree *hand_tree = state->GetHandTree();
+void CombinedEGCFR::HalfIteration(BettingTrees *subtrees, int target_p, int p, 
+				  const ReachProbs &reach_probs, const HandTree *hand_tree,
+				  const string &action_sequence, double *opp_cvs) {
+  int root_bd = hand_tree->RootBd();
   shared_ptr<double []> villain_reach_probs = reach_probs.Get(target_p^1);
   int subtree_st = subtrees->Root()->Street();
   int num_hole_card_pairs = Game::NumHoleCardPairs(subtree_st);
@@ -61,7 +61,7 @@ void CombinedEGCFR::HalfIteration(BettingTrees *subtrees, int target_p, VCFRStat
   if (num_hole_cards == 1) num_enc = max_card1;
   else                     num_enc = max_card1 * max_card1;
   shared_ptr<double []> villain_probs(new double[num_enc]);
-  const CanonicalCards *hands = hand_tree->Hands(subtree_st, 0);
+  const CanonicalCards *hands = hand_tree->Hands(subtree_st, root_bd);
   // bool nonneg = nn_regrets_ && regret_floors_[subtree_st] >= 0;
   double sum_villain_reach_probs = 0;
   for (int i = 0; i < num_hole_card_pairs; ++i) {
@@ -157,12 +157,12 @@ void CombinedEGCFR::HalfIteration(BettingTrees *subtrees, int target_p, VCFRStat
   }
 
   if (p == target_p) {
-    state->SetOppProbs(villain_probs);
-    EGCFR::HalfIteration(subtrees, *state);
+    EGCFR::HalfIteration(subtrees, p, villain_probs, hand_tree, action_sequence);
   } else {
     // Opponent phase.  The target player plays his fixed range to the subgame.  The target
-    // player's fixed range is embedded in the opp_probs in state.
-    shared_ptr<double []> vals = EGCFR::HalfIteration(subtrees, *state);
+    // player's fixed range is embedded in reach_probs.
+    shared_ptr<double []> vals = EGCFR::HalfIteration(subtrees, p, reach_probs.Get(target_p),
+						      hand_tree, action_sequence);
     for (int i = 0; i < num_hole_card_pairs; ++i) {
       double *regrets = &combined_regrets_[i * 2];
       const Card *cards = hands->Cards(i);
@@ -225,22 +225,11 @@ void CombinedEGCFR::SolveSubgame(BettingTrees *subtrees, int solve_bd,
     combined_regrets_[i * 2 + 1] = 0;
   }
   
-  VCFRState **initial_states = new VCFRState *[num_players];
-  for (int p = 0; p < num_players; ++p) {
-    initial_states[p] = new VCFRState(p, reach_probs.Get(p^1), hand_tree, action_sequence, solve_bd,
-				      subtree_st);
-    SetStreetBuckets(subtree_st, solve_bd, *initial_states[p]);
-  }
   for (it_ = 1; it_ <= num_its; ++it_) {
     // Go from high to low to mimic slumbot2017 code
     for (int p = (int)num_players - 1; p >= 0; --p) {
-      HalfIteration(subtrees, target_p, initial_states[p], reach_probs, opp_cvs);
+      HalfIteration(subtrees, target_p, p, reach_probs, hand_tree, action_sequence, opp_cvs);
     }
   }
-
-  for (int p = 0; p < num_players; ++p) {
-    delete initial_states[p];
-  }
-  delete [] initial_states;
 }
 

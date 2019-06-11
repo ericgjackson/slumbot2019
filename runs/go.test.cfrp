@@ -1,0 +1,23 @@
+#!/bin/bash
+
+# You may want to pipe the output of this script to "egrep Exploitability"
+
+../bin/run_cfrp ms0_params none_params mb1b1_params cfrps_params 8 1 200
+# Expect 0.6
+../bin/run_rgbr ms0_params none_params mb1b1_params cfrps_params 8 200 avg raw
+
+../bin/run_cfrp ms1f1_params none_params mb1b1_params cfrps_params 8 1 200
+# Expect 2.86
+../bin/run_rgbr ms1f1_params none_params mb1b1_params cfrps_params 8 200 avg raw
+
+../bin/run_cfrp ms1f3_params none_params mb1b1_params cfrps_params 8 1 200
+# Expect 1.43
+../bin/run_rgbr ms1f3_params none_params mb1b1_params cfrps_params 8 200 avg raw
+
+../bin/run_cfrp ms2f1t1h5_params none_params mb1b1_params cfrps_params 8 1 200
+# Expect 7.99
+../bin/run_rgbr ms2f1t1h5_params none_params mb1b1_params cfrps_params 8 200 avg raw
+
+../bin/run_cfrp ms3f1t1r1h5_params none_params mb1b1_params cfrps_params 8 1 200
+# Expect 32.21
+../bin/run_rgbr ms3f1t1r1h5_params none_params mb1b1_params cfrps_params 8 200 avg raw

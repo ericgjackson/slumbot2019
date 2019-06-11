@@ -19,12 +19,11 @@ public:
   DynamicCBR(void);
   ~DynamicCBR(void);
   std::shared_ptr<double []> Compute(Node *node, const ReachProbs &reach_probs, int gbd,
-				     HandTree *hand_tree, int root_bd_st, int root_bd,
-				     int target_p, bool cfrs, bool zero_sum, bool current,
-				     bool purify_opp);
+				     const HandTree *hand_tree,int target_p, bool cfrs,
+				     bool zero_sum, bool current, bool purify_opp);
 private:
   std::shared_ptr<double []> Compute(Node *node, int p, const std::shared_ptr<double []> &opp_probs,
-				     int gbd, HandTree *hand_tree, int root_bd_st, int root_bd);
+				     int gbd, const HandTree *hand_tree);
 
   bool cfrs_;
 };

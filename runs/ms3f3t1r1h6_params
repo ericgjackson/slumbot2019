@@ -1,0 +1,13 @@
+# Three card flop, one card turn, one card river
+# 24 card deck (6 ranks)
+GameName ms3f3t1r1
+MaxStreet 3
+NumRanks 6
+NumSuits 4
+NumHoleCards 2
+NumFlopCards 3
+Ante 0
+SmallBlind 1
+BigBlind 2
+FirstToAct 1,0,0,0
+NumPlayers 2

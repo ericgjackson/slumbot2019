@@ -19,8 +19,11 @@ class CFRValues {
 	    const Buckets &buckets, const BettingTree *betting_tree);
   CFRValues(const bool *players, const bool *streets, int root_bd, int root_bd_st,
 	    const Buckets &buckets, const BettingTrees &betting_trees);
+  CFRValues(const CFRValues &p0_values, const CFRValues &p1_values);
   virtual ~CFRValues(void);
   AbstractCFRStreetValues *StreetValues(int st) const {return street_values_[st];}
+  void AllocateAndClear(const BettingTree *betting_tree, CFRValueType *value_types,
+			bool quantize, int only_p);
   void AllocateAndClear(const BettingTree *betting_tree, CFRValueType value_type, bool quantize,
 			int only_p);
   void CreateStreetValues(int st, CFRValueType value_type, bool quantize);
@@ -55,7 +58,11 @@ class CFRValues {
   }
   void MergeInto(const CFRValues &subgame_values, int root_bd, Node *full_root, Node *subgame_root,
 		 const Buckets &buckets, int final_st);
-  
+  bool Player(int p) const {return players_[p];}
+  bool Street(int st) const {return streets_[st];}
+  int NumHoldings(int st) const {return num_holdings_[st];}
+  int RootSt(void) const {return root_bd_st_;}
+  int RootBd(void) const {return root_bd_;}
  protected:
   void Read(Node *node, Reader ***readers, void ***decompressors, int p);
   Reader *InitializeReader(const char *dir, int p, int st, int it,

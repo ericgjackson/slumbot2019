@@ -1,0 +1,198 @@
+Solve small mb1b1 game
+Solve larger mb2b2tr game with more bets and bet sizes on turn and river
+Use progressive endgame solving to build large system from small base
+See if resolved system is close in performance to large system.
+Exploitability and head to head
+
+mb2b2tr
+2.7g
+200 its in 5m27s
+Exploitability: 98.50 mbb/g
+200-400 its in 4m53s
+Exploitability: 30.65 mbb/g
+400-600 its in 4m39s
+Exploitability: 16.41 mbb/g
+600-800 its in 4m42s
+Exploitability: 11.06 mbb/g
+800-1000 its in 4m13s
+Exploitability: 7.82 mbb/g
+
+-----------------------------------------------------------------------------
+
+Using the same betting abstraction for resolve and for base
+Using mb1b1
+Only resolving street-initial nodes on a given street
+Results should match solve_all_subgames
+
+*** ms1f1 ***
+
+Unsafe
+solve_all_subgames:           Exploitability: 3.83 mbb/g
+progressively_solve_subgames: Exploitability: 3.83 mbb/g
+  (Resolve all and only street-initial flop nodes)
+Matches!
+
+Combined
+solve_all_subgames:           Exploitability: 2.92 mbb/g
+progressively_solve_subgames: Exploitability: 2.92 mbb/g
+  (Resolve all and only street-initial flop nodes)
+Matches!
+
+*** ms2f1t1 ***
+
+Unsafe
+solve_all_subgames:           Exploitability: 13.77 mbb/g
+progressively_solve_subgames: Exploitability: 13.77 mbb/g
+  (Resolving flop street-initial nodes.)
+Matches!
+
+Unsafe
+solve_all_subgames:           Exploitability: 43.72 mbb/g
+progressively_solve_subgames: Exploitability: 43.72 mbb/g
+  (Resolving turn street-initial nodes.)
+Matches!
+
+Combined
+solve_all_subgames:           Exploitability: 11.20 mbb/g
+progressively_solve_subgames: Exploitability: 11.20 mbb/g
+  (Resolving turn street-initial nodes.)
+Matches!
+
+*** ms3f1t1r1h5 ***
+
+Unsafe
+solve_all_subgames:           Exploitability: 84.53 mbb/g
+progressively_solve_subgames: Exploitability: 84.53 mbb/g
+  (Resolving river street-initial nodes.)
+Matches!
+
+Unsafe
+solve_all_subgames:           Exploitability: 30.01 mbb/g
+progressively_solve_subgames: Exploitability: 30.01 mbb/g
+  (Resolving turn street-initial nodes.)
+Matches!
+
+Combined
+solve_all_subgames:           Exploitability: 26.59 mbb/g
+progressively_solve_subgames: Exploitability: 26.59 mbb/g
+  (Resolving turn street-initial nodes.)
+Matches!
+
+Unsafe
+solve_all_subgames:           Exploitability: 21.57 mbb/g
+progressively_solve_subgames: Exploitability: 21.57 mbb/g
+  (Resolving flop street-initial nodes.)
+Matches!
+
+------------------------------------------------------------------------
+
+Resolving all nodes on a street, or all nodes on a street and all following streets.
+Still using same betting abstraction for the base and the resolve.
+
+ms1f1/mb1b1
+Unsafe method
+  Resolve all flop nodes
+  Exploitability: 38.45 mbb/g
+Combined method
+  Resolve all flop nodes
+  Exploitability: 5.35 mbb/g
+
+ms2f1t1h5/mb1b1
+Resolve all turn nodes, unsafe:
+  Exploitability: 278.05 mbb/g
+Resolve all turn nodes, combined:
+  Exploitability: 38.48 mbb/g
+Resolve all flop and turn nodes, unsafe:
+  Exploitability: 238.21 mbb/g
+Resolve all flop and turn nodes, combined:
+  Exploitability: 41.84 mbb/g
+Resolve all flop nodes, unsafe:
+  Exploitability: 28.53 mbb/g
+Resolve all flop nodes, combined:
+  Exploitability: 17.02 mbb/g
+
+ms3f1t1r1h5/mb1b1
+Resolve all river nodes, unsafe:
+Exploitability: 804.95 mbb/g
+Resolve all river nodes, combined:
+Exploitability: 83.36 mbb/g
+Resolve all turn and river nodes, unsafe:
+Resolve all turn and river nodes, combined:
+Exploitability: 88.34 mbb/g
+Resolve all flop, turn and river nodes, unsafe:
+Resolve all flop, turn and river nodes, combined:
+Exploitability: 105.45 mbb/g
+
+Was I getting better results before?  That's odd.  Maybe only with the unsafe method?
+I assume old results below were with the unsafe method.  Is there any way the unsafe
+method could have a bug, but not the combined method?
+
+ms2f1t1h5 old results.
+Resolve all nodes on flop
+Exploitability: 25.02 mbb/g                           REDO
+Resolve all nodes on turn
+Exploitability: 73.86 mbb/g                           REDO
+Resolve all nodes on flop and turn
+Exploitability: 78.34 mbb/g                           REDO
+More nesting didn't make things much worse.
+43.72 solving all subgames on turn
+
+ms3f1t1r1h5 old results
+Resolve all nodes on river
+Exploitability: 236.99 mbb/g                           REDO
+84.53 solving all subgames on river
+Resolve all nodes on turn and river
+Exploitability: 191.84 mbb/g                           REDO
+Resolve all nodes on flop, turn and river
+Exploitability: 200.67 mbb/g                           REDO
+
+---------------------------------------------
+
+ms3f1t1r1h5
+mb1b1 base; resolve and final mb2b2tr
+Resolving only turn-initial nodes, unsafe (20m)
+  Exploitability: 472.65 mbb/g
+  Matches
+
+solve_all_subgames, turn, unsafe
+  Exploitability: 472.65 mbb/g
+  Not that great
+Compare to baseline (solving mb2b2tr directory for 200 its):
+  Exploitability: 98.50 mbb/g
+solve_all_subgames, turn, combined
+  Exploitability: 208.47 mbb/g
+  Much better, although still not wonderful.
+
+mb1b1 base; resolve and final mb2b2r
+solve_all_subgames, river
+  Exploitability: 397.63 mbb/g
+Resolving only river-initial nodes, unsafe
+  Exploitability: 397.63 mbb/g
+  Matches.
+
+----------------
+
+ms3f1t1r1h5
+base, resolve and final mb2b2tr
+solve_all_subgames, turn, unsafe
+  Exploitability: 81.10 mbb/g
+  Much better (compare 472.65).  Pays to have the right base, unfortunately.
+  Better than base too.
+solve_all_subgames, turn, combined
+  Exploitability: 51.81 mbb/g
+  Nice.  Better than base too.
+
+----------------
+
+ms1f1/mb1b2f
+Solving mb1b2f directly: Exploitability: 3.32 mbb/g
+Resolving only flop-initial nodes, unsafe
+  Exploitability: 35.10 mbb/g
+With solve_all_subgames, unsafe:
+  Exploitability: 35.10 mbb/g
+  Matches
+Resolving only flop-initial nodes, combined
+  Exploitability: 28.12 mbb/g
+With solve_all_subgames, combined:
+  Exploitability: 28.12 mbb/g
+  Matches

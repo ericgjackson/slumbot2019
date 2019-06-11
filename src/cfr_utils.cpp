@@ -25,6 +25,127 @@ using std::string;
 using std::unique_ptr;
 using std::vector;
 
+// Compute probs from the current hand values using regret matching.  Normally the values we do this
+// to are regrets, but they may also be sumprobs.
+// May eventually want to take parameters for nonneg, explore, uniform, nonterminal succs,
+// num nonterminal succs.
+// Note: doesn't handle nodes with one succ
+template <typename T> void RMProbs(const T *vals, int num_succs, int dsi, double *probs) {
+  double sum = 0;
+  for (int s = 0; s < num_succs; ++s) {
+    T v = vals[s];
+    if (v > 0) sum += v;
+  }
+  if (sum == 0) {
+    for (int s = 0; s < num_succs; ++s) {
+      probs[s] = s == dsi ? 1.0 : 0;
+    }
+  } else {
+    for (int s = 0; s < num_succs; ++s) {
+      T v = vals[s];
+      if (v > 0) probs[s] = v / sum;
+      else       probs[s] = 0;
+    }
+  }
+}
+
+template void RMProbs<double>(const double *vals, int num_succs, int dsi, double *probs);
+template void RMProbs<int>(const int *vals, int num_succs, int dsi, double *probs);
+template void RMProbs<unsigned short>(const unsigned short *vals, int num_succs, int dsi,
+				      double *probs);
+template void RMProbs<unsigned char>(const unsigned char *vals, int num_succs, int dsi,
+				     double *probs);
+
+// Uses the current strategy (from regrets or sumprobs) to compute the weighted average of
+// the successor values.  This version for systems employing card abstraction.
+template <typename T> void ComputeOurValsBucketed(const T *all_cs_vals, int num_hole_card_pairs,
+						  int num_succs, int dsi,
+						  shared_ptr<double []> *succ_vals,
+						  int *street_buckets, shared_ptr<double []> vals) {
+  unique_ptr<double []> current_probs(new double[num_succs]);
+  for (int i = 0; i < num_hole_card_pairs; ++i) {
+    int b = street_buckets[i];
+    RMProbs(all_cs_vals + b * num_succs, num_succs, dsi, current_probs.get());
+    for (int s = 0; s < num_succs; ++s) {
+      vals[i] += succ_vals[s][i] * current_probs[s];
+    }
+  }
+}
+
+template void ComputeOurValsBucketed<double>(const double *all_cs_vals, int num_hole_card_pairs,
+					     int num_succs, int dsi,
+					     shared_ptr<double []> *succ_vals,
+					     int *street_buckets, shared_ptr<double []> vals);
+template void ComputeOurValsBucketed<int>(const int *all_cs_vals, int num_hole_card_pairs,
+					  int num_succs, int dsi, shared_ptr<double []> *succ_vals,
+					  int *street_buckets, shared_ptr<double []> vals);
+template void ComputeOurValsBucketed<unsigned short>(const unsigned short *all_cs_vals, 
+						     int num_hole_card_pairs, int num_succs,
+						     int dsi, shared_ptr<double []> *succ_vals,
+						     int *street_buckets,
+						     shared_ptr<double []> vals);
+template void ComputeOurValsBucketed<unsigned char>(const unsigned char *all_cs_vals,
+						    int num_hole_card_pairs,
+						    int num_succs, int dsi,
+						    shared_ptr<double []> *succ_vals,
+						    int *street_buckets,
+						    shared_ptr<double []> vals);
+
+// Uses the current strategy (from regrets or sumprobs) to compute the weighted average of
+// the successor values.  This version for unabstracted systems.
+template <typename T> void ComputeOurVals(const T *all_cs_vals, int num_hole_card_pairs,
+					  int num_succs, int dsi, shared_ptr<double []> *succ_vals,
+					  int lbd, shared_ptr<double []> vals) {
+  unique_ptr<double []> current_probs(new double[num_succs]);
+  int base = lbd * num_hole_card_pairs * num_succs;
+  for (int i = 0; i < num_hole_card_pairs; ++i) {
+    int offset = base + i * num_succs;
+    RMProbs(all_cs_vals + offset, num_succs, dsi, current_probs.get());
+    for (int s = 0; s < num_succs; ++s) {
+      vals[i] += succ_vals[s][i] * current_probs[s];
+    }
+  }
+}
+
+template void ComputeOurVals<double>(const double *all_cs_vals, int num_hole_card_pairs,
+				     int num_succs, int dsi, shared_ptr<double []> *succ_vals,
+				     int lbd, shared_ptr<double []> vals);
+template void ComputeOurVals<int>(const int *all_cs_vals, int num_hole_card_pairs, int num_succs,
+				  int dsi, shared_ptr<double []> *succ_vals, int lbd,
+				  shared_ptr<double []> vals);
+template void ComputeOurVals<unsigned short>(const unsigned short *all_cs_vals,
+					     int num_hole_card_pairs, int num_succs, int dsi,
+					     shared_ptr<double []> *succ_vals, int lbd,
+					     shared_ptr<double []> vals);
+template void ComputeOurVals<unsigned char>(const unsigned char *all_cs_vals,
+					    int num_hole_card_pairs, int num_succs, int dsi,
+					    shared_ptr<double []> *succ_vals, int lbd,
+					    shared_ptr<double []> vals);
+
+template <typename T> void SetCurrentAbstractedStrategy(const T *all_regrets, int num_buckets,
+							int num_succs, int dsi,
+							double *all_cs_probs) {
+  unique_ptr<double []> current_probs(new double[num_succs]);
+  for (int b = 0; b < num_buckets; ++b) {
+    int offset = b * num_succs;
+    RMProbs(all_regrets + offset, num_succs, dsi, current_probs.get());
+    for (int s = 0; s < num_succs; ++s) {
+      all_cs_probs[b * num_succs + s] = current_probs[s];
+    }
+  }
+}
+
+template void SetCurrentAbstractedStrategy<double>(const double *all_regrets, int num_buckets,
+						   int num_succs, int dsi, double *all_cs_probs);
+template void SetCurrentAbstractedStrategy<int>(const int *all_regrets, int num_buckets,
+						int num_succs, int dsi, double *all_cs_probs);
+template void SetCurrentAbstractedStrategy<unsigned short>(const unsigned short *all_regrets,
+							   int num_buckets, int num_succs, int dsi,
+							   double *all_cs_probs);
+template void SetCurrentAbstractedStrategy<unsigned char>(const unsigned char *all_regrets,
+							  int num_buckets, int num_succs, int dsi,
+							  double *all_cs_probs);
+
 shared_ptr<double []> Showdown(Node *node, const CanonicalCards *hands, double *opp_probs,
 			       double sum_opp_probs, double *total_card_probs) {
   int max_card1 = Game::MaxCard() + 1;
@@ -263,6 +384,7 @@ void ProcessOppProbs(Node *node, int lbd, const CanonicalCards *hands, bool buck
   int num_hole_cards = Game::NumCardsForStreet(0);
   int num_hole_card_pairs = Game::NumHoleCardPairs(st);
   int max_card1 = Game::MaxCard() + 1;
+  const T1 *all_cs_vals = cs_vals.AllValues(pa, nt);
   T2 *all_sumprobs = nullptr;
   if (sumprobs) all_sumprobs = sumprobs->AllValues(pa, nt);
   for (int i = 0; i < num_hole_card_pairs; ++i) {
@@ -287,8 +409,8 @@ void ProcessOppProbs(Node *node, int lbd, const CanonicalCards *hands, bool buck
       } else {
 	offset = lbd * num_hole_card_pairs * num_succs + i * num_succs;
       }
-      cs_vals.RMProbs(pa, nt, offset, num_succs, dsi, current_probs.get());
-      // double was = all_sumprobs[offset];
+      // cs_vals.RMProbs(pa, nt, offset, num_succs, dsi, current_probs.get());
+      RMProbs(all_cs_vals + offset, num_succs, dsi, current_probs.get());
       UpdateSumprobsAndSuccOppProbs(enc, num_succs, opp_prob, current_probs.get(), succ_opp_probs,
 				    it, soft_warmup, hard_warmup, sumprob_scaling,
 				    all_sumprobs ? all_sumprobs + offset : nullptr);

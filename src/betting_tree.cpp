@@ -121,7 +121,7 @@ static void Indent(int num) {
 }
 
 void Node::PrintTree(int depth, const string &name, vector< vector< vector<bool> > > *seen,
-		     int last_st) {
+		     int last_st) const {
   bool recurse = true;
   int st = Street();
   int pa = PlayerActing();
@@ -133,9 +133,9 @@ void Node::PrintTree(int depth, const string &name, vector< vector< vector<bool>
   Indent(2 * depth);
   int num_succs = NumSuccs();
   printf("\"%s\" (id %u lbt %u ns %u st %u", name.c_str(), id_, LastBetTo(), num_succs, st);
-  if (! Terminal()) {
-    printf(" p%uc", pa);
-  }
+  // if (! Terminal()) {
+  // Showdown nodes have pa 255
+  if (pa != 255) printf(" p%uc", pa);
   printf(")");
   if (! recurse) {
     printf(" *");
@@ -179,11 +179,21 @@ int Node::DefaultSuccIndex(void) const {
   return 0;
 }
 
+// Only works for heads-up
+bool Node::StreetInitial(void) const {
+  if (Terminal()) return false;
+  int csi = CallSuccIndex();
+  // Not sure this can happen
+  if (csi == -1) return false;
+  Node *c = IthSucc(csi);
+  return (! c->Terminal() && c->Street() == Street());
+}
+
 int BettingTree::NumNonterminals(int p, int st) const {
   return num_nonterminals_[p * (Game::MaxStreet() + 1) + st];
 }
 
-void BettingTree::Display(void) {
+void BettingTree::Display(void) const {
   int num_players = Game::NumPlayers();
   int max_street = Game::MaxStreet();
   vector< vector< vector<bool> > > seen(max_street + 1);
@@ -482,25 +492,6 @@ BettingTree::BettingTree(Node *subtree_root) {
   // reentrancy of the source tree inside of Clone().  But if we did, then we would need to
   // modify AssignNonterminalIDs() accordingly.
   AssignNonterminalIDs(this, num_nonterminals_.get());
-}
-
-void BettingTree::GetStreetInitialNodes(Node *node, int street,	vector<Node *> *nodes) {
-  if (node->Street() == street) {
-    nodes->push_back(node);
-    return;
-  }
-  int num_succs = node->NumSuccs();
-  for (int s = 0; s < num_succs; ++s) {
-    GetStreetInitialNodes(node->IthSucc(s), street, nodes);
-  }
-}
-
-void BettingTree::GetStreetInitialNodes(int street,
-					vector<Node *> *nodes) {
-  nodes->clear();
-  if (root_) {
-    GetStreetInitialNodes(root_.get(), street, nodes);
-  }
 }
 
 // Two succs correspond if they are both call succs

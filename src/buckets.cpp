@@ -62,7 +62,12 @@ Buckets::Buckets(const CardAbstraction &ca, bool numb_only) {
       }
     }
   }
+}
 
+// Allow a dummy empty buckets object to be created
+Buckets::Buckets(void) {
+  short_buckets_ = nullptr;
+  int_buckets_ = nullptr;
 }
 
 Buckets::~Buckets(void) {

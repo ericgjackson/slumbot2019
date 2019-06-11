@@ -1,0 +1,33 @@
+Thinking up variants of resolving methods.
+
+Can we estimate T values for CFR-D, instead of trying to compute exactly?  If we estimate
+them with machine learning should get estimates that are more robust; i.e., no large errors.
+Alternatively or in addition, could compute T-values for buckets.
+
+Since these T values are estimates, why not revisit maxmargin?
+
+In CFR-D we get a value that is the value obtained for the hand minus the T-value and
+we try to minimize that.  What if we wrapped that in a sigmoidal?  Being way over the
+T value shouldn't penalize us *too* much.  Being way under the sigmoidal shouldn't reward us
+too much.
+
+Reminder: for CFR-D the opponent has a choice of the T-value and playing to the subtree.
+This is why we have no motivation to drive his value in the subtree below the T-value.
+
+What is the gadget for maxmargin?
+
+Can I think up a gadget that forces target player to achieve other goals or satisfy other
+constraints?
+
+Strong hands should achieve higher EV than weak hands.
+No hand should achieve too much more than some baseline (the average CV?).
+
+Try to satisfy twin goals:
+1) The overall CV of the opponent is minimized;
+2) The maximum value achieved by any opponent hand is minimized
+
+Regular CFR achieves the first goal.  (Note: this assumes a specific reach range for the
+opponent.)  Goal 2 can be maximized by a gadget, I guess.  Opponent has a choice of a
+hand to play to the subgame.
+
+

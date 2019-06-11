@@ -47,12 +47,10 @@ public:
 		     int target_player, std::string *key, int *terminal_id,
 		     std::shared_ptr<Node> *call_succ, std::shared_ptr<Node> *fold_succ,
 		     std::vector< std::shared_ptr<Node> > *bet_succs);
-  std::shared_ptr<Node> CreateMPSubtree(int st, int last_bet_size,
-					int bet_to,
-				   int num_street_bets, int num_bets,
-				   int player_acting, int num_players_to_act,
-				   bool *folded, int target_player, std::string *key,
-				   int *terminal_id);
+  std::shared_ptr<Node> CreateMPSubtree(int st, int last_bet_size, int bet_to, int num_street_bets,
+					int num_bets, int player_acting, int num_players_to_act,
+					bool *folded, int target_player, std::string *key,
+					int *terminal_id);
   std::shared_ptr<Node> CreateMPStreet(int street, int bet_to, int num_bets,
 				  bool *folded, int target_player, std::string *key,
 				  int *terminal_id);

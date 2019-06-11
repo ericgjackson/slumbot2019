@@ -82,11 +82,6 @@ public:
 private:
   void Showdown(Node *a_node, Node *b_node, const ReachProbs &reach_probs);
   void Fold(Node *a_node, Node *b_node, const ReachProbs &reach_probs);
-#if 0
-  shared_ptr<double []> **GetSuccReachProbs(Node *node, int gbd, const Buckets &buckets,
-					    const CFRValues *sumprobs,
-					    shared_ptr<double []> *reach_probs);
-#endif
   void Nonterminal(Node *a_node, Node *b_node, const string &action_sequence,
 		   const ReachProbs &reach_probs);
   void Walk(Node *a_node, Node *b_node, const string &action_sequence,
@@ -428,108 +423,6 @@ void Player::Fold(Node *a_node, Node *b_node, const ReachProbs &reach_probs) {
   sum_weights_ += wtd_sum_joint_probs;
 }
 
-#if 0
-// Hard-coded for heads-up
-shared_ptr<double []> **Player::GetSuccReachProbs(Node *node, int gbd, const Buckets &buckets,
-						  const CFRValues *sumprobs,
-						  shared_ptr<double []> *reach_probs) {
-  int num_succs = node->NumSuccs();
-  shared_ptr<double []> **succ_reach_probs = new shared_ptr<double []> *[num_succs];
-  int max_card1 = Game::MaxCard() + 1;
-  int num_enc = max_card1 * max_card1;
-  int st = node->Street();
-  int max_street = Game::MaxStreet();
-  const CanonicalCards *hands = street_hands_[st].get();
-  int num_hole_card_pairs = Game::NumHoleCardPairs(st);
-  for (int s = 0; s < num_succs; ++s) {
-    succ_reach_probs[s] = new shared_ptr<double []>[2];
-    for (int p = 0; p < 2; ++p) {
-      succ_reach_probs[s][p].reset(new double[num_enc]);
-    }
-  }
-  // Can happen when we are all-in.  Only succ is check.
-  if (num_succs == 1) {
-    for (int i = 0; i < num_hole_card_pairs; ++i) {
-      const Card *cards = hands->Cards(i);
-      Card hi = cards[0];
-      Card lo = cards[1];
-      int enc = hi * max_card1 + lo;
-      for (int p = 0; p <= 1; ++p) {
-	succ_reach_probs[0][p][enc] = reach_probs[p][enc];
-      }
-    }
-    return succ_reach_probs;
-  }
-  const Card *ms_board = BoardTree::Board(max_street, msbd_);
-  int pa = node->PlayerActing();
-  int nt = node->NonterminalID();
-  int dsi = node->DefaultSuccIndex();
-  unique_ptr<double []> probs(new double[num_succs]);
-  for (int i = 0; i < num_hole_card_pairs; ++i) {
-    const Card *hole_cards = hands->Cards(i);
-    Card hi = hole_cards[0];
-    if (hi < 0 || hi >= max_card1) {
-      fprintf(stderr, "OOB hi\n");
-      exit(-1);
-    }
-    Card lo = hole_cards[1];
-    if (lo < 0 || lo >= max_card1) {
-      fprintf(stderr, "OOB lo\n");
-      exit(-1);
-    }
-    int enc = hi * max_card1 + lo;
-    int offset;
-    if (buckets.None(st)) {
-      offset = gbd * num_hole_card_pairs * num_succs + i * num_succs;
-    } else {
-      // Hands on final street were reordered by hand strength, but bucket lookup requires the
-      // unordered hole card pair index
-      unsigned int hcp;
-      if (st == max_street) {
-	// Is HCPIndex() too slow?  Should I precompute?
-	hcp = HCPIndex(st, ms_board, hole_cards);
-      } else {
-	hcp = i;
-      }
-      unsigned int h = ((unsigned int)gbd) * ((unsigned int)num_hole_card_pairs) + hcp;
-      int b = buckets.Bucket(st, h);
-      offset = b * num_succs;
-    }
-    sumprobs->RMProbs(st, pa, nt, offset, num_succs, dsi, probs.get());
-    for (int s = 0; s < num_succs; ++s) {
-      for (int p = 0; p <= 1; ++p) {
-	if (p == pa) {
-	  double prob = reach_probs[p][enc] * probs[s];
-	  if (prob > 1.0 || prob < 0) {
-	    fprintf(stderr, "OOB prob %f (%f * %f) enc %i st %i\n", prob, reach_probs[p][enc],
-		    probs[s], enc, st);
-	    OutputCard(hi);
-	    printf(" ");
-	    OutputCard(lo);
-	    printf("\n");
-	    const Card *board = BoardTree::Board(max_street, msbd_);
-	    OutputFiveCards(board);
-	    printf("\n");
-	    exit(-1);
-	  }
-	  succ_reach_probs[s][p][enc] = prob;
-	} else {
-	  // Can't I just say succ_reach_probs[s][p] = reach_probs[p]?
-	  double prob = reach_probs[p][enc];
-	  if (prob > 1.0 || prob < 0) {
-	    fprintf(stderr, "OOB prob %f enc %i\n", prob, enc);
-	    exit(-1);
-	  }
-	  succ_reach_probs[s][p][enc] = prob;
-	}
-      }
-    }
-  }
-  
-  return succ_reach_probs;
-}
-#endif
-
 void Player::Nonterminal(Node *a_node, Node *b_node, const string &action_sequence,
 			 const ReachProbs &reach_probs) {
   int st = a_node->Street();
@@ -566,7 +459,6 @@ void Player::Nonterminal(Node *a_node, Node *b_node, const string &action_sequen
     }
     const Buckets &buckets =
       (resolve_b_ && st >= resolve_st_) ? *b_subgame_buckets_ : *b_base_buckets_;
-    // succ_reach_probs = GetSuccReachProbs(b_node, b_boards_[st], buckets, sumprobs, reach_probs);
     const CanonicalCards *hands = street_hands_[st].get();
     succ_reach_probs = ReachProbs::CreateSuccReachProbs(b_node, b_gbds_[st], b_lbds_[st], hands,
 							buckets, sumprobs, reach_probs, false);
@@ -579,7 +471,6 @@ void Player::Nonterminal(Node *a_node, Node *b_node, const string &action_sequen
     }
     const Buckets &buckets =
       (resolve_a_ && st >= resolve_st_) ? *a_subgame_buckets_ : *a_base_buckets_;
-    // succ_reach_probs = GetSuccReachProbs(a_node, a_boards_[st], buckets, sumprobs, reach_probs);
     const CanonicalCards *hands = street_hands_[st].get();
     succ_reach_probs = ReachProbs::CreateSuccReachProbs(a_node, a_gbds_[st], a_lbds_[st], hands,
 							buckets, sumprobs, reach_probs, false);

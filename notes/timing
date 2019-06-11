@@ -1,0 +1,49 @@
+How long does it take to resolve turn subgames?
+
+big3sym base
+cccc
+Resolving secs: 12.264933
+b2ccc
+Resolving secs: 10.232868
+b4ccc
+Resolving secs: 10.069741
+cb2ccc
+Resolving secs: 10.393783
+cb4ccc
+Resolving secs: 10.179653
+b2b4ccc
+Resolving secs: 11.122481
+b2b8ccc
+Resolving secs: 7.506174
+b4b6ccc
+Resolving secs: 7.174842
+b4b12ccc
+Resolving secs: 5.408577
+
+b2ccb4c
+Resolving secs: 9.974594
+Resolving secs: 10.404186
+Resolving secs: 9.647136
+Resolving secs: 9.795989
+Resolving secs: 9.710351
+
+8 threads, split on the river
+b2ccb4c
+Resolving secs: 4.031172
+Resolving secs: 4.066598
+Hmm, why only twice as fast?
+
+Rewrote multithreading code.  Using separate VCFR2 class for now.
+b2ccb4c
+2 threads, split on the river
+Resolving secs: 5.044682
+8 threads, split on the river
+Resolving secs: 2.601032
+  Single threaded: 9.6-10.4
+  Much better, although still far from 8x better.
+
+cc
+8 threads, split on the river
+Resolving secs: 3.601853
+  Single threaded: 1.26
+

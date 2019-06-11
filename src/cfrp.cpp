@@ -39,7 +39,6 @@
 #include "io.h"
 #include "split.h"
 #include "vcfr_state.h"
-#include "vcfr.h"
 
 using std::shared_ptr;
 using std::string;
@@ -281,13 +280,11 @@ void CFRP::HalfIteration(int p) {
   }
 
   if (subgame_street_ >= 0 && subgame_street_ <= Game::MaxStreet()) pre_phase_ = true;
-  VCFRState state(p, hand_tree_.get());
-  SetStreetBuckets(0, 0, state);
-  shared_ptr<double []> vals = Process(betting_trees_->Root(), betting_trees_->Root(), 0, state, 0);
+  shared_ptr<double []> vals = ProcessRoot(betting_trees_.get(), p, hand_tree_.get());
   if (subgame_street_ >= 0 && subgame_street_ <= Game::MaxStreet()) {
     WaitForFinalSubgames();
     pre_phase_ = false;
-    vals = Process(betting_trees_->Root(), betting_trees_->Root(), 0, state, 0);
+    vals = ProcessRoot(betting_trees_.get(), p, hand_tree_.get());
   }
 #if 0
   int num_hole_card_pairs = Game::NumHoleCardPairs(0);

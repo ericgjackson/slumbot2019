@@ -12,3 +12,14 @@ abstraction.
 Boosting doesn't seem to improve resolved results (heads-up).
 
 Char quantizing river, short quantizing turn, short quantizing flop seems to work.
+
+Not much difference in exploitability after 200 iterations for ms3f1t1r1h5, ms3f1t1r1h6,
+ms3f1t1r1h7, ms3f1t1r1h8, ms3f1t1r9.  Suggests you can do experiments with small decks and get
+exploitability numbers that are pretty good approximations of what you'd see for the full game of
+interest.
+
+New model of multithreading is superior to old model.  But for solve_all_subgames it's still
+better to do the multithreading in solve_all_subgames and not inside VCFR.  Need to preserve
+both methods, I guess.  Or, if we don't care about evaluating the new method, we could just
+keep the multithreading in solve_all_subgames.
+

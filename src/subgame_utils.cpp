@@ -12,6 +12,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "betting_abstraction.h"
 #include "betting_tree.h"
@@ -34,6 +35,7 @@
 using std::shared_ptr;
 using std::string;
 using std::unique_ptr;
+using std::vector;
 
 // Create a subtree for resolving rooted at the node (from a base tree) passed in.
 // Assumes the subtree is rooted at a street-initial node.
@@ -54,6 +56,192 @@ BettingTrees *CreateSubtrees(int st, int player_acting, int last_bet_to, int tar
   // automatically take care of it because they are shared pointers.
   return new BettingTrees(subtree_root.get());
 }
+
+// More flexible implementation that supports subtrees not rooted at street-initial node.
+// Don't really need to know num_bets.
+// We do need to know num_street_bets.  Determines whether we can fold.
+// I think we need num_players_to_act.  Should be 2 at street initial node, and 1 otherwise.
+// Only support heads-up for now.  Assume no one has folded.
+BettingTrees *CreateSubtrees(int st, int last_bet_size, int last_bet_to, int num_street_bets,
+			     int num_bets, int player_acting, int num_players_to_act,
+			     int target_player, const BettingAbstraction &betting_abstraction) {
+  int num_players = Game::NumPlayers();
+  unique_ptr<bool []> folded(new bool[num_players]);
+  for (int p = 0; p < num_players; ++p) folded[p] = false;
+  string key;
+  int num_terminals = 0;
+  BettingTreeBuilder betting_tree_builder(betting_abstraction, target_player);
+  shared_ptr<Node> subtree_root =
+    betting_tree_builder.CreateMPSubtree(st, last_bet_size, last_bet_to, num_street_bets,
+					 num_bets, player_acting, num_players_to_act,
+					 folded.get(), target_player, &key, &num_terminals);
+  return new BettingTrees(subtree_root.get());
+}
+
+// Copies source tree for the current node.  For successors of the current node, build according to
+// the betting abstraction.
+BettingTrees *BuildHybridTree(const BettingAbstraction &betting_abstraction, int target_p,
+			      Node *source, int last_bet_size, int num_street_bets, int num_bets) {
+  BettingTreeBuilder betting_tree_builder(betting_abstraction, target_p);
+  int csi = source->CallSuccIndex();
+  bool has_call = csi != -1;
+  int fsi = source->FoldSuccIndex();
+  bool has_fold = fsi != -1;
+  int num_succs = source->NumSuccs();
+  int num_bet_succs = num_succs - (has_call ? 1 : 0) - (has_fold ? 1 : 0);
+  int st = source->Street();
+  int last_bet_to = source->LastBetTo();
+  int player_acting = source->PlayerActing();
+  int num_players = Game::NumPlayers();
+  if (num_players > 2) {
+    fprintf(stderr, "Node::StreetInitial() doesn't support multiplayer\n");
+    exit(-1);
+  }
+  bool street_initial = source->StreetInitial();
+  int num_players_to_act = street_initial ? 2 : 1;
+  unique_ptr<bool []> folded(new bool[num_players]);
+  for (int p = 0; p < num_players; ++p) folded[p] = false;
+  int num_terminals = 0;
+  string key;
+  shared_ptr<Node> fold_succ, call_succ;
+  vector< shared_ptr<Node> > bet_succs;
+  if (has_call) {
+    call_succ = betting_tree_builder.CreateMPCallSucc(st, last_bet_size, last_bet_to,
+						      num_street_bets, num_bets, player_acting,
+						      num_players_to_act, folded.get(), target_p,
+						      &key, &num_terminals);
+  }
+  if (has_fold) {
+    fold_succ = betting_tree_builder.CreateMPFoldSucc(st, last_bet_size, last_bet_to,
+						      num_street_bets, num_bets, player_acting,
+						      num_players_to_act, folded.get(), target_p,
+						      &key, &num_terminals);
+  }
+  for (int i = 0; i < num_bet_succs; ++i) {
+    int s = i + (has_call ? 1 : 0) + (has_fold ? 1 : 0);
+    int bet_size = source->IthSucc(s)->LastBetTo() - source->LastBetTo();
+    shared_ptr<Node> bet =
+      betting_tree_builder.CreateMPSubtree(st, bet_size, last_bet_to + bet_size,
+					   num_street_bets + 1, num_bets + 1, player_acting^1, 1,
+					   folded.get(), -1, &key, &num_terminals);
+    bet_succs.push_back(bet);
+  }
+  shared_ptr<Node> root(new Node(-1, st, player_acting, call_succ, fold_succ, &bet_succs, 2,
+				 last_bet_to));
+  return new BettingTrees(root.get());
+}
+
+#if 0
+// Builds a subtree rooted at a street-initial node on backup_st.  We take a path from a source
+// tree as input.  This path is a sequence of nodes from the root of the source tree to some
+// nonterminal node that is on backup_st or later.  The new subtree we create is a) modeled
+// on the source tree along the subpart of the input path starting at backup_st, and b) dictated
+// by the input betting abstraction for the remainder.
+// What should I do at each step?
+// If the source node calls:
+//   Create a call node
+// Otherwise:
+//   Create a call subtree with the given betting abstraction
+// If the source node bets:
+//   Create a bet node with the given bet size
+// Otherwise:
+//   Create one or more bet subtrees with the given betting abstraction
+// If the source node has a fold succ
+//   Create a fold succ
+// Create a call node, a fold node and a bet node?  If the source node made a bet, then get the
+BettingTrees *BuildHybridTreeBackup(const BettingAbstraction &betting_abstraction, int target_p,
+				    const vector<Node *> &source_path, int backup_st) {
+  BettingTreeBuilder betting_tree_builder(betting_abstraction, target_p);
+  int sz = source_path.size();
+  int num_bets = 0, i;
+  for (i = 0; i < sz; ++i) {
+    Node *node = source_path[i];
+    if (node->Street() == backup_st) break;
+    if (i < sz - 1) {
+      Node *next_node = source_path[i+1];
+      int num_succs = node->NumSuccs();
+      int s;
+      for (s = 0; s < num_succs; ++s) {
+	if (node->IthSucc(s) == next_node) break;
+      }
+      if (s == num_succs) {
+	fprintf(stderr, "Couldn't connect node to next node\n");
+	exit(-1);
+      }
+      if (s != node->CallSuccIndex() && s != node->FoldSuccIndex()) ++num_bets;
+    }
+  }
+  if (i == sz) {
+    fprintf(stderr, "No node on backup street on path\n");
+    exit(-1);
+  }
+  unique_ptr<bool []> folded(new bool[2]);
+  string key;
+  for (int p = 0; p < 2; ++p) folded[p] = false;
+  int num_terminals = 0, last_bet_size = 0, num_street_bets = 0, num_players_to_act = 2;
+  int last_st = backup_st;
+  for (int j = i; j < sz - 1; ++j) {
+    Node *node = source_path[j];
+    Node *next_node = source_path[j+1];
+    int num_succs = node->NumSuccs();
+    int s;
+    for (s = 0; s < num_succs; ++s) {
+      if (node->IthSucc(s) == next_node) break;
+    }
+    if (s == num_succs) {
+      fprintf(stderr, "Couldn't connect node to next node\n");
+      exit(-1);
+    }
+    if (s == node->FoldSuccIndex()) {
+      fprintf(stderr, "Shouldn't see fold along path\n");
+      exit(-1);
+    }
+    int st = node->Street();
+    if (st > last_st) {
+      num_street_bets = 0;
+      last_bet_size = 0;
+      num_players_to_act = 2;
+      st = last_st;
+    }
+    int pa = node->PlayerActing();
+    shared_ptr<Node> call_succ, fold_succ;
+    if (node->HasCallSucc()) {
+      // Should I create node or subtree?
+      // call_succ.reset(new Node(-1, st, pa, call_succ, fold_succ, &bet_succs, num_rem, bet_to));
+      call_succ = betting_tree_builder.CreateMPCallSucc(st, last_bet_size, node->LastBetTo(),
+							num_street_bets, num_bets, pa,
+							num_players_to_act, folded.get(), target_p,
+							&key, &num_terminals);
+    }
+    if (node->HasFoldSucc()) {
+      fold_succ = betting_tree_builder.CreateMPFoldSucc(st, last_bet_size, node->LastBetTo(),
+							num_street_bets, num_bets, pa,
+							num_players_to_act, folded.get(), target_p,
+							&key, &num_terminals);
+    }
+    int new_bet_size;
+    if (s == node->CallSuccIndex()) {
+      new_bet_size = 0;
+      num_players_to_act = 1;
+    } else if (s == node->FoldSuccIndex()) {
+    } else {
+      new_bet_size = next_node->LastBetTo() - node->LastBetTo();
+      ++num_street_bets;
+      num_players_to_act = 1;
+    }
+    last_bet_size = new_bet_size;
+    vector< shared_ptr<Node> > bet_succs;
+    shared_ptr<Node> call_succ;
+    shared_ptr<Node> fold_succ;
+    vector< shared_ptr<Node> > bet_succs;
+    CreateMPSuccs(st, last_bet_size, bet_to, num_street_bets, num_bets, player_acting,
+		  num_players_to_act, folded, target_player, key, terminal_id, &call_succ,
+		  &fold_succ, &bet_succs);
+    if (s == node->CallSuccIndex()) {
+    }
+  }
+}
+#endif
 
 // I always load probabilities for both players because I need the reach
 // probabilities for both players.  In addition, as long as we are
@@ -313,74 +501,6 @@ unique_ptr<CFRValues> ReadSubgame(const string &action_sequence, BettingTrees *s
   }
   
   return sumprobs;
-}
-
-// Hard-coded for heads-up
-shared_ptr<double []> **GetSuccReachProbs(Node *node, int gbd, HandTree *hand_tree,
-					  const Buckets &buckets, const CFRValues *sumprobs,
-					  shared_ptr<double []> *reach_probs, int root_bd_st,
-					  int root_bd, bool purify) {
-  int num_succs = node->NumSuccs();
-  shared_ptr<double []> **succ_reach_probs = new shared_ptr<double []> *[num_succs];
-  int max_card1 = Game::MaxCard() + 1;
-  int num_enc = max_card1 * max_card1;
-  int st = node->Street();
-  int num_hole_card_pairs = Game::NumHoleCardPairs(st);
-  int lbd = BoardTree::LocalIndex(root_bd_st, root_bd, st, gbd);
-  const CanonicalCards *hands = hand_tree->Hands(st, lbd);
-  for (int s = 0; s < num_succs; ++s) {
-    succ_reach_probs[s] = new shared_ptr<double []>[2];
-    for (int p = 0; p < 2; ++p) {
-      succ_reach_probs[s][p].reset(new double[num_enc]);
-    }
-  }
-  // Can happen when we are all-in.  Only succ is check.
-  if (num_succs == 1) {
-    for (int i = 0; i < num_hole_card_pairs; ++i) {
-      const Card *cards = hands->Cards(i);
-      Card hi = cards[0];
-      Card lo = cards[1];
-      int enc = hi * max_card1 + lo;
-      for (int p = 0; p <= 1; ++p) {
-	succ_reach_probs[0][p][enc] = reach_probs[p][enc];
-      }
-    }
-    return succ_reach_probs;
-  }
-  int pa = node->PlayerActing();
-  int nt = node->NonterminalID();
-  int dsi = node->DefaultSuccIndex();
-  unique_ptr<double []> probs(new double[num_succs]);
-  for (int i = 0; i < num_hole_card_pairs; ++i) {
-    const Card *cards = hands->Cards(i);
-    Card hi = cards[0];
-    Card lo = cards[1];
-    int enc = hi * max_card1 + lo;
-    int offset;
-    if (buckets.None(st)) {
-      offset = lbd * num_hole_card_pairs * num_succs + i * num_succs;
-    } else {
-      unsigned int h = ((unsigned int)lbd) * ((unsigned int)num_hole_card_pairs) + i;
-      int b = buckets.Bucket(st, h);
-      offset = b * num_succs;
-    }
-    if (purify) {
-      sumprobs->PureProbs(st, pa, nt, offset, num_succs, probs.get());
-    } else {
-      sumprobs->RMProbs(st, pa, nt, offset, num_succs, dsi, probs.get());
-    }
-    for (int s = 0; s < num_succs; ++s) {
-      for (int p = 0; p <= 1; ++p) {
-	if (p == pa) {
-	  succ_reach_probs[s][p][enc] = reach_probs[p][enc] * probs[s];
-	} else {
-	  succ_reach_probs[s][p][enc] = reach_probs[p][enc];
-	}
-      }
-    }
-  }
-  
-  return succ_reach_probs;
 }
 
 void DeleteAllSubgames(const CardAbstraction &base_card_abstraction,

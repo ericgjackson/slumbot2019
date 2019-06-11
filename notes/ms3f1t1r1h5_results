@@ -1,4 +1,18 @@
 ms3f1t1r1h5
+
+cfrps/none
+200:  Exploitability: 32.21 mbb/g
+400:  Exploitability: 10.70 mbb/g
+1000: Exploitability: 2.76 mbb/g
+
+200 vs. 400
+play (100m in 3m21s):
+  Avg B outcome: 0.008026 (4.0 mbb/g) over 100000000 dup hands
+  Avg P1 outcome: 0.591488
+play_resolved (no sampling): 
+  Avg B outcome: 0.008514 (4.3 mbb/g)
+  Avg P1 outcome: 0.590633 (295.3 mbb/g)
+
 nhs3_params
   null for preflop, flop and turn
   hs for river
@@ -76,19 +90,6 @@ base@7b vs. combined/7b base: Avg B outcome: 0.018297 (9.1 mbb/g) over 100m
 base@7b vs. unsafe/7b base:   Avg B outcome: 0.036434 (18.2 mbb/g) over 100m
 cfrps/none/400 vs. combined/7b base: Avg B outcome: -0.013786 (-6.9 mbb/g) over 100m
 cfrps/none/400 vs. unsafe/7b base:   Avg B outcome: -0.004947 (-2.5 mbb/g) over 100m
-
-cfrps/none
-200:  Exploitability: 32.21 mbb/g
-400:  Exploitability: 10.70 mbb/g
-1000: Exploitability: 2.76 mbb/g
-
-200 vs. 400
-play (100m in 3m21s):
-  Avg B outcome: 0.008026 (4.0 mbb/g) over 100000000 dup hands
-  Avg P1 outcome: 0.591488
-play_resolved (no sampling): 
-  Avg B outcome: 0.008514 (4.3 mbb/g)
-  Avg P1 outcome: 0.590633 (295.3 mbb/g)
 
 tcfr/nxhs3
 7b: Exploitability: 189.58 mbb/g

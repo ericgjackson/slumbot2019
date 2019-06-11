@@ -40,6 +40,7 @@
 #include "game.h"
 #include "game_params.h"
 #include "hand_tree.h"
+#include "hand_value_tree.h"
 #include "io.h"
 #include "params.h"
 #include "reach_probs.h"
@@ -63,16 +64,18 @@ public:
 		const Buckets &base_buckets, const Buckets &subgame_buckets, int solve_st,
 		ResolvingMethod method, bool cfrs, bool card_level, bool zero_sum, bool current,
 		const bool *pure_streets, bool base_mem, int base_it, int num_subgame_its,
-		int num_threads);
+		int num_inner_threads, int num_outer_threads);
   ~SubgameSolver(void) {}
   void Walk(Node *node, const string &action_sequence, int gbd, const ReachProbs &reach_probs,
+	    int last_bet_size, int num_street_bets, int num_bets, int num_players_to_act,
 	    int last_st);
   void Walk(void);
 private:
   BettingTrees *CreateSubtrees(Node *node, int target_p, bool base);
-  void Split(Node *node, const string &action_sequence, int pgbd, const ReachProbs &reach_probs);
+  void Split(Node *node, const string &action_sequence, int pgbd, const ReachProbs &reach_probs,
+	     int num_bets);
   void StreetInitial(Node *node, const string &action_sequence, int pgbd,
-		     const ReachProbs &reach_probs);
+		     const ReachProbs &reach_probs, int num_bets);
   void ResolveUnsafe(Node *node, int gbd, const string &action_sequence,
 		     const ReachProbs &reach_probs);
   void ResolveSafe(Node *node, int gbd, const string &action_sequence,
@@ -100,7 +103,8 @@ private:
   bool base_mem_;
   int base_it_;
   int num_subgame_its_;
-  int num_threads_;
+  int num_inner_threads_;
+  int num_outer_threads_;
 };
 
 SubgameSolver::SubgameSolver(const CardAbstraction &base_card_abstraction,
@@ -111,7 +115,8 @@ SubgameSolver::SubgameSolver(const CardAbstraction &base_card_abstraction,
 			     const Buckets &base_buckets, const Buckets &subgame_buckets,
 			     int solve_st, ResolvingMethod method, bool cfrs, bool card_level,
 			     bool zero_sum, bool current, const bool *pure_streets, bool base_mem,
-			     int base_it, int num_subgame_its, int num_threads) :
+			     int base_it, int num_subgame_its, int num_inner_threads,
+			     int num_outer_threads) :
   base_card_abstraction_(base_card_abstraction),
   subgame_card_abstraction_(subgame_card_abstraction),
   base_betting_abstraction_(base_betting_abstraction),
@@ -128,7 +133,8 @@ SubgameSolver::SubgameSolver(const CardAbstraction &base_card_abstraction,
   base_mem_ = base_mem;
   base_it_ = base_it;
   num_subgame_its_ = num_subgame_its;
-  num_threads_ = num_threads;
+  num_inner_threads_ = num_inner_threads;
+  num_outer_threads_ = num_outer_threads;
 
   base_betting_trees_.reset(new BettingTrees(base_betting_abstraction_));
 
@@ -136,7 +142,12 @@ SubgameSolver::SubgameSolver(const CardAbstraction &base_card_abstraction,
   int max_street = Game::MaxStreet();
   unique_ptr<bool []> trunk_streets(new bool[max_street + 1]);
   for (int st = 0; st <= max_street; ++st) {
-    trunk_streets[st] = (base_mem_ && ! current_) || st < solve_st_;
+    if (method == ResolvingMethod::UNSAFE) {
+      // For unsafe method, don't need base probs outside trunk.
+      trunk_streets[st] = st < solve_st_;
+    } else {
+      trunk_streets[st] = (base_mem_ && ! current_) || st < solve_st_;
+    }
   }
   unique_ptr<bool []> compressed_streets(new bool[max_street + 1]);
   for (int st = 0; st <= max_street; ++st) compressed_streets[st] = false;
@@ -240,7 +251,7 @@ BettingTrees *SubgameSolver::CreateSubtrees(Node *node, int target_p, bool base)
 class SSThread {
 public:
   SSThread(Node *node, const string &action_sequence, int pgbd, const ReachProbs &reach_probs,
-	   SubgameSolver *solver, int thread_index, int num_threads);
+	   int num_bets, SubgameSolver *solver, int thread_index, int num_threads);
   ~SSThread(void) {}
   void Run(void);
   void Join(void);
@@ -250,6 +261,7 @@ private:
   string action_sequence_;
   int pgbd_;
   const ReachProbs &reach_probs_;
+  int num_bets_;
   SubgameSolver *solver_;
   int thread_index_;
   int num_threads_;
@@ -257,10 +269,10 @@ private:
 };
 
 SSThread::SSThread(Node *node, const string &action_sequence, int pgbd,
-		   const ReachProbs &reach_probs, SubgameSolver *solver, int thread_index,
-		   int num_threads) :
+		   const ReachProbs &reach_probs, int num_bets, SubgameSolver *solver,
+		   int thread_index, int num_threads) :
   node_(node), action_sequence_(action_sequence), pgbd_(pgbd), reach_probs_(reach_probs),
-  solver_(solver), thread_index_(thread_index), num_threads_(num_threads) {
+  num_bets_(num_bets), solver_(solver), thread_index_(thread_index), num_threads_(num_threads) {
 }
 
 void SSThread::Go(void) {
@@ -270,7 +282,8 @@ void SSThread::Go(void) {
   int ngbd_end = BoardTree::SuccBoardEnd(pst, pgbd_, nst);
   for (int ngbd = ngbd_begin; ngbd < ngbd_end; ++ngbd) {
     if (ngbd % num_threads_ != thread_index_) continue;
-    solver_->Walk(node_, action_sequence_, ngbd, reach_probs_, nst);
+    // Street initial
+    solver_->Walk(node_, action_sequence_, ngbd, reach_probs_, 0, 0, num_bets_, 2, nst);
   }
 }
 
@@ -289,29 +302,30 @@ void SSThread::Join(void) {
 }
 
 void SubgameSolver::Split(Node *node, const string &action_sequence, int pgbd,
-			  const ReachProbs &reach_probs) {
-  unique_ptr<SSThread * []> threads(new SSThread *[num_threads_]);
-  for (int t = 0; t < num_threads_; ++t) {
-    threads[t] = new SSThread(node, action_sequence, pgbd, reach_probs, this, t, num_threads_);
+			  const ReachProbs &reach_probs, int num_bets) {
+  unique_ptr<SSThread * []> threads(new SSThread *[num_outer_threads_]);
+  for (int t = 0; t < num_outer_threads_; ++t) {
+    threads[t] = new SSThread(node, action_sequence, pgbd, reach_probs, num_bets, this, t,
+			      num_outer_threads_);
   }
-  for (int t = 1; t < num_threads_; ++t) threads[t]->Run();
+  for (int t = 1; t < num_outer_threads_; ++t) threads[t]->Run();
   // Do first thread in main thread
   threads[0]->Go();
-  for (int t = 1; t < num_threads_; ++t) threads[t]->Join();
-  for (int t = 0; t < num_threads_; ++t) delete threads[t];
+  for (int t = 1; t < num_outer_threads_; ++t) threads[t]->Join();
+  for (int t = 0; t < num_outer_threads_; ++t) delete threads[t];
 }
 
 void SubgameSolver::StreetInitial(Node *node, const string &action_sequence, int pgbd,
-				  const ReachProbs &reach_probs) {
+				  const ReachProbs &reach_probs, int num_bets) {
   int nst = node->Street();
-  if (nst == 1 && num_threads_ > 1) {
-    Split(node, action_sequence, pgbd, reach_probs);
+  if (nst == 1 && num_outer_threads_ > 1) {
+    Split(node, action_sequence, pgbd, reach_probs, num_bets);
   } else {
     int pst = node->Street() - 1;
     int ngbd_begin = BoardTree::SuccBoardBegin(pst, pgbd, nst);
     int ngbd_end = BoardTree::SuccBoardEnd(pst, pgbd, nst);
     for (int ngbd = ngbd_begin; ngbd < ngbd_end; ++ngbd) {
-      Walk(node, action_sequence, ngbd, reach_probs, nst);
+      Walk(node, action_sequence, ngbd, reach_probs, 0, 0, num_bets, 2, nst);
     }
   }
 }
@@ -330,7 +344,11 @@ void SubgameSolver::ResolveUnsafe(Node *node, int gbd, const string &action_sequ
   if (method_ == ResolvingMethod::UNSAFE) {
     eg_cfr.reset(new UnsafeEGCFR(subgame_card_abstraction_, base_card_abstraction_,
 				 subgame_betting_abstraction_, base_betting_abstraction_,
-				 subgame_cfr_config_, base_cfr_config_, subgame_buckets_, 1));
+				 subgame_cfr_config_, base_cfr_config_, subgame_buckets_,
+				 num_inner_threads_));
+    if (st < Game::MaxStreet()) {
+      eg_cfr->SetSplitStreet(st + 1);
+    }
   } else {
     fprintf(stderr, "Method not supported yet\n");
     exit(-1);
@@ -371,7 +389,7 @@ void SubgameSolver::ResolveUnsafe(Node *node, int gbd, const string &action_sequ
 	WriteSubgame(subgame_subtrees->Root(), action_sequence, action_sequence, gbd,
 		     base_card_abstraction_, subgame_card_abstraction_, base_betting_abstraction_,
 		     subgame_betting_abstraction_, base_cfr_config_, subgame_cfr_config_, method_,
-		     eg_cfr->Sumprobs(), st, gbd, asym_p, solve_p, st);
+		     eg_cfr->Sumprobs().get(), st, gbd, asym_p, solve_p, st);
       }
     } else {
       for (int solve_p = 0; solve_p < num_players; ++solve_p) {
@@ -388,12 +406,12 @@ void SubgameSolver::ResolveUnsafe(Node *node, int gbd, const string &action_sequ
 	    // hand tree and have a global base strategy.
 	    // We assume that pure_streets_[st] tells us whether to purify
 	    // for the entire endgame.
-	    t_vals = dynamic_cbr_->Compute(node, reach_probs, gbd, trunk_hand_tree_.get(), 0, 0,
+	    t_vals = dynamic_cbr_->Compute(node, reach_probs, gbd, trunk_hand_tree_.get(),
 					   solve_p^1, cfrs_, zero_sum_, current_,
 					   pure_streets_[st]);
 	  } else {
 	    t_vals = dynamic_cbr_->Compute(base_subtrees->Root(), reach_probs, gbd, &hand_tree,
-					   st, gbd, solve_p^1, cfrs_, zero_sum_, current_,
+					   solve_p^1, cfrs_, zero_sum_, current_,
 					   pure_streets_[st]);
 	  }
 	}
@@ -406,7 +424,7 @@ void SubgameSolver::ResolveUnsafe(Node *node, int gbd, const string &action_sequ
 	WriteSubgame(subgame_subtrees->Root(), action_sequence, action_sequence, gbd,
 		     base_card_abstraction_, subgame_card_abstraction_, base_betting_abstraction_,
 		     subgame_betting_abstraction_, base_cfr_config_, subgame_cfr_config_, method_,
-		     eg_cfr->Sumprobs(), st, gbd, asym_p, solve_p, st);
+		     eg_cfr->Sumprobs().get(), st, gbd, asym_p, solve_p, st);
       }
     }
   
@@ -450,14 +468,16 @@ void SubgameSolver::ResolveSafe(Node *node, int gbd, const string &action_sequen
       // hand tree and have a global base strategy.
       // We assume that pure_streets_[st] tells us whether to purify
       // for the entire endgame.
-      t_vals = dynamic_cbr_->Compute(node, reach_probs, gbd, trunk_hand_tree_.get(), 0, 0,
+      t_vals = dynamic_cbr_->Compute(node, reach_probs, gbd, trunk_hand_tree_.get(),
 				     solve_p^1, cfrs_, zero_sum_, current_, pure_streets_[st]);
+      // fprintf(stderr, "solve_p %i t_vals[0] %f\n", solve_p, t_vals[0]);
+      // exit(-1);
     } else {
       fprintf(stderr, "base_mem_ false not supported yet\n");
       exit(-1);
 #if 0
       t_vals = dynamic_cbr_->Compute(base_subtree->Root(), reach_probs, gbd, &hand_tree,
-				     st, gbd, solve_p^1, cfrs_, zero_sum_, current_,
+				     solve_p^1, cfrs_, zero_sum_, current_,
 				     pure_streets_[st]);
 #endif
     }
@@ -469,12 +489,13 @@ void SubgameSolver::ResolveSafe(Node *node, int gbd, const string &action_sequen
     WriteSubgame(subgame_subtrees->Root(), action_sequence, action_sequence, gbd,
 		 base_card_abstraction_, subgame_card_abstraction_, base_betting_abstraction_,
 		 subgame_betting_abstraction_, base_cfr_config_, subgame_cfr_config_, method_,
-		 eg_cfr->Sumprobs(), st, gbd, 0, solve_p, st);
+		 eg_cfr->Sumprobs().get(), st, gbd, 0, solve_p, st);
   }
 }
 
 void SubgameSolver::Walk(Node *node, const string &action_sequence, int gbd,
-			 const ReachProbs &reach_probs, int last_st) {
+			 const ReachProbs &reach_probs, int last_bet_size, int num_street_bets,
+			 int num_bets, int num_players_to_act, int last_st) {
   if (node->Terminal()) return;
   int st = node->Street();
   if (st > last_st) {
@@ -482,12 +503,13 @@ void SubgameSolver::Walk(Node *node, const string &action_sequence, int gbd,
       // No point doing resolving if we are already all-in
       return;
     }
-    StreetInitial(node, action_sequence, gbd, reach_probs);
+    StreetInitial(node, action_sequence, gbd, reach_probs, num_bets);
     return;
   }
   if (st == solve_st_) {
     // Do we assume that this is a street-initial node?
     // We do assume no bet pending
+    // Skip if we are already all in?
     if (method_ == ResolvingMethod::UNSAFE) {
       ResolveUnsafe(node, gbd, action_sequence, reach_probs);
     } else {
@@ -497,7 +519,7 @@ void SubgameSolver::Walk(Node *node, const string &action_sequence, int gbd,
   }
 
   const CFRValues *sumprobs;
-  if (base_mem_ && ! current_) sumprobs = dynamic_cbr_->Sumprobs();
+  if (base_mem_ && ! current_) sumprobs = dynamic_cbr_->Sumprobs().get();
   else                         sumprobs = trunk_sumprobs_.get();
   const CanonicalCards *hands = trunk_hand_tree_->Hands(st, gbd);
   shared_ptr<ReachProbs []> succ_reach_probs =
@@ -505,22 +527,33 @@ void SubgameSolver::Walk(Node *node, const string &action_sequence, int gbd,
 				     false);
   int num_succs = node->NumSuccs();
   for (int s = 0; s < num_succs; ++s) {
+    int fsi = node->FoldSuccIndex();
+    int csi = node->CallSuccIndex();
+    bool bet = s != fsi && s != csi;
+    int last_bet_size = 0;
+    if (bet) {
+      last_bet_size = node->IthSucc(s)->LastBetTo() - node->LastBetTo();
+    }
+    int new_num_street_bets = num_street_bets + bet ? 1 : 0;
+    int new_num_bets = num_bets + bet ? 1 : 0;
     string action = node->ActionName(s);
-    Walk(node->IthSucc(s), action_sequence + action, gbd, succ_reach_probs[s], st);
+    Walk(node->IthSucc(s), action_sequence + action, gbd, succ_reach_probs[s], last_bet_size,
+	 new_num_street_bets, new_num_bets, 1, st);
   }
 }
 
 void SubgameSolver::Walk(void) {
+  int last_bet_size = Game::BigBlind() - Game::SmallBlind();
   unique_ptr<ReachProbs> reach_probs(ReachProbs::CreateRoot());
-  Walk(base_betting_trees_->Root(), "x", 0, *reach_probs, 0);
+  Walk(base_betting_trees_->Root(), "x", 0, *reach_probs, last_bet_size, 0, 0, 2, 0);
 }
 
 static void Usage(const char *prog_name) {
   fprintf(stderr, "USAGE: %s <game params> <base card params> <subgame card params> "
 	  "<base betting params> <subgame betting params> <base CFR params> <subgame CFR params> "
 	  "<solve street> <base it> <num subgame its> [unsafe|cfrd|maxmargin|combined] [cbrs|cfrs] "
-	  "[card|bucket] [zerosum|raw] [current|avg] <pure streets> [mem|disk] <num threads>\n",
-	  prog_name);
+	  "[card|bucket] [zerosum|raw] [current|avg] <pure streets> [mem|disk] "
+	  "<num inner threads> <num outer threads>\n", prog_name);
   fprintf(stderr, "\n");
   fprintf(stderr, "\"current\" or \"avg\" signifies whether we use the opponent's current strategy "
 	  "(from regrets) in the subgame CBR calculation, or, as per usual, the avg strategy (from "
@@ -528,18 +561,23 @@ static void Usage(const char *prog_name) {
   fprintf(stderr, "\n");
   fprintf(stderr, "pure streets are those streets on which to purify probabilities.  In the "
 	  "endgame, this means purifying the opponent's strategy when computing the endgame CBRs.  "
-	  "In the trunk, this means purifying the reach probs for *both* players.  Use \"null\" "
+	  "In the trunk, this means purifying the reach probs for *both* players.  Use \"none\" "
 	  "to signify no pure streets.\n");
   fprintf(stderr, "\n");
   fprintf(stderr, "\"mem\" or \"disk\" signifies whether the base strategy for the subgame "
 	  "streets is loaded into memory at startup, or whether we read the base subgame strategy "
 	  "as needed.  Note that the trunk streets are loaded into memory at startup "
 	  "regardless.\n");
+  fprintf(stderr, "\n");
+  fprintf(stderr, "We support two different methods of multithreading.  The first type is the "
+	  "multithreading inside of VCFR.  The second type is the multithreading inside of "
+	  "solve_all_subgames.  <num inner threads> controls the first type; <num outer threads> "
+	  "controls the second type.\n");
   exit(-1);
 }
 
 int main(int argc, char *argv[]) {
-  if (argc != 19) Usage(argv[0]);
+  if (argc != 20) Usage(argv[0]);
   Files::Init();
   unique_ptr<Params> game_params = CreateGameParams();
   game_params->ReadFromFile(argv[1]);
@@ -601,7 +639,7 @@ int main(int argc, char *argv[]) {
   unique_ptr<bool []> pure_streets(new bool[max_street + 1]);
   string p = argv[16];
   for (int st = 0; st <= max_street; ++st) pure_streets[st] = false;
-  if (p != "null") {
+  if (p != "none") {
     vector<int> v;
     ParseInts(p, &v);
     int num = v.size();
@@ -614,20 +652,27 @@ int main(int argc, char *argv[]) {
   if (mem == "mem")       base_mem = true;
   else if (mem == "disk") base_mem = false;
   else                    Usage(argv[0]);
-  int num_threads;
-  if (sscanf(argv[18], "%i", &num_threads) != 1) Usage(argv[0]);
+  int num_inner_threads, num_outer_threads;
+  if (sscanf(argv[18], "%i", &num_inner_threads) != 1) Usage(argv[0]);
+  if (sscanf(argv[19], "%i", &num_outer_threads) != 1) Usage(argv[0]);
 
+  if (num_inner_threads > 1 && solve_st == max_street) {
+    fprintf(stderr, "Can't have num_inner_threads > 1 if solve_st == max_street\n");
+    exit(-1);
+  }
+  
   // If card abstractions are the same, should not load both.
   Buckets base_buckets(*base_card_abstraction, false);
   Buckets subgame_buckets(*subgame_card_abstraction, false);
 
   BoardTree::Create();
+  HandValueTree::Create();
 
   SubgameSolver solver(*base_card_abstraction, *subgame_card_abstraction, *base_betting_abstraction,
 		       *subgame_betting_abstraction, *base_cfr_config, *subgame_cfr_config,
 		       base_buckets, subgame_buckets, solve_st, method, cfrs, card_level, zero_sum,
 		       current, pure_streets.get(), base_mem, base_it, num_subgame_its,
-		       num_threads);
+		       num_inner_threads, num_outer_threads);
   for (int asym_p = 0; asym_p <= 1; ++asym_p) {
     DeleteAllSubgames(*base_card_abstraction, *subgame_card_abstraction, *base_betting_abstraction,
 		      *subgame_betting_abstraction, *base_cfr_config, *subgame_cfr_config, method,

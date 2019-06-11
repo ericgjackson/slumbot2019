@@ -45,16 +45,10 @@ void UnsafeEGCFR::SolveSubgame(BettingTrees *subtrees, int solve_bd, const Reach
 				subtrees->GetBettingTree()));
   sumprobs_->AllocateAndClear(subtrees->GetBettingTree(), CFRValueType::CFR_DOUBLE, false, -1);
 
-  unique_ptr< unique_ptr<VCFRState> [] > initial_states(new unique_ptr<VCFRState> [num_players]);
-  for (int p = 0; p < num_players; ++p) {
-    initial_states[p].reset(new VCFRState(p, reach_probs.Get(p^1), hand_tree, action_sequence,
-					  solve_bd, subtree_st));
-    SetStreetBuckets(subtree_st, solve_bd, *initial_states[p]);
-  }
   for (it_ = 1; it_ <= num_its; ++it_) {
     // Go from high to low to mimic slumbot2017 code
     for (int p = (int)num_players - 1; p >= 0; --p) {
-      HalfIteration(subtrees, *initial_states[p]);
+      HalfIteration(subtrees, p, reach_probs.Get(p^1), hand_tree, action_sequence);
     }
   }
 }

@@ -155,18 +155,15 @@ shared_ptr<Node> BettingTreeBuilder::CreateCallSucc(int street, int last_bet_siz
   shared_ptr<Node> call_succ;
   int max_street = Game::MaxStreet();
   if (street < max_street && advance_street) {
-    call_succ = CreateNoLimitSubtree(street + 1, 0, bet_to, 0,
-				     Game::FirstToAct(street + 1),
+    call_succ = CreateNoLimitSubtree(street + 1, 0, bet_to, 0, Game::FirstToAct(street + 1),
 				     target_player, terminal_id);
   } else if (! advance_street) {
     // This is a check that does not advance the street
-    call_succ = CreateNoLimitSubtree(street, 0, bet_to, num_street_bets,
-				     player_acting^1, target_player,
-				     terminal_id);
+    call_succ = CreateNoLimitSubtree(street, 0, bet_to, num_street_bets, player_acting^1,
+				     target_player, terminal_id);
   } else {
     // This is a call on the final street
-    call_succ.reset(new Node((*terminal_id)++, street, 255, nullptr, nullptr,
-			     nullptr, 2, bet_to));
+    call_succ.reset(new Node((*terminal_id)++, street, 255, nullptr, nullptr, nullptr, 2, bet_to));
 
   }
   return call_succ;
@@ -178,8 +175,8 @@ shared_ptr<Node> BettingTreeBuilder::CreateFoldSucc(int street, int last_bet_siz
   shared_ptr<Node> fold_succ;
   // Player acting field encodes player remaining at fold nodes
   // bet_to - last_bet_size is how many chips the opponent put in
-  fold_succ.reset(new Node((*terminal_id)++, street, player_remaining, nullptr,
-			   nullptr, nullptr, 1, bet_to - last_bet_size));
+  fold_succ.reset(new Node((*terminal_id)++, street, player_remaining, nullptr, nullptr, nullptr, 1,
+			   bet_to - last_bet_size));
   return fold_succ;
 }
 
@@ -360,9 +357,8 @@ shared_ptr<Node> BettingTreeBuilder::CreateNoLimitSubtree(int st, int last_bet_s
   shared_ptr<Node> call_succ(nullptr);
   shared_ptr<Node> fold_succ(nullptr);
   vector< shared_ptr<Node> > bet_succs;
-  CreateNoLimitSuccs(st, last_bet_size, bet_to, num_street_bets,
-		     player_acting, target_player, terminal_id, &call_succ,
-		     &fold_succ, &bet_succs);
+  CreateNoLimitSuccs(st, last_bet_size, bet_to, num_street_bets, player_acting, target_player,
+		     terminal_id, &call_succ, &fold_succ, &bet_succs);
   if (call_succ == NULL && fold_succ == NULL && bet_succs.size() == 0) {
     fprintf(stderr, "Creating nonterminal with zero succs\n");
     fprintf(stderr, "This will cause problems\n");

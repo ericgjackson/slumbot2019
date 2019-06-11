@@ -159,7 +159,7 @@ run_approx_rgbr, flop, sampling one, quantize:
   Much better?!?  Maybe just flop variability.
 
 With resolving
-../bin/run_approx_rgbr2 ms1f1_params none_params mb1b1_params cfrps_params 200 raw 1 0 none_params mb1b1_params cfrps_params 
+../bin/run_approx_rgbr ms1f1_params none_params mb1b1_params cfrps_params 200 raw 1 0 1 none_params mb1b1_params cfrps_params 200
 P0 BR val: -0.138297
 P1 BR val: 0.140712
 Exploitability: 0.60 mbb/g
@@ -167,3 +167,9 @@ Compare to solving all subgames with solve_all_subgames.
 RGBR of full game on merged resolved: 3.83
 Approx RGBR (flop, sampling all) of merged resolved: 0.60
 Good!
+
+holdem/nwml2/mb1b1/tcfr/4
+run_approx_rgbr (river, sampling all, 411m):
+  P0 BR val: 0.100236
+  P1 BR val: 1.409250
+  Exploitability: 377.37 mbb/g

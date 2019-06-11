@@ -10,7 +10,8 @@ Suppose you only sampled one flop which is Tc7c2d.  The best-responder will lear
 all sorts of weak hands like T7o, T2o and 72o because it knows they will "hit".
 
 This assume MCTS samples from the chance actions.  The descriptions of MCTS I have found
-on the web don't talk about chance actions.  But I think they must.
+on the web don't talk about chance actions.  But I think they must.  The rollout step,
+for example, pursues a single path to a leaf.
 
 What else can we do?
 
@@ -23,3 +24,10 @@ at terminal nodes as we do now.
 
 3) Can we limit the actions taken by the best responder?  Just allow call, fold, the smallest
 bet size and all-in?
+
+4) run_approx_rgbr evaluates at every betting state.  Can we sample one betting state?  Can't
+compute an overall EV; can only compute EV as compared to baseline.  What to do with hands
+that don't reach?  May not be meaningful if they can outperform their baseline values.
+Evaluate only on hands that do reach?
+
+5) Local best response.  Reread Lisy paper.

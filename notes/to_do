@@ -1,24 +1,81 @@
 Train and assess big sym system.
 1) Seems like exploitability gets substantially worse over time.  Confirm.
 2) Seems like head to head improves and is asymptoting.
-3) Would like to know if exploitability decreases when incorporating resolving.  Need
-   run_approx_rgbr to support resolving.
+3) Would like to know if exploitability decreases when incorporating resolving.
 4) Can I look at flop ranges and see if they look wacky?
 
-Why is turn resolving so much slower now?  Saw 22 seconds.  Maybe this is normal?  Get average of 5
-seconds because the all-ins are effectively instantaneous and drag down the average.  Could
-precompute solutions for most commonly reached nodes.
+Progressive resolving.    How can I test if progressive endgame solving is working well?  Evaluate
+head to head a system with more bets against a system with fewer bets.  Incorporate progressive
+resolving for the system with fewer bets.  What do I expect to see?  Competitive results?
+Should be better than translation.  Can do this with unabstracted game.
+
+Redo combined results in debugging that may be stale due to bug fix.
+
+Don't think I have things working currently when the resolving betting abstraction is different
+from the base betting abstraction.  Try the smallest possible game.
+
+Try backup approach in which we always solve a subtree rooted at a street-initial node.
+Possibly even a turn subgame even when we have reached the river.
+
+Instead of taking a path as input, maybe take a vector of bet sizes per street?
+First bet size on the turn, second bet size on the turn, etc.  Always allow one raise
+after the last given bet.
+
+We saw some bad results solving street-internal nodes with the unsafe method.  I don't think
+this is a bug; I just think resolving at street-internal nodes with the unsafe method is inherently
+unreliable.  In the particular case I looked into, the unsafe method yielded poor results because
+it failed to take into account that the opponent could change his preflop behavior.  In
+particular, he exploited by betting weak hands preflop and again betting the weak hands
+postflop and ended up getting too many folds.  The unsafe method assumed that 32o never reached
+the node in question because the ranges are locked in, and as a consequence learned to call
+more tightly.
+
+Resolving at street-initial nodes will always be better because the chance event (the board
+card or cards) introduces randomness into the distributions and ensures that each player has a
+mixture of strong and weak hands.
+
+Some options:
+1) Use CFR-D or combined subgame solving;
+2) Back up and solve the entire street subgame.
+
+Combined method may need some work to account for the fact that the path from the root to
+the current resolve node may pass through parts of the tree previously resolved.  The dynamic
+CBR calculation may need to look at both base probs and resolve probs.
+
+For CFR-D, why don't we have the opponent best-respond?  What about at the special node -
+can he best respond there, or should he mix?
+
+New endgame solving approach: try to force the opponent to prefer the same actions as he did
+in the base.  A weaker version of CFR-D.  How would we force this?  Would want this to be a
+defeasible constraint.
+
+With lazy initialization we are no longer doing pruning after each opp action in OppChoice().
+Does that hurt performance?  We could initialize there.  Does that defeat the point of lazy
+initialization?  Maybe not.
+
+Do SetStreetBuckets() lazily.
+
+The hand tree should be linked to the regrets/sumprobs.  root_bd and root_st must be the same.
+
+Is turn resolving too slow?  I saw 12.26 seconds single-threaded for cccc with the big3sym
+betting abstraction (one bet and raise postflop).  Down to 3.6 seconds with the new multithreading
+code and 8 threads.  I guess that's OK although I think klondikefx reports 2 seconds.  May not
+be good enough with multiple concurrent users.
+
+Should lbd and gbd have different types so that we cannot mistakenly pass one to the other?
+
+Do I want to presolve commonly reached turn subgames?  There are 63,000 turn boards, keep in mind.
+With 3 second per board, that's 189,000 seconds.  That's over 50 hours.  And that's just one
+betting state.  Maybe not.
+
+Allow HandValueTree to be created from multiple threads at once.  There's a way to do this
+in C++.  Google "singleton".
 
 Better approx RGBR calculation?
 
-Are we pruning in VCFR when no opponent hands reach?  We should, no?
-
-Process() in VCFR should not be public.  Add a new public method that is a wrapper around
-Process() and does some initial setup like creating the VCFRState and calling SetStreetBuckets().
-
 Use ReachProbs in VCFR?  Limit to opponent.
 
-Multithread run_approx_rgbr, head_to_head
+Multithread head_to_head.  
 
 Can we get rid of two nodes in VCFR?
 
@@ -45,6 +102,12 @@ Build a new heads-up system:
 6) Reentrant on turn and river?  Doesn't gain much.
 7) Quantize on turn and river, at least.
 8) Don't save sumprobs for turn or river
+
+Can I run RGBR on holdem/mb1b1 game?  I think it tries to create a HandTree for the entire
+game.  Won't fit in memory?  Could instead create hand tree for each max street subgame.
+Would that add to the computational cost?
+
+Can I get rid of busy loops and usleep() in new multithreading code.
 
 Investigate board on ms3f1t1r1h5/nxhs3 which leads to such high exploitability.  Any lessons
 about card abstraction?

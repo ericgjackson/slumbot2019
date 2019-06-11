@@ -223,10 +223,14 @@ void CFRPSubgame::Go(void) {
     fprintf(stderr, "Need to set buckets for initial street of subgame\n");
     exit(-1);
   }
-  // Should set action sequence
-  VCFRState state(p_, opp_probs_, hand_tree_.get(), action_sequence_, root_bd_, root_bd_st_);
-  SetStreetBuckets(root_bd_st_, root_bd_, state);
-  final_vals_ = Process(subtrees_->Root(), subtrees_->Root(), 0, state, subtree_st - 1);
+  fprintf(stderr, "See comment in cfrp_subgame.cpp\n");
+  exit(-1);
+  // Old code called Process() passing in subtree_st - 1.  This would ensure that StreetInitial()
+  // would get called.  ProcessSubgame() doesn't have that ability currently.  Could add a
+  // last_st parameter but doesn't that get ugly?
+  // final_vals_ = Process(subtrees_->Root(), subtrees_->Root(), 0, state, subtree_st - 1);
+  final_vals_ = ProcessSubgame(subtrees_->Root(), subtrees_->Root(), root_bd_, p_, opp_probs_,
+			       hand_tree_.get(), action_sequence_);
 
   if (! value_calculation_) {
     Mkdir(dir);

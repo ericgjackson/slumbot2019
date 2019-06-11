@@ -19,6 +19,11 @@ class ReachProbs;
 
 BettingTrees *CreateSubtrees(int st, int player_acting, int last_bet_to, int target_p,
 			     const BettingAbstraction &betting_abstraction);
+BettingTrees *CreateSubtrees(int st, int last_bet_size, int last_bet_to, int num_street_bets,
+			     int num_bets, int player_acting, int num_players_to_act,
+			     int target_player, const BettingAbstraction &betting_abstraction);
+BettingTrees *BuildHybridTree(const BettingAbstraction &betting_abstraction, int target_p,
+			      Node *source, int last_bet_size, int num_street_bets, int num_bets);
 std::unique_ptr<CFRValues>
 ReadBaseSubgameStrategy(const CardAbstraction &base_card_abstraction,
 			const BettingAbstraction &base_betting_abstraction,
@@ -46,10 +51,6 @@ ReadSubgame(const std::string &action_sequence, BettingTrees *subtrees, int gbd,
 	    const CFRConfig &base_cfr_config, const CFRConfig &subgame_cfr_config,
 	    const Buckets &subgame_buckets, ResolvingMethod method, int root_bd_st,
 	    int root_bd, int target_p);
-std::shared_ptr<double []> **
-GetSuccReachProbs(Node *node, int gbd, HandTree *hand_tree, const Buckets &buckets,
-		  const CFRValues *sumprobs, std::shared_ptr<double []> *reach_probs,
-		  int root_bd_st, int root_bd, bool purify);
 void DeleteAllSubgames(const CardAbstraction &base_card_abstraction,
 		       const CardAbstraction &subgame_card_abstraction,
 		       const BettingAbstraction &base_betting_abstraction,
