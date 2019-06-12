@@ -153,6 +153,12 @@ bin/run_approx_rgbr:	obj/run_approx_rgbr.o $(OBJS) $(HEADS)
 bin/test_backup_tree:	obj/test_backup_tree.o $(OBJS) $(HEADS)
 	g++ $(LDFLAGS) $(CFLAGS) -o bin/test_backup_tree obj/test_backup_tree.o $(OBJS) $(LIBRARIES)
 
+bin/estimate_ram:	obj/estimate_ram.o $(OBJS) $(HEADS)
+	g++ $(LDFLAGS) $(CFLAGS) -o bin/estimate_ram obj/estimate_ram.o $(OBJS) $(LIBRARIES)
+
+bin/find_gaps:	obj/find_gaps.o $(OBJS) $(HEADS)
+	g++ $(LDFLAGS) $(CFLAGS) -o bin/find_gaps obj/find_gaps.o $(OBJS) $(LIBRARIES)
+
 bin/x:	obj/x.o $(OBJS) $(HEADS)
 	g++ $(LDFLAGS) $(CFLAGS) -o bin/x obj/x.o $(OBJS) $(LIBRARIES)
 

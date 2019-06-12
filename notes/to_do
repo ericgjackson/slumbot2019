@@ -4,15 +4,15 @@ Train and assess big sym system.
 3) Would like to know if exploitability decreases when incorporating resolving.
 4) Can I look at flop ranges and see if they look wacky?
 
+Build a base system.  Target 768 GB of RAM?  It's actually hard to use that much.  Find
+gaps in the betting abstraction?  Allow min bets?  Choose between external and targeted CFR.
+
 Progressive resolving.    How can I test if progressive endgame solving is working well?  Evaluate
 head to head a system with more bets against a system with fewer bets.  Incorporate progressive
 resolving for the system with fewer bets.  What do I expect to see?  Competitive results?
 Should be better than translation.  Can do this with unabstracted game.
 
 Redo combined results in debugging that may be stale due to bug fix.
-
-Don't think I have things working currently when the resolving betting abstraction is different
-from the base betting abstraction.  Try the smallest possible game.
 
 Try backup approach in which we always solve a subtree rooted at a street-initial node.
 Possibly even a turn subgame even when we have reached the river.

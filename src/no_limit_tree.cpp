@@ -54,9 +54,8 @@ int BettingTreeBuilder::NearestAllowableBetTo(int old_pot_size, int new_bet_to, 
 
 }
 
-// Some additional tests get performed later.  For example, if a bet is a
-// raise, we check that the raise size is valid (at least one big blind, at
-// least as big as the previous bet).
+// Some additional tests get performed later.  For example, if a bet is a raise, we check later that
+// the raise size is valid (at least one big blind, at least as big as the previous bet).
 void BettingTreeBuilder::GetNewBetTos(int old_bet_to, int last_bet_size,
 				      const vector<double> &pot_fracs, int player_acting,
 				      int target_player, bool *bet_to_seen) {
@@ -66,16 +65,12 @@ void BettingTreeBuilder::GetNewBetTos(int old_bet_to, int last_bet_size,
   int old_pot_size = 2 * old_bet_to;
   if ((! betting_abstraction_.Asymmetric() &&
        old_pot_size >= betting_abstraction_.OnlyPotThreshold()) ||
-      (betting_abstraction_.Asymmetric() &&
-       player_acting == target_player &&
-       old_pot_size >=
-       betting_abstraction_.OurOnlyPotThreshold()) ||
-      (betting_abstraction_.Asymmetric() &&
-       player_acting != target_player &&
-       old_pot_size >=
-       betting_abstraction_.OppOnlyPotThreshold())) {
-    // Only pot-size bets allowed.  (Well, maybe all-ins also.)  So skip code
-    // below that looks at pot_fracs.
+      (betting_abstraction_.Asymmetric() && player_acting == target_player &&
+       old_pot_size >= betting_abstraction_.OurOnlyPotThreshold()) ||
+      (betting_abstraction_.Asymmetric() && player_acting != target_player &&
+       old_pot_size >= betting_abstraction_.OppOnlyPotThreshold())) {
+    // Only pot-size bets allowed.  (Well, maybe all-ins also.)  So skip code below that looks at
+    // pot_fracs.
     if (old_pot_size > 0) {
       int new_bet_to = 3 * old_pot_size / 2;
       if (new_bet_to > all_in_bet_to) {

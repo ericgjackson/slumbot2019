@@ -19,7 +19,7 @@
 #include "params.h"
 #include "tcfr.h"
 
-using namespace std;
+using std::string;
 
 static void Usage(const char *prog_name) {
   fprintf(stderr, "USAGE: %s <game params> <card params> <betting params> <CFR params> "

@@ -13,3 +13,46 @@ Turn:
 wmls3 turn features: 0.5, 0.7, 0.9
 
 a_params
+
+
+b_params
+10,000 buckets on turn and river
+wml3.10k
+wml4.a.10k
+
+c_params
+100,000 buckets on turn and river
+wml3.100k
+wml4.a.100k
+
+River going to take too long.  Maybe we can come up with features that lead to fewer
+unique objects.  More squashing.
+
+Preflop: wml0.4
+Flop:    wml0.5
+Turn:    wml0.6
+River:   wml
+wmls4.b: wml0.4, wml0.5, wml0.6, wml; no multiplier
+
+../bin/build_kmeans_buckets holdem_params 3 100000 wmls4.b.100k wmls4.b 50.0 200 7
+5.16m unique objects
+Seemed like it would take 50m for first iteration
+
+wmls4.c: wml0.3, wml0.3, wml0.3, wml; no multiplier
+146857 unique objects
+Too few for clustering
+Too many for unique
+wmls4.c: wml0.3, wml0.4, wml0.5, wml; no multiplier
+991848 unique objects
+
+wmls4.d: wml0.2, wml0.2, wml0.3, wml: no multiplier
+42,764 buckets
+Change
+wmls4.d: wml0.2, wml0.3, wml0.3, wml: no multiplier
+80,186 buckets
+Change
+wmls4.d: wml0.2, wml0.3, wml0.4, wml: no multiplier
+154,100 buckets
+Change
+wmls4.d: wml0.2, wml0.3, wml0.35, wml: no multiplier
+113,314 buckets

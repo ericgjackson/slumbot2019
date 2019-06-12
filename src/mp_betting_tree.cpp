@@ -183,7 +183,8 @@ void BettingTreeBuilder::MPHandleBet(int street, int last_bet_size, int last_bet
 
   int new_bet_size = new_bet_to - last_bet_to;
 
-  bool all_in_bet = (new_bet_to == betting_abstraction_.StackSize());
+  int stack_size = betting_abstraction_.StackSize();
+  bool all_in_bet = (new_bet_to == stack_size);
 
   // Cannot make a bet that is smaller than the min bet (usually the big blind)
   if (new_bet_size < betting_abstraction_.MinBet() && ! all_in_bet) {
@@ -196,6 +197,13 @@ void BettingTreeBuilder::MPHandleBet(int street, int last_bet_size, int last_bet
     return;
   }
 
+  // If CloseToAllInFrac is set, eliminate some bet sizes that are too close to an all-in bet.
+  int new_pot_size = new_bet_to * 2;
+  if (! all_in_bet && betting_abstraction_.CloseToAllInFrac() > 0 &&
+      new_pot_size >= 2 * stack_size * betting_abstraction_.CloseToAllInFrac()) {
+    return;
+  }
+  
   string new_key = *key;
   if (betting_abstraction_.BettingKey(street)) {
     AddStringToKey("b", &new_key);

@@ -23,3 +23,5 @@ better to do the multithreading in solve_all_subgames and not inside VCFR.  Need
 both methods, I guess.  Or, if we don't care about evaluating the new method, we could just
 keep the multithreading in solve_all_subgames.
 
+Seems like it's better to solve an entire turn subgame than to do nested resolves of subgames
+rooted at street-internal nodes.  Suggests we should take backup approach.

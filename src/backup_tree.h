@@ -5,16 +5,15 @@
 #include <vector>
 
 class Node;
-
 class BackupBuilder {
 public:
   BackupBuilder(int stack_size);
-  std::shared_ptr<Node> Build(const std::vector<Node *> &path, int st);
+  std::shared_ptr<Node> Build(const std::vector< std::vector<double> > &bet_fracs, int st,
+			      int last_bet_to);
 private:
-  std::shared_ptr<Node> OffPathSubtree(int st, int player_acting, bool street_initial,
-				       int last_bet_size, int last_bet_to, int num_street_bets);
-  std::shared_ptr<Node> Build(const std::vector<Node *> &path, int index, int num_street_bets,
-			      int last_bet_size);
+  std::shared_ptr<Node> Build(const std::vector< std::vector<double> > &bet_fracs, int *num_bets,
+			      int st, int pa, int num_street_bets, int last_bet_size,
+			      int last_bet_to, bool street_initial);
 
   int stack_size_;
   int terminal_id_;

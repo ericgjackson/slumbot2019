@@ -1,0 +1,5 @@
+#!/bin/bash
+
+time ../bin/build_rollout_features holdem_params 0 wml0.3 0.3 wmls 0.5
+time ../bin/build_rollout_features holdem_params 1 wml0.3 0.3 wmls 0.5
+time ../bin/build_rollout_features holdem_params 2 wml0.3 0.3 wmls 0.5

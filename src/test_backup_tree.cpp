@@ -16,6 +16,7 @@
 using std::unique_ptr;
 using std::vector;
 
+#if 0
 static void Walk(Node *node, vector<Node *> *path, BackupBuilder *builder, int st) {
   int num_succs = node->NumSuccs();
   if (node->Street() >= st) {
@@ -33,6 +34,7 @@ static void Walk(Node *node, vector<Node *> *path, BackupBuilder *builder, int s
     path->pop_back();
   }
 }
+#endif
 
 static void Usage(const char *prog_name) {
   fprintf(stderr, "USAGE: %s <game params> <betting abstraction> <st>\n", prog_name);
@@ -54,6 +56,14 @@ int main(int argc, char *argv[]) {
   BettingTree betting_tree(*ba);
   
   BackupBuilder builder(ba->StackSize());
+#if 0
   vector<Node *> path;
   Walk(betting_tree.Root(), &path, &builder, st);
+#endif
+  int max_street = Game::MaxStreet();
+  vector< vector<double> > bet_fracs(max_street + 1);
+  bet_fracs[2].push_back(0.5);
+  bet_fracs[3].push_back(0.5);
+  BettingTree subtree(builder.Build(bet_fracs, 2, 18).get());
+  subtree.Display();
 }

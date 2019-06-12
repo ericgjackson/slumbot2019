@@ -1,0 +1,106 @@
+Solve a bigger base than big3sym on Amazon.
+
+Pick an instance that doesn't cost too uch.
+
+m5.24xlarge
+  96 vcpu, 384 GB RAM, Xeon
+  $0.9578 per Hour
+m5ad.24xlarge
+  96 vcpu, 384 GB RAM, AMD
+  $0.9578 per Hour
+m5.12xlarge
+  48 vcpu, 192 GB RAM, Xeon
+  $0.5038 per Hour  
+m4.16xlarge
+  64 vcpu, 256 GB RAM, Xeon
+  $0.6081 per Hour
+r4.16xlarge
+  64 vcpu, 488 GB
+  $0.6535 per Hour
+r5.4xlarge
+  16 vcpu, 128 GB
+  $0.1673 per Hour
+r5.12xlarge
+  48 vcpu, 384 GB RAM, Xeon
+  $0.5017 per Hour
+r5d.24xlarge
+  96 vcpu, 768 GB RAM, Xeon
+  $1.0037 per Hour  
+r5d.metal
+  96 vcpu (48 physical cores), 768 GB RAM, Xeon
+  $0.6689 per Hour
+r5ad.24xlarge
+  96 vcpu, 768 GB RAM, AMD
+  $1.0034 per Hour  
+u-6tb1.metal
+  448 vcpu, 6 TB RAM
+  I presume too expensive
+x1e.4xlarge
+  16 vcpu, 488 GB RAM
+  $1.0008 per Hour
+x1e.8xlarge
+  32 vcpu, 976 GB RAM, Xeon
+x1.16xlarge
+  64 vcpu, 976 GB RAM, Xeon
+  $2.0676 per Hour
+x1e.16xlarge
+  64 vcpu, 1,952 GB RAM, Xeon
+  $4.0032 per Hour  
+x1.32xlarge
+  128 vcpu, 1,952 GB RAM, Xeon
+  $4.0014 per Hour
+x1e.32xlarge
+  128 vcpu, 3,904 GB RAM, Xeon
+  $8.0064 per Hour
+c5n.18xlarge
+  72 vcpu, 192 GB RAM
+  $0.6841 per Hour
+
+$1/hr is $24/day is $720/mo
+Can get 768 GB RAM for that (r5d24xlarge)
+r5d.meta is better value for same RAM
+So let's say we are targeting 768 GB RAM.
+
+There's overhead; the HandValueTree or the HVB table.  Maybe 10 GB?
+
+Start with big3sym, add to it.
+Add 5th bet on preflop and flop: almost no difference
+Add 3/4 pot open: 29 gigs
+Add 1/2 pot 3rd bet: 43.5 gigs
+Add 2x pot open: 52.5 gigs
+Add 3x raise preflop: 55 gigs
+Add 10x raise preflop: 55.1 gigs
+Add 1/8 pot open on flop: 75 gigs
+Add third bet on turn and river: 75 gigs (almost no change due to coarse abstraction?)
+Use b_params: 10k buckets on turn and river: 78.9 gigs
+Add 0.75x and 1.5x raises preflop: 109g
+Add 0.75x and 1.5x raises on flop: 141g
+Add 0.75x and 1.5x flop open: 169g
+Use c_params: ~100k buckets on turn and river: 256g (160g flop)
+Use new c_params: 100k buckets on turn and river: 248g (160g flop)
+Respect CloseToAllInFrac 0.5: 169g (160g flop)
+Add 1/16 flop opening bet: 203g, (193g flop)
+Maybe shrink the betting abstraction.
+Added min bets for preflop and flop opens and raises: 454 GB (431 GB flop)
+Only allow min bets for preflop and flop raises: 382 GB (362 GB flop)
+Instead of allowing min bets, allow 1/4 pot raise preflop and flop: 315 GB (299 GB flop)
+Instead of 1/16, 1/8, 1/4 allow 0.1, 0.2, 0.3: 317 GB (300 GB flop)
+Use short regrets on flop: 377 GB (361 GB flop)
+Use short regrets for all postflop streets: 381 GB (361 GB flop)
+No quantization: 508 GB (481 GB flop)
+Instead of 0.1, 0.2, 0.3 use 0.15, 0.25, 0.333: 495 GB (469 GB)
+Add 1.5x preflop open: 554 GB/525 GB
+Add 5x preflop open: 564 GB/534 GB
+Use CloseToAllInFrac of 0.75 instead of 0.5: 954 GB/900 GB
+Allow 6 bets on preflop and flop: 955 GB/901 GB
+Allow 4th bet on preflop/flop to be 1/2 pot: 1.12 TB/1.06 TB
+Allow 5th bet on preflop/flop to be 1/2 pot: 1.15 TB/1.1 TB
+Allow 7 bets preflop and flop; new pot size raise inserted: 1.16 TB/1.1 TB
+Allow 2x pot 4th bet on preflop and flop: 1.17 TB, 1.1 TB
+Allow 1/2 pot 6th bet preflop and flop: 1.17 TB, 1.11 TB
+Allow 5x open on flop: 1.18 TB, 1.12 TB
+Allow 1/3 pot 3rd bet on preflop and flop: 1.87 TB, 1.78 TB
+  Too much!  Go back to last version.
+Go back to quantizing regrets on all postflop streets: 737 GB (698 GB flop)
+Char regrets for flop; shorts for turn and river: 745 GB (698 GB flop)
+Good!

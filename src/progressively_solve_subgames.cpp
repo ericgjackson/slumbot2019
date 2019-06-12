@@ -171,13 +171,13 @@ Resolver::Resolver(const CardAbstraction &base_card_abstraction,
 
   resolve_st_ = ResolveStreet(base_betting_trees_->Root(), final_betting_trees_->Root());
   if (resolve_st_ == kMaxInt) {
-#if 0
     fprintf(stderr, "Base and final betting trees are identical?!?\n");
     exit(-1);
-#endif
+#if 0
     // Temporary
     // resolve_st_ = Game::MaxStreet();
     resolve_st_ = 1;
+#endif
   }
   fprintf(stderr, "Resolve st %i\n", resolve_st_);
 
