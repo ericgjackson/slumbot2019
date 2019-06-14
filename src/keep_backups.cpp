@@ -48,9 +48,9 @@ static long long int TargetSize(int st, bool regrets, int p) {
     }
   } else if (st == 2) {
     if (regrets) {
-      return 4466360000LL;
-    } else {
       return 2233180000LL;
+    } else {
+      return 4466360000LL;
     }
   } else {
     if (regrets) {
@@ -63,10 +63,15 @@ static long long int TargetSize(int st, bool regrets, int p) {
 
 static bool Ready(int it) {
   char buf[500];
-  for (int st = 0; st <= 4; ++st) {
+  for (int st = 0; st <= 3; ++st) {
     for (int r = 0; r <= 1; ++r) {
       for (int p = 0; p <= 1; ++p) {
-	sprintf(buf, "%s/%s.x.0.0.%i.%i.p%i.i", r ? "regrets" : "sumprobs", kDir, st, it, p);
+	if (r) {
+	  sprintf(buf, "%s/regrets.x.0.0.%i.%i.p%i.%c", kDir, st, it, p,
+		  st == 1 ? 'c' : (st >= 2 ? 's' : 'i'));
+	} else {
+	  sprintf(buf, "%s/sumprobs.x.0.0.%i.%i.p%i.i", kDir, st, it, p);
+	}
 	if (! FileExists(buf)) return false;
 	long long int target_size = TargetSize(st, r, p);
 	if (FileSize(buf) != target_size) return false;
@@ -83,7 +88,8 @@ static void Backup(void) {
   if (pid == 0) {
     // Child
     char const *binary = "/usr/bin/aws";
-    char const * newargv[] = { binary, "s3", "cp", kDir, "s3://slumbot2019", "--recursive", NULL };
+    char const * newargv[] = { binary, "s3", "cp", kDir, "s3://slumbot2019cfr", "--recursive",
+			       NULL };
     execvp(binary, (char * const *)newargv);
     fprintf(stderr, "Failed to execvp aws s3 cp process\n");
     exit(-1);
@@ -98,7 +104,7 @@ static void Backup(void) {
 
 static bool BackupDone(int target_it) {
   char cmd[500], output[500];
-  strcpy(cmd, "/usr/bin/aws s3 ls s3://slumbot2019");
+  strcpy(cmd, "/usr/bin/aws s3 ls s3://slumbot2019cfr");
   FILE *fp = popen(cmd, "r");
   vector<string> lines;
   while (fgets(output, sizeof(output), fp)) {
