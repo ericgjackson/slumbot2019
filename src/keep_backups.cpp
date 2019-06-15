@@ -89,7 +89,7 @@ static void Backup(void) {
     // Child
     char const *binary = "/usr/bin/aws";
     char const * newargv[] = { binary, "s3", "cp", kDir, "s3://slumbot2019cfr", "--recursive",
-			       NULL };
+			       "--quiet", NULL };
     execvp(binary, (char * const *)newargv);
     fprintf(stderr, "Failed to execvp aws s3 cp process\n");
     exit(-1);
