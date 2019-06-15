@@ -203,6 +203,7 @@ int main(int argc, char *argv[]) {
 	if (BackupDone(it)) {
 	  EmptyDirectory();
 	  ++it;
+	  break;
 	} else {
 	  sleep(60);
 	}
