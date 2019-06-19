@@ -31,7 +31,7 @@ HandTree::HandTree(int root_st, int root_bd, int final_st) {
   // Used to lazily instantiate, but that doesn't currently work in
   // multi-threaded environment because HandValueTree::Create() is not
   // threadsafe.  Fix that?  May not be trivial.
-  if (! HandValueTree::Created()) {
+  if (final_st >= max_street && ! HandValueTree::Created()) {
     fprintf(stderr, "Hand value tree has not been created\n");
     exit(-1);
   }
