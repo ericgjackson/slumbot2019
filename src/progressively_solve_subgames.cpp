@@ -226,8 +226,8 @@ shared_ptr<CFRValues> Resolver::ResolveUnsafe(Node *node, int gbd, const string 
 	  node->NonterminalID(), gbd);
 
   UnsafeEGCFR eg_cfr(resolve_card_abstraction_, base_card_abstraction_,
-		     resolve_betting_abstraction_, base_betting_abstraction_, resolve_cfr_config_,
-		     base_cfr_config_, resolve_buckets_, num_inner_threads_);
+		     base_betting_abstraction_, resolve_cfr_config_, base_cfr_config_,
+		     resolve_buckets_, num_inner_threads_);
   if (st < Game::MaxStreet()) {
     eg_cfr.SetSplitStreet(st + 1);
   }
@@ -249,14 +249,13 @@ shared_ptr<CFRValues> Resolver::ResolveCombined(Node *node, shared_ptr<CFRValues
 	  node->NonterminalID(), gbd);
 
   CombinedEGCFR eg_cfr(resolve_card_abstraction_, base_card_abstraction_,
-		       resolve_betting_abstraction_, base_betting_abstraction_, resolve_cfr_config_,
-		       base_cfr_config_, resolve_buckets_, false, true, num_inner_threads_);
+		       base_betting_abstraction_, resolve_cfr_config_, base_cfr_config_,
+		       resolve_buckets_, false, true, num_inner_threads_);
   if (st < Game::MaxStreet()) {
     eg_cfr.SetSplitStreet(st + 1);
   }
 
-  DynamicCBR dynamic_cbr(base_card_abstraction_, base_betting_abstraction_, base_cfr_config_,
-			 base_buckets_, 1);
+  DynamicCBR dynamic_cbr(base_card_abstraction_, base_cfr_config_, base_buckets_, 1);
   dynamic_cbr.SetSumprobs(prior_sumprobs);
 
   shared_ptr<CFRValues> p0_sumprobs, p1_sumprobs;
