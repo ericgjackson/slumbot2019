@@ -16,7 +16,7 @@ class ReachProbs;
 
 class EGCFR : public VCFR {
  public:
-  EGCFR(const CardAbstraction &ca, const CardAbstraction &base_ca, const BettingAbstraction &ba,
+  EGCFR(const CardAbstraction &ca, const CardAbstraction &base_ca,
 	const BettingAbstraction &base_ba, const CFRConfig &cc, const CFRConfig &base_cc,
 	const Buckets &buckets, ResolvingMethod method, bool cfrs, bool zero_sum, int num_threads);
   virtual void SolveSubgame(BettingTrees *subtrees, int solve_bd, const ReachProbs &reach_probs,

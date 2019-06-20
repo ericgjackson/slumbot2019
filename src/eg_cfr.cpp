@@ -28,10 +28,10 @@ shared_ptr<double []> EGCFR::HalfIteration(BettingTrees *subtrees, int p,
 }
 
 EGCFR::EGCFR(const CardAbstraction &ca, const CardAbstraction &base_ca,
-	     const BettingAbstraction &ba, const BettingAbstraction &base_ba,
-	     const CFRConfig &cc, const CFRConfig &base_cc, const Buckets &buckets, 
-	     ResolvingMethod method, bool cfrs, bool zero_sum, int num_threads) :
-  VCFR(ca, ba, cc, buckets, num_threads),
+	     const BettingAbstraction &base_ba, const CFRConfig &cc, const CFRConfig &base_cc,
+	     const Buckets &buckets, ResolvingMethod method, bool cfrs, bool zero_sum,
+	     int num_threads) :
+  VCFR(ca, cc, buckets, num_threads),
   base_card_abstraction_(base_ca), base_betting_abstraction_(base_ba),
   base_cfr_config_(base_cc) {
 
