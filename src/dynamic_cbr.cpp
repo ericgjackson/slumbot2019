@@ -22,9 +22,9 @@
 using std::shared_ptr;
 using std::string;
 
-DynamicCBR::DynamicCBR(const CardAbstraction &ca, const BettingAbstraction &ba,
-		       const CFRConfig &cc, const Buckets &buckets, int num_threads) :
-  VCFR(ca, ba, cc, buckets, num_threads) {
+DynamicCBR::DynamicCBR(const CardAbstraction &ca, const CFRConfig &cc, const Buckets &buckets,
+		       int num_threads) :
+  VCFR(ca, cc, buckets, num_threads) {
   value_calculation_ = true;
   int max_street = Game::MaxStreet();
   for (int st = 0; st <= max_street; ++st) {
