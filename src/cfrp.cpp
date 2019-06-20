@@ -29,7 +29,7 @@
 #include "cfr_config.h"
 #include "cfr_utils.h" // DeleteOldFiles()
 #include "cfr_values.h"
-#include "cfrp_subgame.h"
+// #include "cfrp_subgame.h"
 #include "cfrp.h"
 #include "constants.h"
 #include "files.h"
@@ -45,7 +45,20 @@ using std::string;
 using std::unique_ptr;
 
 // Called from run_cfrp
-void CFRP::Initialize(void) {
+void CFRP::Initialize(const BettingAbstraction &ba, int target_p) {
+  asymmetric_ = ba.Asymmetric();
+  betting_abstraction_name_ = ba.BettingAbstractionName();
+  if (asymmetric_) {
+    target_p_ = target_p;
+  } else {
+    target_p_ = -1;
+  }
+  if (asymmetric_) {
+    betting_trees_.reset(new BettingTrees(ba, target_p_));
+  } else {
+    betting_trees_.reset(new BettingTrees(ba));
+  }
+
   unique_ptr<bool []> streets;
   int max_street = Game::MaxStreet();
   if (subgame_street_ >= 0 && subgame_street_ <= max_street) {
@@ -58,7 +71,7 @@ void CFRP::Initialize(void) {
 			       betting_trees_->GetBettingTree()));
   
   // Should honor sumprobs_streets_
-  if (betting_abstraction_.Asymmetric()) {
+  if (asymmetric_) {
     int num_players = Game::NumPlayers();
     unique_ptr<bool []> players(new bool [num_players]);
     for (int p = 0; p < num_players; ++p) players[p] = false;
@@ -85,21 +98,9 @@ void CFRP::Initialize(void) {
   }
 }
 
-CFRP::CFRP(const CardAbstraction &ca, const BettingAbstraction &ba, const CFRConfig &cc,
-	   const Buckets &buckets, int num_threads, int target_p) :
-  VCFR(ca, ba, cc, buckets, num_threads) {
-  if (ba.Asymmetric()) {
-    betting_trees_.reset(new BettingTrees(ba, target_p));
-  } else {
-    betting_trees_.reset(new BettingTrees(ba));
-  }
-  
-  if (betting_abstraction_.Asymmetric()) {
-    target_p_ = target_p;
-  } else {
-    target_p_ = -1;
-  }
-
+CFRP::CFRP(const CardAbstraction &ca, const CFRConfig &cc, const Buckets &buckets,
+	   int num_threads) :
+  VCFR(ca, cc, buckets, num_threads) {
   BoardTree::Create();
   HandValueTree::Create();
 
@@ -120,6 +121,8 @@ CFRP::CFRP(const CardAbstraction &ca, const BettingAbstraction &ba, const CFRCon
   }
 }
 
+// Temporarily comment out subgame stuff
+#if 0
 void CFRP::Post(int t) {
   // Set subgame_running_[t] to false *before* sem_post.  If we didn't do that,
   // we might break out of sem_wait in main thread and find no threads with
@@ -243,7 +246,7 @@ void CFRP::SpawnSubgame(Node *node, int bd, const string &action_sequence, int p
   }
   pthread_create(&pthread_ids_[t], NULL, thread_run, subgame);
 }
-
+#endif
 
 void CFRP::FloorRegrets(Node *node, int p) {
   if (node->Terminal()) return;
@@ -267,6 +270,8 @@ void CFRP::HalfIteration(int p) {
     SetCurrentStrategy(betting_trees_->Root());
   }
 
+#if 0
+  // Temporarily comment out subgame stuff
   if (subgame_street_ >= 0 && subgame_street_ <= Game::MaxStreet()) {
     // subgame_running_ should be false for all threads
     // active_subgames_ should be nullptr for all threads
@@ -278,14 +283,17 @@ void CFRP::HalfIteration(int p) {
       }
     }
   }
+#endif
 
-  if (subgame_street_ >= 0 && subgame_street_ <= Game::MaxStreet()) pre_phase_ = true;
+  // if (subgame_street_ >= 0 && subgame_street_ <= Game::MaxStreet()) pre_phase_ = true;
   shared_ptr<double []> vals = ProcessRoot(betting_trees_.get(), p, hand_tree_.get());
+#if 0
   if (subgame_street_ >= 0 && subgame_street_ <= Game::MaxStreet()) {
     WaitForFinalSubgames();
     pre_phase_ = false;
     vals = ProcessRoot(betting_trees_.get(), p, hand_tree_.get());
   }
+#endif
 #if 0
   int num_hole_card_pairs = Game::NumHoleCardPairs(0);
   for (int i = 0; i < num_hole_card_pairs; ++i) {
@@ -314,10 +322,9 @@ void CFRP::Checkpoint(int it) {
   sprintf(dir, "%s/%s.%u.%s.%u.%u.%u.%s.%s", Files::NewCFRBase(),
 	  Game::GameName().c_str(), Game::NumPlayers(),
 	  card_abstraction_.CardAbstractionName().c_str(), Game::NumRanks(),
-	  Game::NumSuits(), Game::MaxStreet(),
-	  betting_abstraction_.BettingAbstractionName().c_str(),
+	  Game::NumSuits(), Game::MaxStreet(), betting_abstraction_name_.c_str(),
 	  cfr_config_.CFRConfigName().c_str());
-  if (betting_abstraction_.Asymmetric()) {
+  if (asymmetric_) {
     char buf[100];
     sprintf(buf, ".p%u", target_p_);
     strcat(dir, buf);
@@ -332,10 +339,9 @@ void CFRP::ReadFromCheckpoint(int it) {
   sprintf(dir, "%s/%s.%u.%s.%u.%u.%u.%s.%s", Files::OldCFRBase(),
 	  Game::GameName().c_str(), Game::NumPlayers(),
 	  card_abstraction_.CardAbstractionName().c_str(), Game::NumRanks(),
-	  Game::NumSuits(), Game::MaxStreet(),
-	  betting_abstraction_.BettingAbstractionName().c_str(),
+	  Game::NumSuits(), Game::MaxStreet(), betting_abstraction_name_.c_str(),
 	  cfr_config_.CFRConfigName().c_str());
-  if (betting_abstraction_.Asymmetric()) {
+  if (asymmetric_) {
     char buf[100];
     sprintf(buf, ".p%u", target_p_);
     strcat(dir, buf);
@@ -349,7 +355,7 @@ void CFRP::Run(int start_it, int end_it) {
     fprintf(stderr, "CFR starts from iteration 1\n");
     exit(-1);
   }
-  DeleteOldFiles(card_abstraction_, betting_abstraction_, cfr_config_, end_it);
+  DeleteOldFiles(card_abstraction_, betting_abstraction_name_, cfr_config_, end_it);
 
   if (start_it > 1) {
     ReadFromCheckpoint(start_it - 1);
