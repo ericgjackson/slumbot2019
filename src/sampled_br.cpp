@@ -121,7 +121,7 @@ SampledBR::SampledBR(const BettingAbstraction &ba, const CardAbstraction &target
     }
 #endif
   } else {
-    betting_tree_ = BettingTree::BuildTree(ba);
+    betting_tree_ = new BettingTree(ba);
 #if 0
     for (int asym_p = 1; asym_p < num_players_; ++asym_p) {
       betting_trees_[asym_p] = betting_trees_[0];
@@ -151,7 +151,7 @@ SampledBR::SampledBR(const BettingAbstraction &ba, const CardAbstraction &target
       sprintf(buf, ".p%u", p);
       strcat(dir, buf);
     }
-    probs_[p]->Read(dir, it, betting_tree_->Root(), "x", -1, true);
+    probs_[p]->Read(dir, it, betting_tree_, "x", -1, true, false);
   }
 
   int max_street = Game::MaxStreet();

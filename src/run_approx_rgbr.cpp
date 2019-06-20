@@ -249,9 +249,9 @@ PreResponder::PreResponder(const CardAbstraction &ca, const BettingAbstraction &
   street_buckets_.reset(new int[num]);
 
   if (resolve_) {
-    eg_cfr_.reset(new UnsafeEGCFR(s_ca, ca, s_ba, ba, s_cc, cc, subgame_buckets_, 1));
+    eg_cfr_.reset(new UnsafeEGCFR(s_ca, ca, ba, s_cc, cc, subgame_buckets_, 1));
   } else {
-    vcfr_.reset(new VCFR(ca, ba, cc, buckets, 1));
+    vcfr_.reset(new VCFR(ca, cc, buckets, 1));
     vcfr_->SetValueCalculation(true);
     for (int st = street_; st <= max_street; ++st) {
       vcfr_->SetBestResponseStreet(st, true);
@@ -287,9 +287,9 @@ PreResponder::PreResponder(const CardAbstraction &ca, const BettingAbstraction &
   street_buckets_.reset(new int[num]);
 
   if (resolve_) {
-    eg_cfr_.reset(new UnsafeEGCFR(s_ca, ca, s_ba, ba, s_cc, cc, subgame_buckets_, 1));
+    eg_cfr_.reset(new UnsafeEGCFR(s_ca, ca, ba, s_cc, cc, subgame_buckets_, 1));
   } else {
-    vcfr_.reset(new VCFR(ca, ba, cc, buckets, 1));
+    vcfr_.reset(new VCFR(ca, cc, buckets, 1));
     vcfr_->SetValueCalculation(true);
     for (int st = street_; st <= max_street; ++st) {
       vcfr_->SetBestResponseStreet(st, true);
@@ -388,19 +388,14 @@ shared_ptr<double []> PreResponder::Transition(Node *p0_node, Node *p1_node,
     int num_samples = board_samples_[ngbd];
     if (num_samples == 0) continue;
     total_num_samples += num_samples;
-    unique_ptr<VCFRState> next_state;
     unique_ptr<HandTree> subgame_hand_tree;
     const HandTree *next_hand_tree;
     if (use_subgames_) {
       // Create a hand tree just for this subgame.  The local board index is thus zero.
       subgame_hand_tree.reset(new HandTree(nst, ngbd, Game::MaxStreet()));
       next_hand_tree = subgame_hand_tree.get();
-      next_state.reset(new VCFRState(responder_p_, reach_probs.Get(responder_p_^1), next_hand_tree,
-				     action_sequence, ngbd, street_));
     } else {
       next_hand_tree = trunk_hand_tree_.get();
-      next_state.reset(new VCFRState(responder_p_, reach_probs.Get(responder_p_^1),
-				     next_hand_tree, action_sequence, 0, 0));
     }
     Node *node;
     if (responder_p_ == 0) {
@@ -423,20 +418,17 @@ shared_ptr<double []> PreResponder::Transition(Node *p0_node, Node *p1_node,
 	eg_cfr_->SetBestResponseStreet(st, true);
       }
       Node *subtree_root = subtrees_->Root();
-      // next_vals = eg_cfr_->Process(subtree_root, subtree_root, nlbd, *next_state, nst);
-      next_vals = eg_cfr_->ProcessInternal(subtree_root, subtree_root, ngbd, *next_state,
-					   ngbd, nst);
+      next_vals = eg_cfr_->ProcessSubgame(subtree_root, subtree_root, ngbd, responder_p_,
+					  reach_probs.Get(responder_p_^1), next_hand_tree,
+					  action_sequence);
       eg_cfr_->SetValueCalculation(false);
       for (int st = street_; st <= max_street; ++st) {
 	eg_cfr_->SetBestResponseStreet(st, false);
       }
     } else {
-      // next_vals = vcfr_->Process(node, node, nlbd, *next_state, nst);
-      if (use_subgames_) {
-	next_vals = vcfr_->ProcessInternal(node, node, ngbd, *next_state, ngbd, nst);
-      } else {
-	next_vals = vcfr_->ProcessInternal(node, node, ngbd, *next_state, 0, 0);
-      }
+      next_vals = vcfr_->ProcessSubgame(node, node, ngbd, responder_p_,
+					reach_probs.Get(responder_p_^1), next_hand_tree,
+					action_sequence);
     }
     const CanonicalCards *hands;
     if (subgame_hand_tree.get()) {

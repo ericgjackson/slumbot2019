@@ -84,7 +84,7 @@ Assembler::Assembler(const BettingTrees &base_betting_trees,
   subgame_it_ = subgame_it;
   method_ = method;
 
-  DeleteOldFiles(merged_ca_, subgame_ba_, merged_cc_, subgame_it_);
+  DeleteOldFiles(merged_ca_, subgame_ba_.BettingAbstractionName(), merged_cc_, subgame_it_);
 
   subgame_buckets_.reset(new Buckets(subgame_ca_, true));
   

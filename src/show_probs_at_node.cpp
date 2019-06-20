@@ -180,9 +180,9 @@ int main(int argc, char *argv[]) {
   Buckets buckets(*card_abstraction, false);
   unique_ptr<BettingTree> betting_tree;
   if (betting_abstraction->Asymmetric()) {
-    betting_tree.reset(BettingTree::BuildAsymmetricTree(*betting_abstraction, target_p));
+    betting_tree.reset(new BettingTree(*betting_abstraction, target_p));
   } else {
-    betting_tree.reset(BettingTree::BuildTree(*betting_abstraction));
+    betting_tree.reset(new BettingTree(*betting_abstraction));
   }
   int num_players = Game::NumPlayers();
   unique_ptr<bool []> players(new bool[num_players]);
@@ -214,7 +214,7 @@ int main(int argc, char *argv[]) {
     sprintf(buf, ".p%u", target_p);
     strcat(dir, buf);
   }
-  values.Read(dir, it, betting_tree->Root(), "x", -1, ! current);
+  values.Read(dir, it, betting_tree.get(), "x", -1, ! current, false);
   bool ***seen = new bool **[max_street + 1];
   for (int st = 0; st <= max_street; ++st) {
     seen[st] = new bool *[num_players];

@@ -246,11 +246,11 @@ Player::Player(const BettingAbstraction &a_ba, const BettingAbstraction &b_ba,
   // Check for dups for buckets
   if (resolve_a_) {
     a_subgame_buckets_.reset(new Buckets(as_ca, false));
-    a_eg_cfr_.reset(new UnsafeEGCFR(as_ca, a_ca, as_ba, a_ba, as_cc, a_cc, *a_subgame_buckets_, 1));
+    a_eg_cfr_.reset(new UnsafeEGCFR(as_ca, a_ca, a_ba, as_cc, a_cc, *a_subgame_buckets_, 1));
   }
   if (resolve_b_) {
     b_subgame_buckets_.reset(new Buckets(bs_ca, false));
-    b_eg_cfr_.reset(new UnsafeEGCFR(bs_ca, b_ca, bs_ba, b_ba, bs_cc, b_cc, *b_subgame_buckets_, 1));
+    b_eg_cfr_.reset(new UnsafeEGCFR(bs_ca, b_ca, b_ba, bs_cc, b_cc, *b_subgame_buckets_, 1));
   }
 }
 
@@ -453,7 +453,7 @@ void Player::Nonterminal(Node *a_node, Node *b_node, const string &action_sequen
     // This doesn't support multiplayer yet
     const CFRValues *sumprobs;
     if (resolve_b_ && st >= resolve_st_) {
-      sumprobs = b_eg_cfr_->Sumprobs();
+      sumprobs = b_eg_cfr_->Sumprobs().get();
     } else {
       sumprobs = b_probs_.get();
     }
@@ -465,7 +465,7 @@ void Player::Nonterminal(Node *a_node, Node *b_node, const string &action_sequen
   } else {
     const CFRValues *sumprobs;
     if (resolve_a_ && st >= resolve_st_) {
-      sumprobs = a_eg_cfr_->Sumprobs();
+      sumprobs = a_eg_cfr_->Sumprobs().get();
     } else {
       sumprobs = a_probs_.get();
     }
