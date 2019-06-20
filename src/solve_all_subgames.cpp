@@ -184,8 +184,7 @@ SubgameSolver::SubgameSolver(const CardAbstraction &base_card_abstraction,
   if (base_mem_) {
     // We are calculating CBRs from the *base* strategy, not the resolved
     // endgame strategy.  So pass in base_card_abstraction_, etc.
-    dynamic_cbr_.reset(new DynamicCBR(base_card_abstraction_, base_betting_abstraction_,
-				      base_cfr_config_, base_buckets_, 1));
+    dynamic_cbr_.reset(new DynamicCBR(base_card_abstraction_, base_cfr_config_, base_buckets_, 1));
     if (current_) {
       unique_ptr<bool []> subgame_streets(new bool[max_street + 1]);
       for (int st = 0; st <= max_street; ++st) {
@@ -210,18 +209,6 @@ SubgameSolver::SubgameSolver(const CardAbstraction &base_card_abstraction,
       trunk_hand_tree_.reset(new HandTree(0, 0, 0));
     }
   }
-}
-
-static Node *FindCorrespondingNode(Node *old_node, Node *old_target, Node *new_node) {
-  if (old_node->Terminal()) return nullptr;
-  if (old_node == old_target) return new_node;
-  int num_succs = old_node->NumSuccs();
-  for (int s = 0; s < num_succs; ++s) {
-    Node *new_target = FindCorrespondingNode(old_node->IthSucc(s), old_target,
-					     new_node->IthSucc(s));
-    if (new_target) return new_target;
-  }
-  return nullptr;
 }
 
 // Get rid of this; use CreateSubtrees() from subgame_utils.cpp instead
@@ -343,9 +330,8 @@ void SubgameSolver::ResolveUnsafe(Node *node, int gbd, const string &action_sequ
   unique_ptr<EGCFR> eg_cfr;
   if (method_ == ResolvingMethod::UNSAFE) {
     eg_cfr.reset(new UnsafeEGCFR(subgame_card_abstraction_, base_card_abstraction_,
-				 subgame_betting_abstraction_, base_betting_abstraction_,
-				 subgame_cfr_config_, base_cfr_config_, subgame_buckets_,
-				 num_inner_threads_));
+				 base_betting_abstraction_, subgame_cfr_config_, base_cfr_config_,
+				 subgame_buckets_, num_inner_threads_));
     if (st < Game::MaxStreet()) {
       eg_cfr->SetSplitStreet(st + 1);
     }
@@ -443,14 +429,12 @@ void SubgameSolver::ResolveSafe(Node *node, int gbd, const string &action_sequen
   unique_ptr<EGCFR> eg_cfr;
   if (method_ == ResolvingMethod::CFRD) {
     eg_cfr.reset(new CFRDEGCFR(subgame_card_abstraction_, base_card_abstraction_,
-			       subgame_betting_abstraction_, base_betting_abstraction_,
-			       subgame_cfr_config_, base_cfr_config_, subgame_buckets_, cfrs_,
-			       zero_sum_, 1));
+			       base_betting_abstraction_, subgame_cfr_config_, base_cfr_config_,
+			       subgame_buckets_, cfrs_, zero_sum_, 1));
   } else if (method_ == ResolvingMethod::COMBINED) {
     eg_cfr.reset(new CombinedEGCFR(subgame_card_abstraction_, base_card_abstraction_,
-				   subgame_betting_abstraction_, base_betting_abstraction_,
-				   subgame_cfr_config_, base_cfr_config_, subgame_buckets_, cfrs_,
-				   zero_sum_, 1));
+				   base_betting_abstraction_, subgame_cfr_config_, base_cfr_config_,
+				   subgame_buckets_, cfrs_, zero_sum_, 1));
   } else {
     fprintf(stderr, "ResolveSafe unsupported method\n");
     exit(-1);
