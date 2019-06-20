@@ -17,10 +17,9 @@ using std::string;
 using std::unique_ptr;
 
 UnsafeEGCFR::UnsafeEGCFR(const CardAbstraction &ca, const CardAbstraction &base_ca,
-			 const BettingAbstraction &ba, const BettingAbstraction &base_ba,
-			 const CFRConfig &cc, const CFRConfig &base_cc, const Buckets &buckets,
-			 int num_threads) :
-  EGCFR(ca, base_ca, ba, base_ba, cc, base_cc, buckets, ResolvingMethod::UNSAFE, false, false,
+			 const BettingAbstraction &base_ba, const CFRConfig &cc,
+			 const CFRConfig &base_cc, const Buckets &buckets, int num_threads) :
+  EGCFR(ca, base_ca, base_ba, cc, base_cc, buckets, ResolvingMethod::UNSAFE, false, false,
 	num_threads) {
 }
 

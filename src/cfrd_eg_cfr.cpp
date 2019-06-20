@@ -19,10 +19,10 @@ using std::string;
 using std::unique_ptr;
 
 CFRDEGCFR::CFRDEGCFR(const CardAbstraction &ca, const CardAbstraction &base_ca,
-		     const BettingAbstraction &ba, const BettingAbstraction &base_ba,
-		     const CFRConfig &cc, const CFRConfig &base_cc,
-		     const Buckets &buckets, bool cfrs, bool zero_sum, int num_threads) :
-  EGCFR(ca, base_ca, ba, base_ba, cc, base_cc, buckets, ResolvingMethod::CFRD, cfrs, zero_sum,
+		     const BettingAbstraction &base_ba, const CFRConfig &cc,
+		     const CFRConfig &base_cc, const Buckets &buckets, bool cfrs, bool zero_sum,
+		     int num_threads) :
+  EGCFR(ca, base_ca, base_ba, cc, base_cc, buckets, ResolvingMethod::CFRD, cfrs, zero_sum,
 	num_threads) {
 }
 
