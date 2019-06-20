@@ -44,8 +44,7 @@ private:
 
 class VCFR {
  public:
-  VCFR(const CardAbstraction &ca, const BettingAbstraction &ba, const CFRConfig &cc,
-       const Buckets &buckets, int num_threads);
+  VCFR(const CardAbstraction &ca, const CFRConfig &cc, const Buckets &buckets, int num_threads);
   virtual ~VCFR(void);
   virtual std::shared_ptr<double []> ProcessRoot(const BettingTrees *betting_trees, int p,
 						 HandTree *hand_tree);
@@ -98,7 +97,6 @@ class VCFR {
   virtual void SetCurrentStrategy(Node *node);
   
   const CardAbstraction &card_abstraction_;
-  const BettingAbstraction &betting_abstraction_;
   const CFRConfig &cfr_config_;
   const Buckets &buckets_;
   int num_threads_;

@@ -932,9 +932,9 @@ void VCFR::SetCurrentStrategy(Node *node) {
   }
 }
 
-VCFR::VCFR(const CardAbstraction &ca, const BettingAbstraction &ba, const CFRConfig &cc,
-	   const Buckets &buckets, int num_threads) :
-  card_abstraction_(ca), betting_abstraction_(ba), cfr_config_(cc), buckets_(buckets) {
+VCFR::VCFR(const CardAbstraction &ca, const CFRConfig &cc, const Buckets &buckets,
+	   int num_threads) :
+  card_abstraction_(ca), cfr_config_(cc), buckets_(buckets) {
   num_threads_ = num_threads;
   subgame_street_ = cfr_config_.SubgameStreet();
   split_street_ = 1; // Default
