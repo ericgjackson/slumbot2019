@@ -538,12 +538,12 @@ void VCFR::UpdateRegretsBucketed(Node *node, int **street_buckets, double *vals,
 }
 #endif
 
-void DeleteOldFiles(const CardAbstraction &ca, const BettingAbstraction &ba, const CFRConfig &cc,
-		    int it) {
+void DeleteOldFiles(const CardAbstraction &ca, const string &betting_abstraction_name,
+		    const CFRConfig &cc, int it) {
   char dir[500];
   sprintf(dir, "%s/%s.%u.%s.%i.%i.%i.%s.%s", Files::NewCFRBase(), Game::GameName().c_str(),
 	  Game::NumPlayers(), ca.CardAbstractionName().c_str(), Game::NumRanks(),
-	  Game::NumSuits(), Game::MaxStreet(), ba.BettingAbstractionName().c_str(),
+	  Game::NumSuits(), Game::MaxStreet(), betting_abstraction_name.c_str(),
 	  cc.CFRConfigName().c_str());
 
   if (! FileExists(dir)) return;

@@ -2,6 +2,7 @@
 #define _CFR_UTILS_H_
 
 #include <memory>
+#include <string>
 
 template<typename T> class CFRStreetValues;
 class CanonicalCards;
@@ -40,7 +41,7 @@ void ProcessOppProbs(Node *node, int lbd, const CanonicalCards *hands, bool buck
 		     const CFRStreetValues<T1> &cs_vals, int dsi, int it, int soft_warmup,
 		     int hard_warmup, double sumprob_scaling,
 		     CFRStreetValues<T2> *sumprobs);
-void DeleteOldFiles(const CardAbstraction &ca, const BettingAbstraction &ba, const CFRConfig &cc,
-		    int it);
+void DeleteOldFiles(const CardAbstraction &ca, const std::string &betting_abstraction_name,
+		    const CFRConfig &cc, int it);
 
 #endif
