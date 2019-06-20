@@ -7,6 +7,7 @@
 
 #include "betting_abstraction.h"
 #include "betting_abstraction_params.h"
+#include "betting_trees.h"
 #include "buckets.h"
 #include "card_abstraction.h"
 #include "card_abstraction_params.h"
@@ -85,22 +86,20 @@ int main(int argc, char *argv[]) {
   unique_ptr<double []> evs(new double[num_players]);
   for (int p = 0; p < num_players; ++p) evs[p] = 0;
 
+  RGBR rgbr(*card_abstraction, *cfr_config, buckets, current, quantize, num_threads,
+	    streets.get());
   if (betting_abstraction->Asymmetric()) {
     if (num_players > 2) {
       fprintf(stderr, "How to handle more than two players?!?\n");
       exit(-1);
     }
     for (int target_p = 0; target_p < num_players; ++target_p) {
-      RGBR rgbr(*card_abstraction, *betting_abstraction, *cfr_config, buckets, current, quantize,
-		num_threads, streets.get(), target_p);
       int responder_p = target_p^1;
-      evs[responder_p] = rgbr.Go(it, responder_p);
+      evs[responder_p] = rgbr.Go(it, responder_p, *betting_abstraction);
     }
   } else {
-    RGBR rgbr(*card_abstraction, *betting_abstraction, *cfr_config, buckets, current, quantize,
-	      num_threads, streets.get(), -1);
     for (int p = 0; p < num_players; ++p) {
-      evs[p] = rgbr.Go(it, p);
+      evs[p] = rgbr.Go(it, p, *betting_abstraction);
     }
   }
 

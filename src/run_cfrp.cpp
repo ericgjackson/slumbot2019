@@ -6,6 +6,7 @@
 
 #include "betting_abstraction.h"
 #include "betting_abstraction_params.h"
+#include "betting_trees.h"
 #include "buckets.h"
 #include "card_abstraction.h"
 #include "card_abstraction_params.h"
@@ -69,8 +70,8 @@ int main(int argc, char *argv[]) {
   Buckets buckets(*card_abstraction, false);
 
   if (cfr_config->Algorithm() == "cfrp") {
-    CFRP cfr(*card_abstraction, *betting_abstraction, *cfr_config, buckets, num_threads, target_p);
-    cfr.Initialize();
+    CFRP cfr(*card_abstraction, *cfr_config, buckets, num_threads);
+    cfr.Initialize(*betting_abstraction, target_p);
     cfr.Run(start_it, end_it);
   } else {
     fprintf(stderr, "Unknown algorithm: %s\n",
