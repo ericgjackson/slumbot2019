@@ -31,10 +31,9 @@
 using std::shared_ptr;
 using std::unique_ptr;
 
-RGBR::RGBR(const CardAbstraction &ca, const BettingAbstraction &ba, const CFRConfig &cc,
-	   const Buckets &buckets, bool current, bool quantize, int num_threads,
-	   const bool *streets, int target_p) :
-  CFRP(ca, ba, cc, buckets, num_threads, target_p) {
+RGBR::RGBR(const CardAbstraction &ca, const CFRConfig &cc, const Buckets &buckets, bool current,
+	   bool quantize, int num_threads, const bool *streets) :
+  CFRP(ca, cc, buckets, num_threads) {
   br_current_ = current;
   quantize_ = quantize;
   value_calculation_ = true;
@@ -56,20 +55,27 @@ RGBR::RGBR(const CardAbstraction &ca, const BettingAbstraction &ba, const CFRCon
 RGBR::~RGBR(void) {
 }
 
-double RGBR::Go(int it, int p) {
+double RGBR::Go(int it, int p, const BettingAbstraction &ba) {
   it_ = it;
   // If P0 is the best-responder, then we will want sumprobs generated in
   // the P1 CFR run.
   target_p_ = p^1;
+
+  asymmetric_ = ba.Asymmetric();
+  if (asymmetric_) {
+    betting_trees_.reset(new BettingTrees(ba, target_p_));
+  } else {
+    betting_trees_.reset(new BettingTrees(ba));
+  }
 
   char dir[500];
   sprintf(dir, "%s/%s.%u.%s.%i.%i.%i.%s.%s", Files::OldCFRBase(),
 	  Game::GameName().c_str(), Game::NumPlayers(),
 	  card_abstraction_.CardAbstractionName().c_str(), Game::NumRanks(),
 	  Game::NumSuits(), Game::MaxStreet(),
-	  betting_abstraction_.BettingAbstractionName().c_str(),
+	  ba.BettingAbstractionName().c_str(),
 	  cfr_config_.CFRConfigName().c_str());
-  if (betting_abstraction_.Asymmetric()) {
+  if (asymmetric_) {
     char buf[100];
     sprintf(buf, ".p%u", target_p_);
     strcat(dir, buf);
@@ -115,7 +121,8 @@ double RGBR::Go(int it, int p) {
   delete [] streets;
 
   // Some of this logic is replicated in CFRP::HalfIteration().
-  
+
+#if 0
   if (subgame_street_ >= 0 && subgame_street_ <= max_street) {
     // subgame_running_ should be false for all threads
     // active_subgames_ should be nullptr for all threads
@@ -127,14 +134,17 @@ double RGBR::Go(int it, int p) {
       }
     }
   }
+#endif
 
-  if (subgame_street_ >= 0 && subgame_street_ <= max_street) pre_phase_ = true;
+  // if (subgame_street_ >= 0 && subgame_street_ <= max_street) pre_phase_ = true;
   shared_ptr<double []> vals = ProcessRoot(betting_trees_.get(), p, hand_tree_.get());
+#if 0
   if (subgame_street_ >= 0 && subgame_street_ <= max_street) {
     WaitForFinalSubgames();
     pre_phase_ = false;
     vals = ProcessRoot(betting_trees_.get(), p, hand_tree_.get());
   }
+#endif
   
   int num_hole_card_pairs = Game::NumHoleCardPairs(0);
 
