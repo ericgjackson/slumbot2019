@@ -177,8 +177,8 @@ void SubgameSolver::Resolve(Node *node, const string &action_sequence,
   int num_players = Game::NumPlayers();
   HandTree hand_tree(st, target_bd_, Game::MaxStreet());
   UnsafeEGCFR eg_cfr(subgame_card_abstraction_, base_card_abstraction_,
-		     subgame_betting_abstraction_, base_betting_abstraction_,
-		     subgame_cfr_config_, base_cfr_config_, subgame_buckets_, num_threads_);
+		     base_betting_abstraction_, subgame_cfr_config_, base_cfr_config_,
+		     subgame_buckets_, num_threads_);
   if (st < Game::MaxStreet()) {
     eg_cfr.SetSplitStreet(st + 1);
   }
