@@ -23,6 +23,7 @@
 #include "cfr_utils.h"
 #include "cfrd_eg_cfr.h"
 #include "combined_eg_cfr.h"
+#include "dynamic_cbr.h"
 #include "eg_cfr.h"
 #include "files.h"
 #include "game.h"
@@ -208,8 +209,7 @@ SubgameSolver::SubgameSolver(const CardAbstraction &base_card_abstraction,
   if (base_mem_ && method != ResolvingMethod::UNSAFE) {
     // We are calculating CBRs from the *base* strategy, not the resolved
     // endgame strategy.  So pass in base_card_abstraction_, etc.
-    dynamic_cbr_.reset(new DynamicCBR(base_card_abstraction_, base_betting_abstraction_,
-				      base_cfr_config_, base_buckets_, 1));
+    dynamic_cbr_.reset(new DynamicCBR(base_card_abstraction_, base_cfr_config_, base_buckets_, 1));
     if (current_) {
       unique_ptr<bool []> subgame_streets(new bool[max_street + 1]);
       for (int st = 0; st <= max_street; ++st) {
@@ -287,8 +287,8 @@ void SubgameSolver::ResolveUnsafe(Node *node, const string &action_sequence,
   unique_ptr<EGCFR> eg_cfr;
   if (method_ == ResolvingMethod::UNSAFE) {
     eg_cfr.reset(new UnsafeEGCFR(subgame_card_abstraction_, base_card_abstraction_,
-				 subgame_betting_abstraction_, base_betting_abstraction_,
-				 subgame_cfr_config_, base_cfr_config_, subgame_buckets_, 1));
+				 base_betting_abstraction_, subgame_cfr_config_, base_cfr_config_,
+				 subgame_buckets_, 1));
   } else {
     fprintf(stderr, "Method not supported yet\n");
     exit(-1);
@@ -328,14 +328,12 @@ void SubgameSolver::ResolveSafe(Node *node, const string &action_sequence,
   unique_ptr<EGCFR> eg_cfr;
   if (method_ == ResolvingMethod::CFRD) {
     eg_cfr.reset(new CFRDEGCFR(subgame_card_abstraction_, base_card_abstraction_,
-			       subgame_betting_abstraction_, base_betting_abstraction_,
-			       subgame_cfr_config_, base_cfr_config_, subgame_buckets_, cfrs_,
-			       zero_sum_, 1));
+			       base_betting_abstraction_, subgame_cfr_config_, base_cfr_config_,
+			       subgame_buckets_, cfrs_, zero_sum_, 1));
   } else if (method_ == ResolvingMethod::COMBINED) {
     eg_cfr.reset(new CombinedEGCFR(subgame_card_abstraction_, base_card_abstraction_,
-				   subgame_betting_abstraction_, base_betting_abstraction_,
-				   subgame_cfr_config_, base_cfr_config_, subgame_buckets_, cfrs_,
-				   zero_sum_, 1));
+				   base_betting_abstraction_, subgame_cfr_config_, base_cfr_config_,
+				   subgame_buckets_, cfrs_, zero_sum_, 1));
   } else {
     fprintf(stderr, "ResolveSafe unsupported method\n");
     exit(-1);
@@ -353,7 +351,7 @@ void SubgameSolver::ResolveSafe(Node *node, const string &action_sequence,
       // hand tree and have a global base strategy.
       // We assume that pure_streets_[st] tells us whether to purify
       // for the entire endgame.
-      t_vals = dynamic_cbr_->Compute(node, reach_probs, target_bd_, trunk_hand_tree_.get(), 0, 0,
+      t_vals = dynamic_cbr_->Compute(node, reach_probs, target_bd_, trunk_hand_tree_.get(),
 				     solve_p^1, cfrs_, zero_sum_, current_, pure_streets_[st]);
     } else {
       fprintf(stderr, "base_mem_ false not supported yet\n");
