@@ -50,6 +50,10 @@ shared_ptr<ReachProbs []> ReachProbs::CreateSuccReachProbs(Node *node, int gbd, 
 							   const ReachProbs &pred_reach_probs,
 							   bool purify) {
   int num_succs = node->NumSuccs();
+  if (num_succs == 0) {
+    fprintf(stderr, "CreateSuccReachProbs() called with zero-succ node\n");
+    exit(-1);
+  }
   shared_ptr<ReachProbs []> succ_reach_probs(new ReachProbs[num_succs]);
   int num_players = Game::NumPlayers();
   int max_street = Game::MaxStreet();

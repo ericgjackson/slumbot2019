@@ -202,7 +202,7 @@ With solve_all_subgames, combined:
 Try to expand to mb2b2tr, but use a richer base - mb2b1tr instead of mb1b1.
 ms3f1t1r1h5/mb2b1tr/200: Exploitability: 28.41 mbb/g
 base mb2b1tr, resolve and final mb2b2tr
-Resolve all turn and river nodes
+Resolve all turn and river nodes, combined method
 313m
 Exploitability: 550.56 mbb/g
   I guess I never did this with an mb1b1 base.

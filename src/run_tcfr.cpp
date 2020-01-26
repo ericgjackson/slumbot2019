@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <memory>
 #include <string>
 
 #include "betting_abstraction.h"
@@ -20,6 +21,7 @@
 #include "tcfr.h"
 
 using std::string;
+using std::unique_ptr;
 
 static void Usage(const char *prog_name) {
   fprintf(stderr, "USAGE: %s <game params> <card params> <betting params> <CFR params> "

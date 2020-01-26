@@ -286,3 +286,27 @@ Redo with new RMProbs(), ComputeOurValues().
 
 ----------------------------------
 
+Compare ecfr to bcfr2
+
+ms3f1t1r1h5/nhs3/mb1b1
+Single-threaded below
+
+With FTL
+10m: Exploitability: 1230.56 mbb/g
+100m: Exploitability: 1281.35 mbb/g
+
+Without FTL
+10m (30s):    Exploitability: 1227.01 mbb/g
+100m (4m16s): Exploitability: 1300.00 mbb/g
+
+nxhs3
+10m (39s):    Exploitability: 695.55 mbb/g
+100m (6m33s): Exploitability: 265.66 mbb/g
+
+Eight-threaded
+nxhs3:
+1b (113m): Exploitability: 181.23 mbb/g
+
+
+-------------------------------------------
+

@@ -15,7 +15,7 @@ poker games
 
 ## Prerequisites
 
-You should have a version of gcc that supports C++ 17.
+You should have a version of gcc that supports C++ 17.  gcc 7.3 is known to work.
 
 Set up a "static" directory and a "cfr" directory with enough disk space available.
 Specify these paths in files.cpp.
@@ -36,7 +36,7 @@ cd runs
 ../bin/build_hand_value_tree ms1f3_params
 ../bin/build_betting_tree ms1f3_params mb1b1_params 
 ../bin/run_cfrp ms1f3_params none_params mb1b1_params cfrps_params 8 1 200
-../bin/run_rgbr ms1f3_params none_params mb1b1_params cfrps_params 8 200 avg
+../bin/run_rgbr ms1f3_params none_params mb1b1_params cfrps_params 8 200 avg raw
 ```
 
 ## MCCFR
@@ -62,7 +62,7 @@ cd runs
 ### Real-Game Best-Response
 
 ```
-../bin/run_rgbr ms1f3_params none_params mb1b1_params cfrps_params 8 200 avg
+../bin/run_rgbr ms1f3_params none_params mb1b1_params cfrps_params 8 200 avg raw
 ```
 
 ### Head-to-head

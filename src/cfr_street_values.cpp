@@ -568,6 +568,43 @@ void CFRStreetValues<T>::MergeInto(Node *full_node, Node *subgame_node, int root
   }
 }
 
+template <typename T> void CopyNValues(T *from_values, T *to_values, int num) {
+  for (int i = 0; i < num; ++i) to_values[i] = from_values[i];
+}
+
+template void CopyNValues<double>(double *from_values, double *to_values, int num);
+template void CopyNValues<int>(int *from_values, int *to_values, int num);
+
+template <typename T> void CopyUnabstractedValues(T *from_values, T *to_values, int st,
+						  int num_succs, int from_bd, int to_bd) {
+  int num_hole_card_pairs = Game::NumHoleCardPairs(st);
+  int num_values = num_hole_card_pairs * num_succs;
+  int from_offset = from_bd * num_values;
+  int to_offset = to_bd * num_values;
+  CopyNValues(from_values + from_offset, to_values + to_offset, num_values);
+}
+
+template void CopyUnabstractedValues<double>(double *from_values, double *to_values, int st,
+					     int num_succs, int from_bd, int to_bd);
+template void CopyUnabstractedValues<int>(int *from_values, int *to_values, int st,
+					  int num_succs, int from_bd, int to_bd);
+
+#if 0
+template <typename T>
+void CFRStreetValues<T>::CopyUnabstractedValues(Node *from_node, CFRStreetValues<T> *to_csv,
+						Node *to_node, int from_bd, int to_bd) {
+  int pa = from_node->PlayerActing(0);
+  int from_num_succs = from_node->NumSuccs();
+  int to_num_succs = to_node->NumSuccs();
+  if (from_num_succs != to_num_succs) {
+    fprintf(stderr, "Mismatched num_succs\n");
+    exit(-1);
+  }
+  T *from_values = AllValues(pa, from_node->NonterminalID());
+  T *to_values = to_csv->AllValues(pa, to_node->NonterminalID());
+  CopyUnabstractedValues(from_values, to_values, st_, from_num_succs, from_bd, to_bd);
+}
+#endif
 
 template class CFRStreetValues<int>;
 template class CFRStreetValues<double>;

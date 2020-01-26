@@ -8,6 +8,7 @@
 #include "betting_abstraction.h"
 #include "betting_abstraction_params.h"
 #include "betting_tree.h"
+#include "betting_trees.h"
 #include "files.h"
 #include "game.h"
 #include "game_params.h"
@@ -60,10 +61,11 @@ int main(int argc, char *argv[]) {
   vector<Node *> path;
   Walk(betting_tree.Root(), &path, &builder, st);
 #endif
-  int max_street = Game::MaxStreet();
-  vector< vector<double> > bet_fracs(max_street + 1);
-  bet_fracs[2].push_back(0.5);
-  bet_fracs[3].push_back(0.5);
-  BettingTree subtree(builder.Build(bet_fracs, 2, 18).get());
-  subtree.Display();
+  ObservedBets observed_bets;
+  // P1 bet on turn after P0 check
+  observed_bets.AddObservedBet(2, 1, 0, 0, 18);
+  // P0 opening bet on river
+  observed_bets.AddObservedBet(3, 0, 0, 1, 36);
+  unique_ptr<BettingTrees> subtrees(builder.BuildTrees(observed_bets, 2, 18));
+  subtrees->GetBettingTree()->Display();
 }

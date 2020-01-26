@@ -1,11 +1,27 @@
+Have a crash in solve_all_backup_subgames inside VCFR.  Lots of debugging statements added.
+Seems to be at end of loop over our succs.  Is it in the destructor of succ_state?
+
+Investigate some questions on holdem5/null/mb1b1:
+1) Is targeted CFR better or external CFR?
+2) Is FTL better or regret matching?
+3) Is my new bcfr2 implementation much slower than my old tcfr implementation?
+
+Try backup approach in which we always solve a subtree rooted at a street-initial node.
+Possibly even a turn subgame even when we have reached the river.
+
+Having trouble getting solve_all_backup_subgames to work.  I guess I should just keep plugging
+away.  Is there a better way to evaluate whether this approach works?
+
+Measure speed of solving backup turn subtrees.
+
+Can I assess base system on Amazon?  Can't load two systems into memory, I don't think.
+Need to make run_approx_rgbr and head_to_head not load entire system into memory.
+
 Train and assess big sym system.
 1) Seems like exploitability gets substantially worse over time.  Confirm.
 2) Seems like head to head improves and is asymptoting.
 3) Would like to know if exploitability decreases when incorporating resolving.
 4) Can I look at flop ranges and see if they look wacky?
-
-Build a base system.  Target 768 GB of RAM?  It's actually hard to use that much.  Find
-gaps in the betting abstraction?  Allow min bets?  Choose between external and targeted CFR.
 
 Progressive resolving.    How can I test if progressive endgame solving is working well?  Evaluate
 head to head a system with more bets against a system with fewer bets.  Incorporate progressive
@@ -13,13 +29,6 @@ resolving for the system with fewer bets.  What do I expect to see?  Competitive
 Should be better than translation.  Can do this with unabstracted game.
 
 Redo combined results in debugging that may be stale due to bug fix.
-
-Try backup approach in which we always solve a subtree rooted at a street-initial node.
-Possibly even a turn subgame even when we have reached the river.
-
-Instead of taking a path as input, maybe take a vector of bet sizes per street?
-First bet size on the turn, second bet size on the turn, etc.  Always allow one raise
-after the last given bet.
 
 We saw some bad results solving street-internal nodes with the unsafe method.  I don't think
 this is a bug; I just think resolving at street-internal nodes with the unsafe method is inherently

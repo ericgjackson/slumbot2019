@@ -29,6 +29,11 @@ r5d.24xlarge
 r5d.metal
   96 vcpu (48 physical cores), 768 GB RAM, Xeon
   $0.6689 per Hour
+  Now seeing $1.14/hr in us-east-1
+  $1.70 in us-west-2
+  $1.08 in us-west-1
+  $0.67 in us-east-2   ***
+  $1.53 in ca-central-1
 r5ad.24xlarge
   96 vcpu, 768 GB RAM, AMD
   $1.0034 per Hour  
@@ -60,6 +65,7 @@ $1/hr is $24/day is $720/mo
 Can get 768 GB RAM for that (r5d24xlarge)
 r5d.meta is better value for same RAM
 So let's say we are targeting 768 GB RAM.
+Do in us-east-2
 
 There's overhead; the HandValueTree or the HVB table.  Maybe 10 GB?
 
@@ -104,3 +110,72 @@ Allow 1/3 pot 3rd bet on preflop and flop: 1.87 TB, 1.78 TB
 Go back to quantizing regrets on all postflop streets: 737 GB (698 GB flop)
 Char regrets for flop; shorts for turn and river: 745 GB (698 GB flop)
 Good!
+Whoops, above was all using c_params.
+
+What do I need installed on my image?
+files.cpp should point to right place
+github key (done)
+sudo yum install git (done)
+sudo yum install gcc.x86_64 (done)
+sudo yum install gcc-c++.x86_64
+sudo yum install emacs.x86_64
+Should I clone the code?
+Should I build any files?
+Should I create data directory?  Maybe not.
+
+Spot request:
+Specify r5d.metal as minimal compute unit
+Specify availability zone?
+Attach instance storage
+Specify "ssh only" security group
+Modify fleet to only have r5d.metal
+Choose "lowest price"
+
+Do lsblk on instance to find device.
+sudo mkdir /data
+sudo mkdir /data2
+sudo chmod 777 /data
+sudo chmod 777 /data2
+mkdir /data/poker2019
+mkdir /data/poker2019/cfr
+mkdir /data/poker2019/static
+sudo mkfs -t ext4 <device1>
+sudo mkfs -t ext4 <device2>
+sudo mkfs -t ext4 <device3>
+sudo mount <device1> /data/poker2019/static
+sudo mount <device2> /data/poker2019/cfr
+sudo mount <device3> /data2
+sudo chmod 777 /data/poker2019/static
+sudo chmod 777 /data/poker2019/cfr
+sudo chmod 777 /data2
+mkdir /data/poker2019/cfr/holdem.???
+aws configure
+Remove old binaries, old object files
+git pull
+Modify max allocation size in tcfr.cpp
+Build build_hand_value_tree, run_tcfr, show_preflop_strategy, show_preflop_reach_probs, keep_backups
+Create go, go2 scripts
+Create go.kb, go.kb2 scripts
+Modify b_params to point to correct river buckets
+Copy old data to /data2
+mkdir holdem.2.b.13.4.3.big4sym.tcfrqcss
+Link files in /data2 to /data
+
+
+Need to build abstractions
+Build turn features
+Cluster turn buckets
+Combine river features with combine_features
+Very very minor differences in combined features.
+  Number of distinct objects changed by one.  Not worrying about it.
+About 13m to start from scratch
+About 10m for 10m iterations
+  If this holds up, 1000m for 1b.  About 17 hours.
+  Probably will be faster.
+About 20m to write out
+Device is 87% full
+Need to save buckets if we want to be able to interpret computed strategies.
+s3.us-east-2.amazonaws.com
+I somehow ended up with a mismatch between b_params on Amazon and b_params at home, I think.
+Doesn't really matter.  The bucket files on Amazon tell us what we need.
+No hand value tree?!?

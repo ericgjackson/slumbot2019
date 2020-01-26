@@ -247,22 +247,6 @@ shared_ptr<double []> VCFR::OurChoice(Node *p0_node, Node *p1_node, int gbd, VCF
     int p1_s = pa == 0 ? succ_mapping[s] : s;
     VCFRState succ_state(*state, node, s);
     succ_vals[s] = Process(p0_node->IthSucc(p0_s), p1_node->IthSucc(p1_s), gbd, &succ_state, st);
-#if 0
-    bool debug1 = state->ActionSequence() == "x" && state->P() == 1;
-    if (debug1) {
-      fprintf(stderr, "Root s %i succ_vals[s][6] %f\n", s, succ_vals[s][6]);
-    }
-    bool debug2 = state->ActionSequence() == "xb4cc" && state->P() == 1;
-    if (debug2) {
-      const CanonicalCards *hands = state->GetHandTree()->Hands(st, gbd);
-      for (int i = 0; i < num_hole_card_pairs; ++i) {
-	const Card *cards = hands->Cards(i);
-	if (cards[0] == MakeCard(1, 0) && cards[1] == MakeCard(0, 0)) {
-	  fprintf(stderr, "xb4cc gbd %i s %i succ_vals[s][%i] %f\n", gbd, s, i, succ_vals[s][i]);
-	}
-      }
-    }
-#endif
   }
   if (num_succs == 1) {
     vals = succ_vals[0];
@@ -493,8 +477,8 @@ shared_ptr<double []> VCFR::OppChoice(Node *p0_node, Node *p1_node, int gbd, VCF
 
   unique_ptr<int []> succ_mapping = GetSuccMapping(node, responding_node);
   shared_ptr<double []> vals;
-  // double succ_sum_opp_probs;
   for (int s = 0; s < num_succs; ++s) {
+    // We can't prune now.  Is that a big problem?
 #if 0
     shared_ptr<double []> succ_total_card_probs(new double[max_card1]);
     CommonBetResponseCalcs(st, hands, succ_opp_probs[s].get(), &succ_sum_opp_probs,
@@ -508,18 +492,6 @@ shared_ptr<double []> VCFR::OppChoice(Node *p0_node, Node *p1_node, int gbd, VCF
     VCFRState succ_state(*state, node, s, succ_opp_probs[s]);
     shared_ptr<double []> succ_vals = Process(p0_node->IthSucc(p0_s), p1_node->IthSucc(p1_s), gbd,
 					      &succ_state, st);
-#if 0
-    bool debug = state->ActionSequence() == "xb4ccb12" && state->P() == 1 && gbd == 7;
-    if (debug) {
-      const CanonicalCards *hands = state->GetHandTree()->Hands(st, gbd);
-      for (int i = 0; i < num_hole_card_pairs; ++i) {
-	const Card *cards = hands->Cards(i);
-	if (cards[0] == MakeCard(1, 0) && cards[1] == MakeCard(0, 0)) {
-	  fprintf(stderr, "xb4ccb12 gbd %i s %i succ_vals[%i] %f\n", gbd, s, i, succ_vals[i]);
-	}
-      }
-    }
-#endif
     if (vals == nullptr) {
       vals = succ_vals;
     } else {
@@ -831,11 +803,6 @@ shared_ptr<double []> VCFR::Process(Node *p0_node, Node *p1_node, int gbd, VCFRS
       return Fold(p0_node, state->P(), state->Hands(st, gbd), state->OppProbs().get(),
 		  state->SumOppProbs(), state->TotalCardProbs().get());
     } else {
-#if 0
-      if (state->ActionSequence() == "xb4ccb12c" && state->P() == 1 && gbd == 7) {
-	fprintf(stderr, "xb4ccb12c p 1 gbd 7 sop %f\n", state->SumOppProbs());
-      }
-#endif
       return Showdown(p0_node, state->Hands(st, gbd), state->OppProbs().get(),
 		      state->SumOppProbs(), state->TotalCardProbs().get());
     }

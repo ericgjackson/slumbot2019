@@ -1,10 +1,49 @@
 holdem5
 With null abstraction, process size is 3g
 
-null/mb1b1/ecfr
+Old external CFR implementation which uses FTL and is implemented in tcfr.cpp.
+null/mb1b1/etcfr
+3.0 GB
 1b its in 105m
 Thread 0 avg P0 val -0.852390
 Thread 0 avg P1 val 0.325125
+1b: Exploitability: 111.69 mbb/g
+1b-2b in 122m
+2b: Exploitability: 89.20 mbb/g
+2b-3b in 113m
+3b: Exploitability: 82.89 mbb/g
+3b-4b in 108m
+4b: Exploitability: 79.66 mbb/g
+Think I turned switch off for all batches except the first.
+
+New external CFR implementation which uses regret matching.
+ecfr/holdem5/null/mb1b1/eight-threaded
+Process size 4.2g
+627m for 4b its.  Average of 157m/1b.
+1b: Exploitability: 134.85 mbb/g
+2b: Exploitability: 93.45 mbb/g
+3b: Exploitability: 76.55 mbb/g
+4b: Exploitability: 66.33 mbb/g
+5b: Exploitability: 59.45 mbb/g (165m)
+6b: Exploitability: 54.76 mbb/g (166m) (cum 958m)
+7b: Exploitability: 51.15 mbb/g (166m) (cum 1124m)
+
+
+null/mb1b1/tcfr
+10b in 382m; 38m/1b
+1b:  Exploitability: 235.03 mbb/g
+2b:  Exploitability: 163.70 mbb/g
+3b:  Exploitability: 131.05 mbb/g
+4b:  Exploitability: 111.18 mbb/g
+5b:  Exploitability: 98.29 mbb/g
+6b:  Exploitability: 88.50 mbb/g
+7b:  Exploitability: 80.58 mbb/g
+8b:  Exploitability: 74.11 mbb/g
+9b:  Exploitability: 68.85 mbb/g
+10b: Exploitability: 64.36 mbb/g
+10-20b in 367m; 37m/1b
+20b: Exploitability: 41.84 mbb/g (cum 749m)
+
 
 cfrps/none
 200 (6m27s): Exploitability: 29.47 mbb/g

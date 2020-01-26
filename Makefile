@@ -11,7 +11,7 @@ HEADS =	src/fast_hash.h src/rand.h src/constants.h src/files.h src/cards.h src/i
 	src/rgbr.h src/resolving_method.h src/subgame_utils.h src/dynamic_cbr.h src/eg_cfr.h \
 	src/unsafe_eg_cfr.h src/cfrd_eg_cfr.h src/combined_eg_cfr.h src/regret_compression.h \
 	src/tcfr.h src/rollout.h src/sparse_and_dense.h src/kmeans.h src/reach_probs.h \
-	src/backup_tree.h
+	src/backup_tree.h src/ecfr.h
 
 # -Wl,--no-as-needed fixes my problem of undefined reference to
 # pthread_create (and pthread_join).  Comments I found on the web indicate
@@ -43,13 +43,14 @@ OBJS =	obj/fast_hash.o obj/rand.o obj/files.o obj/cards.o obj/io.o obj/split.o o
 	obj/cfr_utils.o obj/vcfr.o obj/cfrp.o obj/rgbr.o obj/resolving_method.o \
 	obj/subgame_utils.o obj/dynamic_cbr.o obj/eg_cfr.o obj/unsafe_eg_cfr.o obj/cfrd_eg_cfr.o \
 	obj/combined_eg_cfr.o obj/regret_compression.o obj/tcfr.o obj/rollout.o \
-	obj/sparse_and_dense.o obj/kmeans.o obj/mcts.o obj/reach_probs.o obj/backup_tree.o
+	obj/sparse_and_dense.o obj/kmeans.o obj/mcts.o obj/reach_probs.o obj/backup_tree.o \
+	obj/ecfr.o
 
 all:	bin/show_num_boards bin/show_boards bin/build_hand_value_tree bin/build_null_buckets \
 	bin/build_rollout_features bin/combine_features bin/build_unique_buckets \
 	bin/build_kmeans_buckets bin/crossproduct bin/prify bin/show_num_buckets \
-	bin/build_betting_tree bin/show_betting_tree bin/run_cfrp bin/run_tcfr \
-	bin/run_rgbr bin/solve_all_subgames \
+	bin/build_betting_tree bin/show_betting_tree bin/run_cfrp bin/run_tcfr bin/run_ecfr \
+	bin/run_rgbr bin/solve_all_subgames bin/solve_all_backup_subgames \
 	bin/solve_one_subgame_safe bin/solve_one_subgame_unsafe bin/progressively_solve_subgames \
 	bin/assemble_subgames bin/dump_file bin/show_preflop_strategy bin/show_preflop_reach_probs \
 	bin/show_probs_at_node bin/play bin/head_to_head bin/mc_node bin/eval_node bin/sampled_br \
@@ -108,12 +109,19 @@ bin/run_cfrp:	obj/run_cfrp.o $(OBJS) $(HEADS)
 bin/run_tcfr:	obj/run_tcfr.o $(OBJS) $(HEADS)
 	g++ $(LDFLAGS) $(CFLAGS) -o bin/run_tcfr obj/run_tcfr.o $(OBJS) $(LIBRARIES)
 
+bin/run_ecfr:	obj/run_ecfr.o $(OBJS) $(HEADS)
+	g++ $(LDFLAGS) $(CFLAGS) -o bin/run_ecfr obj/run_ecfr.o $(OBJS) $(LIBRARIES)
+
 bin/run_rgbr:	obj/run_rgbr.o $(OBJS) $(HEADS)
 	g++ $(LDFLAGS) $(CFLAGS) -o bin/run_rgbr obj/run_rgbr.o $(OBJS) $(LIBRARIES)
 
 bin/solve_all_subgames:	obj/solve_all_subgames.o $(OBJS) $(HEADS)
 	g++ $(LDFLAGS) $(CFLAGS) -o bin/solve_all_subgames obj/solve_all_subgames.o $(OBJS) \
 	$(LIBRARIES)
+
+bin/solve_all_backup_subgames:	obj/solve_all_backup_subgames.o $(OBJS) $(HEADS)
+	g++ $(LDFLAGS) $(CFLAGS) -o bin/solve_all_backup_subgames obj/solve_all_backup_subgames.o \
+	$(OBJS) $(LIBRARIES)
 
 bin/solve_one_subgame_safe:	obj/solve_one_subgame_safe.o $(OBJS) $(HEADS)
 	g++ $(LDFLAGS) $(CFLAGS) -o bin/solve_one_subgame_safe obj/solve_one_subgame_safe.o $(OBJS) \
@@ -137,6 +145,10 @@ bin/dump_file:	obj/dump_file.o $(OBJS) $(HEADS)
 bin/show_preflop_strategy:	obj/show_preflop_strategy.o $(OBJS) $(HEADS)
 	g++ $(LDFLAGS) $(CFLAGS) -o bin/show_preflop_strategy obj/show_preflop_strategy.o $(OBJS) \
 	$(LIBRARIES)
+
+bin/show_preflop_reach_probs:	obj/show_preflop_reach_probs.o $(OBJS) $(HEADS)
+	g++ $(LDFLAGS) $(CFLAGS) -o bin/show_preflop_reach_probs obj/show_preflop_reach_probs.o \
+	$(OBJS) $(LIBRARIES)
 
 bin/show_probs_at_node:	obj/show_probs_at_node.o $(OBJS) $(HEADS)
 	g++ $(LDFLAGS) $(CFLAGS) -o bin/show_probs_at_node obj/show_probs_at_node.o $(OBJS) \

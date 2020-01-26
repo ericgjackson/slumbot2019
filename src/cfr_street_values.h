@@ -87,4 +87,7 @@ protected:
   CFRValueType file_value_type_;
 };
 
+template <typename T> void CopyUnabstractedValues(T *from_values, T *to_values, int st,
+						  int num_succs, int from_bd, int to_bd);
+
 #endif
