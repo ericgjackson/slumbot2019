@@ -84,6 +84,7 @@ class BettingTree {
   BettingTree(Node *subtree_root);
   virtual ~BettingTree(void) {}
   void Display(void) const;
+  void Display(Node *node) const;
   Node *Root(void) const {return root_.get();}
   int NumTerminals(void) const {return num_terminals_;}
   Node *Terminal(int i) const {return terminals_[i];}

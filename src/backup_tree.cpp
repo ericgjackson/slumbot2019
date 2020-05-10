@@ -29,6 +29,14 @@ using std::string;
 using std::unique_ptr;
 using std::vector;
 
+ObservedBets::ObservedBets(const ObservedBets &src) {
+  int num = src.observed_bets_.size();
+  observed_bets_.resize(num);
+  for (int i = 0; i < num; ++i) {
+    observed_bets_[i] = src.observed_bets_[i];
+  }
+}
+
 // No checking for dups
 void ObservedBets::AddObservedBet(int st, int p, int npbs, int npb, int sz) {
   ObservedBet ob;

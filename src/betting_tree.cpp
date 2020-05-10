@@ -210,6 +210,23 @@ void BettingTree::Display(void) const {
   root_->PrintTree(0, "", &seen, initial_street_);
 }
 
+void BettingTree::Display(Node *node) const {
+  int num_players = Game::NumPlayers();
+  int max_street = Game::MaxStreet();
+  vector< vector< vector<bool> > > seen(max_street + 1);
+  for (int st = 0; st <= max_street; ++st) {
+    seen[st].resize(num_players);
+    for (int p = 0; p < num_players; ++p) {
+      int num_nt = NumNonterminals(p, st);
+      seen[st][p].resize(num_nt);
+      for (int i = 0; i < num_nt; ++i) {
+	seen[st][p][i] = false;
+      }
+    }
+  }
+  node->PrintTree(0, "", &seen, initial_street_);
+}
+
 void BettingTree::FillTerminalArray(Node *node) {
   if (node->Terminal()) {
     int terminal_id = node->TerminalID();

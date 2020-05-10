@@ -1,0 +1,51 @@
+ms1f1
+mb1b1 base, mb1b1bkf final
+mb1b1bkf allows a raise on the flop
+
+solve_all_backup_subgames
+P0 best response: -0.062410 (-31.21 mbb/g)
+P1 best response: 0.373713 (186.86 mbb/g)
+Gap: 0.311302
+Exploitability: 77.83 mbb/g
+
+solve_all_subgames
+P0 best response: -0.067685 (-33.84 mbb/g)
+P1 best response: 0.379039 (189.52 mbb/g)
+Gap: 0.311354
+Exploitability: 77.84 mbb/g
+Essentially matches!
+
+ms2f1t1
+mb1b1 base, mb1b1bkt final
+mb1b1bkt allows a raise on the turn
+
+solve_all_subgames
+Resolving flop
+P0 best response: -0.323237 (-161.62 mbb/g)
+P1 best response: 0.482014 (241.01 mbb/g)
+Gap: 0.158777
+Exploitability: 39.69 mbb/g
+
+Resolving turn
+P0 best response: -0.128782 (-64.39 mbb/g)
+P1 best response: 0.689880 (344.94 mbb/g)
+Gap: 0.561098
+Exploitability: 140.27 mbb/g
+
+--------------------
+
+Redoing May 2020
+solve_all_backup_subgames
+ms2f1t1
+mb1b1 base, mb1b1bkt final
+mb1b1bkt allows a raise on the turn
+
+Resolving turns
+8.9s 8-threaded
+time ../bin/solve_all_backup_subgames ms2f1t1h5_params none_params none_params none_params mb1b1_params mb1b1bkt_params cfrps_params cfrps_params cfrpsmb2_params 2 200 200 unsafe 1 8
+Exploitability: 140.27 mbb/g
+
+Resolving flops
+11m34s single-threaded
+3m29s 8-threaded
+Exploitability: 39.69 mbb/g

@@ -1,6 +1,3 @@
-Have a crash in solve_all_backup_subgames inside VCFR.  Lots of debugging statements added.
-Seems to be at end of loop over our succs.  Is it in the destructor of succ_state?
-
 Investigate some questions on holdem5/null/mb1b1:
 1) Is targeted CFR better or external CFR?
 2) Is FTL better or regret matching?

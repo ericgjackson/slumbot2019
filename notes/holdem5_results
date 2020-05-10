@@ -44,6 +44,9 @@ null/mb1b1/tcfr
 10-20b in 367m; 37m/1b
 20b: Exploitability: 41.84 mbb/g (cum 749m)
 
+Redoing 5/2020 with tcfr2_params (identical to tcfr_params)
+1b in 44m
+1b: Exploitability: 235.52 mbb/g
 
 cfrps/none
 200 (6m27s): Exploitability: 29.47 mbb/g

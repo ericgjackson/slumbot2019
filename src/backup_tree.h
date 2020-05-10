@@ -21,6 +21,7 @@ class ObservedBets {
 public:
   ObservedBets(void) {}
   ~ObservedBets(void) {}
+  ObservedBets(const ObservedBets &src);
   void AddObservedBet(int st, int p, int npbs, int npb, int sz);
   void GetObservedBetSizes(int st, int p, int npbs, int npb, std::vector<int> *sizes) const;
   bool ObservedACall(int st, int p, int npbs, int npb) const;
