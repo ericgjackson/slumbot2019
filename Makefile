@@ -54,7 +54,8 @@ all:	bin/show_num_boards bin/show_boards bin/build_hand_value_tree bin/build_nul
 	bin/solve_one_subgame_safe bin/solve_one_subgame_unsafe bin/progressively_solve_subgames \
 	bin/assemble_subgames bin/dump_file bin/show_preflop_strategy bin/show_preflop_reach_probs \
 	bin/show_probs_at_node bin/play bin/head_to_head bin/mc_node bin/eval_node bin/sampled_br \
-	bin/run_approx_rgbr bin/test_backup_tree bin/estimate_ram bin/find_gaps bin/keep_backups
+	bin/run_approx_rgbr bin/test_backup_tree bin/estimate_ram bin/find_gaps bin/keep_backups \
+	bin/quantize_sumprobs
 
 bin/show_num_boards:	obj/show_num_boards.o $(OBJS) $(HEADS)
 	g++ $(LDFLAGS) $(CFLAGS) -o bin/show_num_boards obj/show_num_boards.o $(OBJS) $(LIBRARIES)
@@ -183,6 +184,10 @@ bin/find_gaps:	obj/find_gaps.o $(OBJS) $(HEADS)
 
 bin/keep_backups:	obj/keep_backups.o $(OBJS) $(HEADS)
 	g++ $(LDFLAGS) $(CFLAGS) -o bin/keep_backups obj/keep_backups.o $(OBJS) $(LIBRARIES)
+
+bin/quantize_sumprobs:	obj/quantize_sumprobs.o $(OBJS) $(HEADS)
+	g++ $(LDFLAGS) $(CFLAGS) -o bin/quantize_sumprobs obj/quantize_sumprobs.o $(OBJS) \
+	$(LIBRARIES)
 
 bin/x:	obj/x.o $(OBJS) $(HEADS)
 	g++ $(LDFLAGS) $(CFLAGS) -o bin/x obj/x.o $(OBJS) $(LIBRARIES)

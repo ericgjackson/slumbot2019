@@ -6,13 +6,18 @@ Investigate some questions on holdem5/null/mb1b1:
 Try backup approach in which we always solve a subtree rooted at a street-initial node.
 Possibly even a turn subgame even when we have reached the river.
 
-Having trouble getting solve_all_backup_subgames to work.  I guess I should just keep plugging
-away.  Is there a better way to evaluate whether this approach works?
-
 Measure speed of solving backup turn subtrees.
 
-Can I assess base system on Amazon?  Can't load two systems into memory, I don't think.
-Need to make run_approx_rgbr and head_to_head not load entire system into memory.
+Assess progress of CFR on base system with head_to_head.  Quantize probs.
+Maybe I should just use a large instance and load all the sumprobs into memory.
+Or I could do head-to-head with resolving?  I could quantize the probs on disk first.
+River sumprobs for one system:   14.4 GB
+Turn sumprobs for one system:    8.4 GB
+Flop sumprobs for one system:    514.4 GB
+Preflop sumprobs for one system: 2.2 MB
+I guess I had 768 GB of RAM for CFR.
+I can reduce by a factor of 4 pretty easily.
+Wait, can I just use my built-in quantizing?
 
 Train and assess big sym system.
 1) Seems like exploitability gets substantially worse over time.  Confirm.

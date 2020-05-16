@@ -78,7 +78,7 @@ public:
 	 const CardAbstraction &bs_ca, const BettingAbstraction &bs_ba, const CFRConfig &bc_cc,
 	 bool a_quantize, bool b_quantize);
   ~Player(void) {}
-  void Go(int num_sampled_max_street_boards);
+  void Go(int num_sampled_max_street_boards, bool deterministic);
 private:
   void Showdown(Node *a_node, Node *b_node, const ReachProbs &reach_probs);
   void Fold(Node *a_node, Node *b_node, const ReachProbs &reach_probs);
@@ -619,35 +619,7 @@ void Player::ProcessMaxStreetBoard(int msbd) {
     }
     street_hands_[st] = hands;
   }
-  int num_board_cards = Game::NumBoardCards(max_street);
-  int num_hole_cards = Game::NumCardsForStreet(0);
-  int num_cards = num_board_cards + num_hole_cards;
-  const Card *board = BoardTree::Board(max_street, msbd_);
-  unique_ptr<Card []> cards(new Card[num_cards]);
-  for (int i = 0; i < num_board_cards; ++i) {
-    cards[num_hole_cards + i] = board[i];
-  }
-
   int num_players = Game::NumPlayers();
-#if 0
-  // Maintaining reach probs for hole card pairs consistent with *max-street* board.
-  int max_card1 = Game::MaxCard() + 1;
-  int num_enc = max_card1 * max_card1;
-  unique_ptr<shared_ptr<double []> []> reach_probs(new shared_ptr<double []>[num_players]);
-  for (int p = 0; p < num_players; ++p) {
-    reach_probs[p].reset(new double[num_enc]);
-    // Initialize the reach probs for *all* hole card pairs to 1.0 (not just those that are
-    // consistent with the sampled river board).  Note that we may be resolving a turn subgame
-    // so there may be hands that reach the turn subgame that are not consistent with the sampled
-    // river boad.
-    for (Card hi = 1; hi < max_card1; ++hi) {
-      for (Card lo = 0; lo < hi; ++lo) {
-	int enc = hi * max_card1 + lo;
-	reach_probs[p][enc] = 1.0;
-      }
-    }
-  }
-#endif
   unique_ptr<ReachProbs> reach_probs(ReachProbs::CreateRoot());
   Node *a_root, *b_root;
   for (b_pos_ = 0; b_pos_ < num_players; ++b_pos_) {
@@ -657,7 +629,7 @@ void Player::ProcessMaxStreetBoard(int msbd) {
   }
 }
 
-void Player::Go(int num_sampled_max_street_boards) {
+void Player::Go(int num_sampled_max_street_boards, bool deterministic) {
   num_resolves_ = 0;
   resolving_secs_ = 0;
   int max_street = Game::MaxStreet();
@@ -677,9 +649,13 @@ void Player::Go(int num_sampled_max_street_boards) {
     unique_ptr<int []> max_street_board_samples(new int[num_max_street_boards]);
     for (int bd = 0; bd < num_max_street_boards; ++bd) max_street_board_samples[bd] = 0;
     struct drand48_data rand_buf;
-    struct timeval time; 
-    gettimeofday(&time, NULL);
-    srand48_r((time.tv_sec * 1000) + (time.tv_usec / 1000), &rand_buf);
+    if (deterministic) {
+      srand48_r(0, &rand_buf);
+    } else {
+      struct timeval time; 
+      gettimeofday(&time, NULL);
+      srand48_r((time.tv_sec * 1000) + (time.tv_usec / 1000), &rand_buf);
+    }
     vector< pair<double, int> > v;
     for (int bd = 0; bd < num_max_street_boards; ++bd) {
       int board_count = BoardTree::BoardCount(max_street, bd);
@@ -723,9 +699,10 @@ static void Usage(const char *prog_name) {
   fprintf(stderr, "USAGE: %s <game params> <A card params> <B card params> "
 	  "<A betting abstraction params> <B betting abstraction params> <A CFR params> "
 	  "<B CFR params> <A it> <B it> <num sampled max street boards> [quantize|raw] "
-	  "[quantize|raw] <resolve A> <resolve B> (<resolve st>) (<A resolve card params> "
-	  "<A resolve betting params> <A resolve CFR config>) (<B resolve card params> "
-	  "<B resolve betting params> <B resolve CFR config>)\n", prog_name);
+	  "[quantize|raw] [deterministic|nondeterministic] <resolve A> <resolve B> "
+	  "(<resolve st>) (<A resolve card params> <A resolve betting params> "
+	  "<A resolve CFR config>) (<B resolve card params> <B resolve betting params> "
+	  "<B resolve CFR config>)\n", prog_name);
   fprintf(stderr, "\n");
   fprintf(stderr, "Specify 0 for <num sampled max street boards> to not sample\n");
   fprintf(stderr, "<resolve A> and <resolve B> must be \"true\" or \"false\"\n");
@@ -733,7 +710,7 @@ static void Usage(const char *prog_name) {
 }
 
 int main(int argc, char *argv[]) {
-  if (argc != 15 && argc != 19 && argc != 22) Usage(argv[0]);
+  if (argc != 16 && argc != 20 && argc != 23) Usage(argv[0]);
   Files::Init();
   unique_ptr<Params> game_params = CreateGameParams();
   game_params->ReadFromFile(argv[1]);
@@ -777,26 +754,32 @@ int main(int argc, char *argv[]) {
   if (qb == "quantize") b_quantize = true;
   else if (qb == "raw") b_quantize = false;
   else                  Usage(argv[0]);
+
+  bool deterministic = false;
+  string da = argv[13];
+  if (da == "deterministic")         deterministic = true;
+  else if (da == "nondeterministic") deterministic = false;
+  else                               Usage(argv[0]);
   
   bool resolve_a = false;
   bool resolve_b = false;
-  string ra = argv[13];
+  string ra = argv[14];
   if (ra == "true")       resolve_a = true;
   else if (ra == "false") resolve_a = false;
   else                    Usage(argv[0]);
-  string rb = argv[14];
+  string rb = argv[15];
   if (rb == "true")       resolve_b = true;
   else if (rb == "false") resolve_b = false;
   else                    Usage(argv[0]);
 
-  if (resolve_a && resolve_b && argc != 22)     Usage(argv[0]);
-  if (resolve_a && ! resolve_b && argc != 19)   Usage(argv[0]);
-  if (! resolve_a && resolve_b && argc != 19)   Usage(argv[0]);
-  if (! resolve_a && ! resolve_b && argc != 15) Usage(argv[0]);
+  if (resolve_a && resolve_b && argc != 23)     Usage(argv[0]);
+  if (resolve_a && ! resolve_b && argc != 20)   Usage(argv[0]);
+  if (! resolve_a && resolve_b && argc != 20)   Usage(argv[0]);
+  if (! resolve_a && ! resolve_b && argc != 16) Usage(argv[0]);
 
   int resolve_st = -1;
   if (resolve_a || resolve_b) {
-    if (sscanf(argv[15], "%i", &resolve_st) != 1) Usage(argv[0]);
+    if (sscanf(argv[16], "%i", &resolve_st) != 1) Usage(argv[0]);
   }
   
   unique_ptr<CardAbstraction> a_subgame_card_abstraction, b_subgame_card_abstraction;
@@ -804,17 +787,17 @@ int main(int argc, char *argv[]) {
   unique_ptr<CFRConfig> a_subgame_cfr_config, b_subgame_cfr_config;
   if (resolve_a) {
     unique_ptr<Params> subgame_card_params = CreateCardAbstractionParams();
-    subgame_card_params->ReadFromFile(argv[16]);
+    subgame_card_params->ReadFromFile(argv[17]);
     a_subgame_card_abstraction.reset(new CardAbstraction(*subgame_card_params));
     unique_ptr<Params> subgame_betting_params = CreateBettingAbstractionParams();
-    subgame_betting_params->ReadFromFile(argv[17]);
+    subgame_betting_params->ReadFromFile(argv[18]);
     a_subgame_betting_abstraction.reset(new BettingAbstraction(*subgame_betting_params));
     unique_ptr<Params> subgame_cfr_params = CreateCFRParams();
-    subgame_cfr_params->ReadFromFile(argv[18]);
+    subgame_cfr_params->ReadFromFile(argv[19]);
     a_subgame_cfr_config.reset(new CFRConfig(*subgame_cfr_params));
   }
   if (resolve_b) {
-    int a = resolve_a ? 19 : 16;
+    int a = resolve_a ? 20 : 17;
     unique_ptr<Params> subgame_card_params = CreateCardAbstractionParams();
     subgame_card_params->ReadFromFile(argv[a]);
     b_subgame_card_abstraction.reset(new CardAbstraction(*subgame_card_params));
@@ -833,5 +816,5 @@ int main(int argc, char *argv[]) {
 		resolve_a, resolve_b, *a_subgame_card_abstraction, *a_subgame_betting_abstraction,
 		*a_subgame_cfr_config, *b_subgame_card_abstraction, *b_subgame_betting_abstraction,
 		*b_subgame_cfr_config, a_quantize, b_quantize);
-  player.Go(num_sampled_max_street_boards);
+  player.Go(num_sampled_max_street_boards, deterministic);
 }

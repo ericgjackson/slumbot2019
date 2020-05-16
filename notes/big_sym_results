@@ -59,6 +59,9 @@ head_to_head
   1000 sampled max street boards (20m)
   Avg B outcome: 0.208352 (104.2 mbb/g)
   Avg P1 outcome: 0.272046 (136.0 mbb/g)
+Reran 5/16/2020
+  Avg B outcome: 0.206085 (103.0 mbb/g)
+  Avg P1 outcome: 0.276558 (138.3 mbb/g)
 51b vs. 56b
   1000 sampled max street boards (19m)
   Avg B outcome: 0.005300 (2.7 mbb/g)
