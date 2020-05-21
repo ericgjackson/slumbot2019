@@ -64,37 +64,39 @@ static void Walk(Node *node, int p, const Buckets &buckets, Reader **readers,
   if (node->Terminal()) return;
   int num_succs = node->NumSuccs();
   if (node->PlayerActing() == p) {
-    int st = node->Street();
-    int num_buckets = buckets.NumBuckets(st);
-    unique_ptr<int []> i_probs;
-    Reader *reader = readers[st];
-    Writer *writer = writers[st];
-    CFRValueType value_type = value_types[st];
-    if (value_type == CFRValueType::CFR_INT) {
-      i_probs.reset(new int[num_succs]);
-    }
-    for (int b = 0; b < num_buckets; ++b) {
-      int i_sum = 0;
+    if (num_succs > 1) {
+      int st = node->Street();
+      int num_buckets = buckets.NumBuckets(st);
+      unique_ptr<int []> i_probs;
+      Reader *reader = readers[st];
+      Writer *writer = writers[st];
+      CFRValueType value_type = value_types[st];
       if (value_type == CFRValueType::CFR_INT) {
-	for (int s = 0; s < num_succs; ++s) {
-	  i_probs[s] = reader->ReadIntOrDie();
-	  i_sum += i_probs[s];
-	}
+	i_probs.reset(new int[num_succs]);
       }
-      if (i_sum == 0) {
-	for (int s = 0; s < num_succs; ++s) {
-	  writer->WriteUnsignedChar(0);
+      for (int b = 0; b < num_buckets; ++b) {
+	int i_sum = 0;
+	if (value_type == CFRValueType::CFR_INT) {
+	  for (int s = 0; s < num_succs; ++s) {
+	    i_probs[s] = reader->ReadIntOrDie();
+	    i_sum += i_probs[s];
+	  }
 	}
-      } else {
-	double d_sum = i_sum;
-	for (int s = 0; s < num_succs; ++s) {
-	  if (i_probs[s] == i_sum) {
-	    // Make sure we don't try to write 256
-	    writer->WriteUnsignedChar(255);
-	  } else {
-	    double frac = i_probs[s] / d_sum;
-	    unsigned char c = (unsigned char)(frac * 256.0);
-	    writer->WriteUnsignedChar(c);
+	if (i_sum == 0) {
+	  for (int s = 0; s < num_succs; ++s) {
+	    writer->WriteUnsignedChar(0);
+	  }
+	} else {
+	  double d_sum = i_sum;
+	  for (int s = 0; s < num_succs; ++s) {
+	    if (i_probs[s] == i_sum) {
+	      // Make sure we don't try to write 256
+	      writer->WriteUnsignedChar(255);
+	    } else {
+	      double frac = i_probs[s] / d_sum;
+	      unsigned char c = (unsigned char)(frac * 256.0);
+	      writer->WriteUnsignedChar(c);
+	    }
 	  }
 	}
       }
