@@ -84,7 +84,7 @@ public:
 	       shared_ptr<unique_ptr<bool []> []> has_continuation, int num_threads,
 	       int thread_index, Node *p0_node, Node *p1_node, int pbd,
 	       const string &action_sequence, const ReachProbs *reach_probs);
-  void Initialize(int responder_p);
+  void Initialize(void);
   double Go(int responder_p);
   void Run(void);
   void Join(void);
@@ -687,7 +687,7 @@ shared_ptr<double []> PreResponder::Process(Node *p0_node, Node *p1_node,
   return vals;
 }
 
-void PreResponder::Initialize(int responder_p) {
+void PreResponder::Initialize(void) {
   // For asymmetric, we need both betting trees
   betting_trees_.reset(new BettingTrees(betting_abstraction_));
 
@@ -847,8 +847,8 @@ int main(int argc, char *argv[]) {
 			     *subgame_card_abstraction, *subgame_betting_abstraction,
 			     *subgame_cfr_config, *subgame_buckets, num_resolve_its, num_threads);
   double gap = 0;
+  pre_responder.Initialize();
   for (int responder_p = 0; responder_p < 2; ++responder_p) {
-    pre_responder.Initialize(responder_p);
     // post_responder.Initialize(responder_p);
     double val = pre_responder.Go(responder_p);
     gap += val;
