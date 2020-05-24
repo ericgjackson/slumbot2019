@@ -405,13 +405,15 @@ shared_ptr<double []> PreResponder::Transition(Node *p0_node, Node *p1_node,
       node = p0_node;
     }
     shared_ptr<double []> next_vals;
-    // Don't resolve if all-in.
-    if (resolve_ && node->LastBetTo() < betting_abstraction_.StackSize()) {
+    if (resolve_) {
       subtrees_.reset(CreateSubtrees(nst, node->PlayerActing(), node->LastBetTo(), -1,
 				     subgame_betting_abstraction_));
-      fprintf(stderr, "Resolving P%i %s pbd %i ngbd %i\n", responder_p_, action_sequence.c_str(),
-	      pbd, ngbd);
-      Resolve(ngbd, reach_probs, action_sequence, next_hand_tree);
+      // Don't resolve if all-in.
+      if (node->LastBetTo() < betting_abstraction_.StackSize()) {
+	fprintf(stderr, "Resolving P%i %s pbd %i ngbd %i\n", responder_p_, action_sequence.c_str(),
+		pbd, ngbd);
+	Resolve(ngbd, reach_probs, action_sequence, next_hand_tree);
+      }
       eg_cfr_->SetValueCalculation(true);
       int max_street = Game::MaxStreet();
       for (int st = street_; st <= max_street; ++st) {
