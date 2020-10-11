@@ -54,7 +54,7 @@ cd runs
 ../bin/build_rollout_features holdem_params 3 hs 1.0 wmls 0.5
 ../bin/build_unique_buckets holdem_params 2 hs hs
 ../bin/build_unique_buckets holdem_params 3 hs hs
-../bin/run_tcfr holdem_params nhs2_params mb1b1_params ecfr_params 8 0 1 100000000 1
+../bin/run_tcfr holdem_params nhs2_params mb1b1_params tcfr_params 8 0 1 100000000 1
 ```
 
 ## Evaluation

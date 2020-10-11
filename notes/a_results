@@ -7,3 +7,31 @@ Null for preflop and flop
 holdem/a/mb1b1/tcfr
 9.2g process size
 1b in
+
+run_approx_rgbr
+Sampling on river
+../bin/run_approx_rgbr holdem_params a_params mb1b1_params tcfr_params 0 raw 3 1 8
+1000 sampled boards (36s)
+  Exploitability: 363.27 mbb/g, 364.32 mbb/g
+1000 sampled boards, quantized
+  Exploitability: 362.55 mbb/g
+
+10000 sampled boards (1m1s)
+  Exploitability: 361.79 mbb/g
+Sampling on turn
+100 sampled boards (31s)
+  Exploitability: 593.52 mbb/g
+1000 sampled boards (1m21s)
+  Exploitability: 586.03 mbb/g
+Sampling on flop
+1 sampled board (30s)
+  Exploitability: 839.12 mbb/g
+10 sampled boards (1m47s)
+  Exploitability: 760.37 mbb/g
+100 sampled boards (12m39s)
+  Exploitability: 784.71 mbb/g
+
+This all seems too fast.
+Well, did I think a full real-game response would take 6 hours?  Maybe that is consistent.
+Try running run_rgbr with debug output; see how fast it goes
+Does it use too much memory?

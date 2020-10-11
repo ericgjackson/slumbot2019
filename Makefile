@@ -11,7 +11,9 @@ HEADS =	src/fast_hash.h src/rand.h src/constants.h src/files.h src/cards.h src/i
 	src/rgbr.h src/resolving_method.h src/subgame_utils.h src/dynamic_cbr.h src/eg_cfr.h \
 	src/unsafe_eg_cfr.h src/cfrd_eg_cfr.h src/combined_eg_cfr.h src/regret_compression.h \
 	src/tcfr.h src/rollout.h src/sparse_and_dense.h src/kmeans.h src/reach_probs.h \
-	src/backup_tree.h src/ecfr.h
+	src/backup_tree.h src/ecfr.h src/disk_probs.h src/agent.h src/logging.h src/socket_io.h \
+	src/nb_socket_io.h src/server.h src/match_state.h src/acpc_protocol.h src/bot.h \
+	src/acpc_server.h
 
 # -Wl,--no-as-needed fixes my problem of undefined reference to
 # pthread_create (and pthread_join).  Comments I found on the web indicate
@@ -44,7 +46,8 @@ OBJS =	obj/fast_hash.o obj/rand.o obj/files.o obj/cards.o obj/io.o obj/split.o o
 	obj/subgame_utils.o obj/dynamic_cbr.o obj/eg_cfr.o obj/unsafe_eg_cfr.o obj/cfrd_eg_cfr.o \
 	obj/combined_eg_cfr.o obj/regret_compression.o obj/tcfr.o obj/rollout.o \
 	obj/sparse_and_dense.o obj/kmeans.o obj/mcts.o obj/reach_probs.o obj/backup_tree.o \
-	obj/ecfr.o
+	obj/ecfr.o obj/disk_probs.o obj/agent.o obj/logging.o obj/socket_io.o obj/nb_socket_io.o \
+	obj/server.o obj/match_state.o obj/acpc_protocol.o obj/bot.o obj/acpc_server.o
 
 all:	bin/show_num_boards bin/show_boards bin/build_hand_value_tree bin/build_null_buckets \
 	bin/build_rollout_features bin/combine_features bin/build_unique_buckets \
@@ -140,6 +143,10 @@ bin/assemble_subgames:	obj/assemble_subgames.o $(OBJS) $(HEADS)
 	g++ $(LDFLAGS) $(CFLAGS) -o bin/assemble_subgames obj/assemble_subgames.o $(OBJS) \
 	$(LIBRARIES)
 
+bin/assemble_subgames2:	obj/assemble_subgames2.o $(OBJS) $(HEADS)
+	g++ $(LDFLAGS) $(CFLAGS) -o bin/assemble_subgames2 obj/assemble_subgames2.o $(OBJS) \
+	$(LIBRARIES)
+
 bin/dump_file:	obj/dump_file.o $(OBJS) $(HEADS)
 	g++ $(LDFLAGS) $(CFLAGS) -o bin/dump_file obj/dump_file.o $(OBJS) $(LIBRARIES)
 
@@ -189,6 +196,20 @@ bin/quantize_sumprobs:	obj/quantize_sumprobs.o $(OBJS) $(HEADS)
 	g++ $(LDFLAGS) $(CFLAGS) -o bin/quantize_sumprobs obj/quantize_sumprobs.o $(OBJS) \
 	$(LIBRARIES)
 
+bin/test_disk_probs:	obj/test_disk_probs.o $(OBJS) $(HEADS)
+	g++ $(LDFLAGS) $(CFLAGS) -o bin/test_disk_probs obj/test_disk_probs.o $(OBJS) $(LIBRARIES)
+
+bin/test_agent:	obj/test_agent.o $(OBJS) $(HEADS)
+	g++ $(LDFLAGS) $(CFLAGS) -o bin/test_agent obj/test_agent.o $(OBJS) $(LIBRARIES)
+
+bin/test_agent2:	obj/test_agent2.o $(OBJS) $(HEADS)
+	g++ $(LDFLAGS) $(CFLAGS) -o bin/test_agent2 obj/test_agent2.o $(OBJS) $(LIBRARIES)
+
+bin/run_acpc_server:	obj/run_acpc_server.o $(OBJS) $(HEADS)
+	g++ $(LDFLAGS) $(CFLAGS) -o bin/run_acpc_server obj/run_acpc_server.o $(OBJS) $(LIBRARIES)
+
+bin/run_bot:	obj/run_bot.o $(OBJS) $(HEADS)
+	g++ $(LDFLAGS) $(CFLAGS) -o bin/run_bot obj/run_bot.o $(OBJS) $(LIBRARIES)
+
 bin/x:	obj/x.o $(OBJS) $(HEADS)
 	g++ $(LDFLAGS) $(CFLAGS) -o bin/x obj/x.o $(OBJS) $(LIBRARIES)
-

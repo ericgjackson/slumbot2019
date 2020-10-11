@@ -111,7 +111,7 @@ class Writer {
   int BufPos(void);
 
  protected:
-  static const int kBufSize = 65536;
+  static const int kBufSize = 1048576;
 
   void Init(const char *filename, bool modify, int buf_size);
 

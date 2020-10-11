@@ -62,6 +62,7 @@ private:
   int NearestAllowableBetTo(int old_pot_size, int new_bet_to, int last_bet_size);
   void GetNewBetTos(int old_bet_to, int last_bet_size, const std::vector<double> &pot_fracs,
 		    int player_acting, int target_player, bool *bet_to_seen);
+  void GetAllowableBetTos(int old_bet_to, int last_bet_size, bool *bet_to_seen);
   void HandleBet(int street, int last_bet_size, int last_bet_to, int new_bet_to,
 		 int num_street_bets, int player_acting, int target_player, int *terminal_id,
 		 std::vector< std::shared_ptr<Node> > *bet_succs);

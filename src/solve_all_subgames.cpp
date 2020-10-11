@@ -146,7 +146,10 @@ SubgameSolver::SubgameSolver(const CardAbstraction &base_card_abstraction,
       // For unsafe method, don't need base probs outside trunk.
       trunk_streets[st] = st < solve_st_;
     } else {
-      trunk_streets[st] = (base_mem_ && ! current_) || st < solve_st_;
+      // Always do this?  Normally we can load the base strategy into memory, but not
+      // the full HandTree.
+      // trunk_streets[st] = (base_mem_ && ! current_) || st < solve_st_;
+      trunk_streets[st] = true;
     }
   }
   unique_ptr<bool []> compressed_streets(new bool[max_street + 1]);
@@ -181,7 +184,10 @@ SubgameSolver::SubgameSolver(const CardAbstraction &base_card_abstraction,
 #endif
   trunk_sumprobs_->Read(dir, base_it_, base_betting_trees_->GetBettingTree(), "x", -1, true, false);
 
-  if (base_mem_) {
+  // Do this even if base_mem_ = false?  We can load the base strategy into memory, but not
+  // the full HandTree.
+  // if (base_mem_) {
+  if (true) {
     // We are calculating CBRs from the *base* strategy, not the resolved
     // endgame strategy.  So pass in base_card_abstraction_, etc.
     dynamic_cbr_.reset(new DynamicCBR(base_card_abstraction_, base_cfr_config_, base_buckets_, 1));
@@ -457,13 +463,8 @@ void SubgameSolver::ResolveSafe(Node *node, int gbd, const string &action_sequen
       // fprintf(stderr, "solve_p %i t_vals[0] %f\n", solve_p, t_vals[0]);
       // exit(-1);
     } else {
-      fprintf(stderr, "base_mem_ false not supported yet\n");
-      exit(-1);
-#if 0
-      t_vals = dynamic_cbr_->Compute(base_subtree->Root(), reach_probs, gbd, &hand_tree,
-				     solve_p^1, cfrs_, zero_sum_, current_,
-				     pure_streets_[st]);
-#endif
+      t_vals = dynamic_cbr_->Compute(node, reach_probs, gbd, &hand_tree, solve_p^1, cfrs_,
+				     zero_sum_, current_, pure_streets_[st]);
     }
     // Pass in false for both_players.  I am doing separate solves for
     // each player.

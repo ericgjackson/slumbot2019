@@ -4,6 +4,53 @@ nwml2/mb1b1/tcfr
 9.2g process size
 Why so large?  Is it the buckets?  2 bytes per 2.7b river hands?
 
+-----------
+
+Redo May 2020
+nnwml1wml1/mb1b1/tcfr
+9.2gb process size
+1b in 54m
+run_approx_rgbr
+  Sample 100 rivers (33s):   Exploitability: 354.67 mbb/g
+  Sample 1000 rivers (35s):  Exploitability: 339.09 mbb/g
+  Sample 10000 rivers (60s): Exploitability: 337.25 mbb/g
+  Sample 1 turn (23s):       Exploitability: 436.73 mbb/g
+  Sample 10 turns (24s):     Exploitability: 732.67 mbb/g
+  Sample 100 turns (30s):    Exploitability: 643.39 mbb/g
+  Sample 1000 turns (81s):   Exploitability: 610.01 mbb/g
+  Sample 1 flop (34s):       Exploitability: 631.68 mbb/g
+  Sample 10 flops (91s):     Exploitability: 807.63 mbb/g
+  Sample 100 flops (13m):    Exploitability: 768.34 mbb/g
+run_approx_rgbr with resolving (cfrps/200 its/mb1b1)
+  This is a highly optimistic measure of exploitability.
+  Sample 1 river (34s): Exploitability: 1.12 mbb/g
+    0.03s/resolve
+  Sample 1 turn (80s): Exploitability: 5.11 mbb/g
+    3.16s/resolve
+  Sample 1 flop (38m): Exploitability: 9.58 mbb/g
+    376s/resolve
+
+1b-2b in 51m
+run_approx_rgbr
+  Sample 10000 rivers (59s): Exploitability: 357.87 mbb/g
+  Sample 1000 turns (78s):   Exploitability: 637.82 mbb/g
+  Sample 10 flops (99s):     Exploitability: 850.63 mbb/g
+  Sample 100 flops (13m):    Exploitability: 849.81 mbb/g
+
+Exploitability worse already at 2b.
+
+head_to_head
+1b vs. 2b
+Num sampled max street boards
+1 (29s):      Avg B outcome: -0.022527 (-11.3 mbb/g)
+10 (29s):     Avg B outcome: 0.017088 (8.5 mbb/g)
+100 (30s):    Avg B outcome: 0.023560 (11.8 mbb/g)
+1000 (39s):   Avg B outcome: 0.027836 (13.9 mbb/g)
+10000 (132s): Avg B outcome: 0.028864 (14.4 mbb/g)
+
+-----------
+
+
 1b-2b in 51m
 play (100m; 6.5m) 1b vs. 2b: Avg B outcome: 0.029203 (14.6 mbb/g) over 100000000 dup hands
 MBB confidence interval: 13.671970-15.530850

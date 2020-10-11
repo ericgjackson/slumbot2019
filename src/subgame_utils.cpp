@@ -449,7 +449,7 @@ static void ReadSubgame(Node *node, const string &action_sequence, int gbd,
     if (! reader.AtEnd()) {
       fprintf(stderr, "Reader didn't get to end; pos %lli size %lli\nFile: %s\n",
 	      reader.BytePos(), reader.FileSize(), filename);
-      exit(-1);	      
+      exit(-1);
     }
   }
 

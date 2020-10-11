@@ -28,6 +28,10 @@ sampling 10000, quantize (194m)
   P1 BR val: 1.239820
   P0 BR val: 0.804100
   Exploitability: 510.98 mbb/g
+sampling 1, quantize, 5/16/2020 (4m):    Exploitability: 606.87 mbb/g
+sampling 10, quantize, 5/16/2020 (3.5m): Exploitability: 482.33 mbb/g
+sampling 100, quantize, 5/16/2020 (3m):  Exploitability: 489.69 mbb/g
+
 
 Resolving rivers
 56b

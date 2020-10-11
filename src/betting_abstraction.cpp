@@ -200,10 +200,12 @@ BettingAbstraction::BettingAbstraction(const Params &params) {
   }
 
   bool need_bet_sizes = false;
-  for (int st = 0; st <= max_street; ++st) {
-    if (! all_bet_sizes_[st] && ! all_even_bet_sizes_[st]) {
-      need_bet_sizes = true;
-      break;
+  if (! params.IsSet("AllowableBetTos")) {
+    for (int st = 0; st <= max_street; ++st) {
+      if (! all_bet_sizes_[st] && ! all_even_bet_sizes_[st]) {
+	need_bet_sizes = true;
+	break;
+      }
     }
   }
   

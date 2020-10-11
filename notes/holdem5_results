@@ -43,13 +43,23 @@ null/mb1b1/tcfr
 10b: Exploitability: 64.36 mbb/g
 10-20b in 367m; 37m/1b
 20b: Exploitability: 41.84 mbb/g (cum 749m)
+  Approx RGBR, river, no sampling: Exploitability: 14.51 mbb/g
+  Approx RGBR, turn, no sampling:  Exploitability: 19.33 mbb/g
+  Approx RGBR, flop, no sampling:  Exploitability: 26.64 mbb/g
+  Approx RGBR, flop, sample 10:    Exploitability: 19-32
 
 Redoing 5/2020 with tcfr2_params (identical to tcfr_params)
 1b in 44m
 1b: Exploitability: 235.52 mbb/g
 
 cfrps/none
+RGBR
 200 (6m27s): Exploitability: 29.47 mbb/g
+Approx RGBR
+River, no sampling: Exploitability: 6.46 mbb/g
+Turn, no sampling:  Exploitability: 10.13 mbb/g
+Flop, no sampling:  Exploitability: 16.15 mbb/g
+
 
 nxhs3/mb1b1/tcfr
 1b in 42m: Exploitability: 242.34 mbb/g
@@ -87,6 +97,114 @@ combined: Exploitability: 396.98 mbb/g
 Resolve all river subgames at 10b with cfrps/400
 unsafe:   Exploitability: 666.36 mbb/g
 combined: Exploitability: 396.15 mbb/g
+Resolve all turn subgames at 1b with cfrps/200
+combined: Exploitability: 124.04 mbb/g
+Resolve all flop subgames at 1b with cfrps/200
+combined: Exploitability: 41.54 mbb/g
+Resolve all flop subgames at 1b with cfrps/150
+combined: Exploitability: 54.43 mbb/g
+Resolve all flop subgames at 1b with cfrpsw50/100
+combined:
+
 
 play
 unsafe vs. combined: Avg B outcome: -0.000393 (-0.2 mbb/g) over 100000000 dup hands
+
+------------------
+
+holdem5
+mb1b1aai
+cfrps
+200 its (12.5m)
+Exploitability: 127.73 mbb/g
+
+run_approx_rgbr
+Sample all turn boards
+Exploitability: 55.65 mbb/g
+Resolving turn subgames
+  Sample one turn board
+  Exploitability: 51.17 mbb/g
+  Sample all turn boards (23m)
+  Exploitability: 37.60 mbb/g
+
+
+
+------------------
+
+Size of null abstraction
+0: 25
+1: 7760
+2: 104750
+3: 1398100
+
+holdem5
+nwml0.5hs_params (99 buckets on turn, 122 buckets on river)
+1000:1 ratio on turn; 10000:1 ratio on river
+mb1b1
+tcfr_params
+
+Median hand strength on the turn
+Hand strength on the river
+
+1m:       Exploitability: 1426.61 mbb/g
+10m:      Exploitability: 1534.86 mbb/g
+100m:     Exploitability: 1577.10 mbb/g
+1b (25m): Exploitability: 1590.85 mbb/g
+2b (35m): Exploitability: 1603.07 mbb/g
+
+
+../bin/solve_all_subgames holdem5_params nwml0.5hs_params none_params mb1b1_params mb1b1_params tcfr_params cfrps_params 2 0 200 unsafe cbrs card zerosum avg none mem 1 8
+7m
+../bin/assemble_subgames holdem5_params nwml0.5hs_params none_params nullnone2_params mb1b1_params mb1b1_params tcfr_params cfrps_params cfrpsmu_params 2 0 200 unsafe
+
+../bin/run_rgbr holdem5_params nullnone2_params mb1b1_params cfrpsmu_params 8 200 avg raw
+
+Unsafe
+Resolve all turn subgames at 100m: Exploitability: 620.77 mbb/g
+Resolve all turn subgames at 1b:   Exploitability: 647.38 mbb/g
+Resolve all turn subgames at 2b:   Exploitability: 660.00 mbb/g
+
+Combined
+Resolve all turn subgames at 1b:   Exploitability: 350.42 mbb/g
+Resolve all turn subgames at 2b:   Exploitability: 358.84 mbb/g
+
+nwml5hs_params
+wml5 on turn (1204 buckets); hs on river (122 buckets)
+1b (28m): Exploitability: 1368.18 mbb/g
+2b (26m): Exploitability: 1371.39 mbb/g
+Combined
+Resolve all turn subgames at 1b: Exploitability: 236.25 mbb/g
+Resolve all turn subgames at 2b: Exploitability: 239.58 mbb/g
+That helps a fair bit
+
+h5a_params
+null preflop and flop
+wml5 on turn (1204 buckets)
+wml0.5xhs on river (1738 buckets)
+1b (27m): Exploitability: 1035.99 mbb/g
+Resolve all turn subgames (combined) at 1b:
+  Exploitability: 224.23 mbb/g
+  Approx RGBR, river, no sampling: Exploitability: 26.06 mbb/g
+  Approx RGBR, turn, no sampling:  Exploitability: 32.79 mbb/g
+  Approx RGBR, flop, no sampling:  Exploitability: 207.77 mbb/g
+
+h5b_params
+null preflop and flop
+wml3xwml9 turn (10,109 buckets)
+hs river (122 buckets)
+1b (28m): Exploitability: 1175.27 mbb/g
+Resolve all turn subgames (combined) at 1b: Exploitability: 156.63 mbb/g
+Helps a fair bit to increase the number of turn buckets.
+Going all the way to a null turn (nhs3) takes you from 156.63 to 124.04.
+  Null is 104,750 buckets on the turn
+
+Lessons:
+Increasing number of buckets for turn in base system helps?  Try river too.
+Don't need to train base for very long, at least not with crude abstractions and mb1b1
+Do I really believe this for holdem?  A null flop with a rich preflop and flop betting
+  abstraction may need a lot of training.
+More river buckets didn't help much (h5a vs. nwml5hs).
+
+Full game of holdem may be a better test
+Can switch to run_approx_rgbr probably
+Try numbers of turn/river buckets like 1k, 10k, 100k

@@ -1,7 +1,31 @@
 #!/bin/bash
 
+# ../bin/run_tcfr holdem5_params null_params mb1b1r2ps36_params tcfr_params 8 0 1 1000000000 1
+# ../bin/run_rgbr holdem5_params null_params mb1b1r2ps36_params tcfr_params 8 0 avg raw
+# ../bin/solve_all_subgames holdem5_params null_params none_params mb1b1r2ps36_params mb1b1_params tcfr_params cfrps_params 2 0 200 combined cbrs card zerosum avg none mem 1 8
+# ../bin/assemble_subgames holdem5_params null_params none_params nullnone2_params mb1b1r2ps36_params mb1b1_params tcfr_params cfrps_params cfrpsmc_params 2 0 200 combined
+# ../bin/run_rgbr holdem5_params nullnone2_params mb1b1_params cfrpsmc_params 8 200 avg raw
 
-../bin/solve_all_subgames ms2f1t1h5_params none_params none_params mb1b1_params mb1b1_params cfrps_params cfrps2_params 1 200 200 unsafe cbrs card zerosum avg none mem 8
-../bin/assemble_subgames ms2f1t1h5_params none_params none_params none_params mb1b1_params mb1b1_params cfrps_params cfrps2_params cfrpsmu2_params 1 200 200 unsafe
-# Expect 13.77.  Or 14.10 without --fast-math.
-../bin/run_rgbr ms2f1t1h5_params none_params mb1b1_params cfrpsmu2_params 1 200 avg raw
+# time ../bin/run_tcfr holdem5_params null_params mb1b1r2ps36_params tcfr_params 8 1 2 1000000000 1
+# ../bin/run_rgbr holdem5_params null_params mb1b1r2ps36_params tcfr_params 8 1 avg raw
+# time ../bin/solve_all_subgames holdem5_params null_params none_params mb1b1r2ps36_params mb1b1_params tcfr_params cfrps_params 2 1 200 combined cbrs card zerosum avg none mem 1 8
+# ../bin/assemble_subgames holdem5_params null_params none_params nullnone2_params mb1b1r2ps36_params mb1b1_params tcfr_params cfrps_params cfrpsmc_params 2 1 200 combined
+# ../bin/run_rgbr holdem5_params nullnone2_params mb1b1_params cfrpsmc_params 8 200 avg raw
+
+# time ../bin/run_tcfr holdem5_params null_params mb1b1r2ps36_params tcfr_params 8 2 3 1000000000 1
+# ../bin/run_rgbr holdem5_params null_params mb1b1r2ps36_params tcfr_params 8 2 avg raw
+# time ../bin/solve_all_subgames holdem5_params null_params none_params mb1b1r2ps36_params mb1b1_params tcfr_params cfrps_params 2 1 200 combined cbrs card zerosum avg none mem 2 8
+# ../bin/assemble_subgames holdem5_params null_params none_params nullnone2_params mb1b1r2ps36_params mb1b1_params tcfr_params cfrps_params cfrpsmc_params 2 2 200 combined
+# ../bin/run_rgbr holdem5_params nullnone2_params mb1b1_params cfrpsmc_params 8 200 avg raw
+
+# time ../bin/run_tcfr holdem5_params null_params mb1b1r2ps36_params tcfr_params 8 3 4 1000000000 1
+# ../bin/run_rgbr holdem5_params null_params mb1b1r2ps36_params tcfr_params 8 3 avg raw
+# time ../bin/solve_all_subgames holdem5_params null_params none_params mb1b1r2ps36_params mb1b1_params tcfr_params cfrps_params 2 3 200 combined cbrs card zerosum avg none mem 1 8
+# ../bin/assemble_subgames holdem5_params null_params none_params nullnone2_params mb1b1r2ps36_params mb1b1_params tcfr_params cfrps_params cfrpsmc_params 2 3 200 combined
+# ../bin/run_rgbr holdem5_params nullnone2_params mb1b1_params cfrpsmc_params 8 200 avg raw
+
+time ../bin/run_tcfr holdem5_params null_params mb1b1r2ps36_params tcfr_params 8 4 5 1000000000 1
+../bin/run_rgbr holdem5_params null_params mb1b1r2ps36_params tcfr_params 8 4 avg raw
+time ../bin/solve_all_subgames holdem5_params null_params none_params mb1b1r2ps36_params mb1b1_params tcfr_params cfrps_params 2 4 200 combined cbrs card zerosum avg none mem 1 8
+../bin/assemble_subgames holdem5_params null_params none_params nullnone2_params mb1b1r2ps36_params mb1b1_params tcfr_params cfrps_params cfrpsmc_params 2 4 200 combined
+../bin/run_rgbr holdem5_params nullnone2_params mb1b1_params cfrpsmc_params 8 200 avg raw

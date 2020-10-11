@@ -25,3 +25,9 @@ keep the multithreading in solve_all_subgames.
 
 Seems like it's better to solve an entire turn subgame than to do nested resolves of subgames
 rooted at street-internal nodes.  Suggests we should take backup approach.
+
+If resolving turns, the number of buckets on the river in the base doesn't matter that much.
+
+Big wins the earlier the street you can resolve at.
+
+Reentrant resolving seems like a good idea.

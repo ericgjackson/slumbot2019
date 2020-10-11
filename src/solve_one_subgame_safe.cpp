@@ -150,7 +150,6 @@ SubgameSolver::SubgameSolver(const CardAbstraction &base_card_abstraction,
   num_subgame_its_ = num_subgame_its;
   num_threads_ = num_threads;
   solve_st_ = StreetFromAction(target_action_sequence.c_str(), 0, true);
-  fprintf(stderr, "solve_st_ %i\n", solve_st_);
 
   base_betting_trees_.reset(new BettingTrees(base_betting_abstraction_));
 
@@ -168,7 +167,10 @@ SubgameSolver::SubgameSolver(const CardAbstraction &base_card_abstraction,
       // For unsafe method, don't need base probs outside trunk.
       trunk_streets[st] = st < solve_st_;
     } else {
-      trunk_streets[st] = (base_mem_ && ! current_) || st < solve_st_;
+      // Always do this?  Normally we can load the base strategy into memory, but not
+      // the full HandTree.
+      // trunk_streets[st] = (base_mem_ && ! current_) || st < solve_st_;
+      trunk_streets[st] = true;
     }
   }
   unique_ptr<bool []> compressed_streets(new bool[max_street + 1]);
@@ -201,12 +203,13 @@ SubgameSolver::SubgameSolver(const CardAbstraction &base_card_abstraction,
     strcat(dir, buf);
   }
 #endif
-  fprintf(stderr, "Reading trunk sumprobs\n");
   trunk_sumprobs_->Read(dir, base_it_, base_betting_trees_->GetBettingTree(), "x", -1, true,
 			quantize);
-  fprintf(stderr, "Read trunk sumprobs\n");
 
-  if (base_mem_ && method != ResolvingMethod::UNSAFE) {
+  // Do this even if base_mem_ = false?  We can load the base strategy into memory, but not
+  // the full HandTree.
+  // if (base_mem_ && method != ResolvingMethod::UNSAFE) {
+  if (method != ResolvingMethod::UNSAFE) {
     // We are calculating CBRs from the *base* strategy, not the resolved
     // endgame strategy.  So pass in base_card_abstraction_, etc.
     dynamic_cbr_.reset(new DynamicCBR(base_card_abstraction_, base_cfr_config_, base_buckets_, 1));
@@ -229,9 +232,7 @@ SubgameSolver::SubgameSolver(const CardAbstraction &base_card_abstraction,
     trunk_hand_tree_.reset(new HandTree(0, 0, max_street));
   } else {
     if (solve_st_ > 0) {
-      fprintf(stderr, "Creating hand tree\n");
       trunk_hand_tree_.reset(new HandTree(0, 0, solve_st_ - 1));
-      fprintf(stderr, "Created hand tree\n");
     } else {
       trunk_hand_tree_.reset(new HandTree(0, 0, 0));
     }
@@ -338,6 +339,9 @@ void SubgameSolver::ResolveSafe(Node *node, const string &action_sequence,
     fprintf(stderr, "ResolveSafe unsupported method\n");
     exit(-1);
   }
+  double resolving_secs = 0;
+  struct timespec start, finish;
+  clock_gettime(CLOCK_MONOTONIC, &start);
   // Don't support asymmetric yet
   unique_ptr<BettingTrees> subgame_subtrees(CreateSubtrees(node, 0, false));
   for (int solve_p = 0; solve_p < num_players; ++solve_p) {
@@ -354,13 +358,8 @@ void SubgameSolver::ResolveSafe(Node *node, const string &action_sequence,
       t_vals = dynamic_cbr_->Compute(node, reach_probs, target_bd_, trunk_hand_tree_.get(),
 				     solve_p^1, cfrs_, zero_sum_, current_, pure_streets_[st]);
     } else {
-      fprintf(stderr, "base_mem_ false not supported yet\n");
-      exit(-1);
-#if 0
-      t_vals = dynamic_cbr_->Compute(base_subtree->Root(), reach_probs, target_bd_, &hand_tree,
-				     st, target_bd_, solve_p^1, cfrs_, zero_sum_, current_,
-				     pure_streets_[st]);
-#endif
+      t_vals = dynamic_cbr_->Compute(node, reach_probs, target_bd_, &hand_tree, solve_p^1, cfrs_,
+				     zero_sum_, current_, pure_streets_[st]);
     }
     // Pass in false for both_players.  I am doing separate solves for
     // each player.
@@ -368,6 +367,12 @@ void SubgameSolver::ResolveSafe(Node *node, const string &action_sequence,
 			 &hand_tree, t_vals.get(), solve_p, false, num_subgame_its_);
     // Don't write out the resolved strategies
   }
+  clock_gettime(CLOCK_MONOTONIC, &finish);
+  resolving_secs += (finish.tv_sec - start.tv_sec);
+  resolving_secs += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+  // We solved num_players games
+  printf("Resolving secs per solve: %f\n", resolving_secs / num_players);
+  fflush(stdout);
 }
 
 void SubgameSolver::Walk(Node *node, const string &action_sequence, const ReachProbs &reach_probs) {

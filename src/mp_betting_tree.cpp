@@ -59,6 +59,21 @@ static int NextPlayerToAct(int p, bool *folded) {
   return p;
 }
 
+void BettingTreeBuilder::GetAllowableBetTos(int old_bet_to, int last_bet_size, bool *bet_to_seen) {
+  int stack_size = betting_abstraction_.StackSize();
+  int min_bet;
+  if (last_bet_size == 0) {
+    min_bet = betting_abstraction_.MinBet();
+  } else {
+    min_bet = last_bet_size;
+  }
+  for (int bet_to = old_bet_to + min_bet; bet_to <= stack_size; ++bet_to) {
+    if (betting_abstraction_.AllowableBetTo(bet_to)) {
+      bet_to_seen[bet_to] = true;
+    }
+  }
+}
+
 shared_ptr<Node>
 BettingTreeBuilder::CreateMPFoldSucc(int street, int last_bet_size, int bet_to, int num_street_bets,
 				     int num_bets, int player_acting, int num_players_to_act,
@@ -271,56 +286,63 @@ void BettingTreeBuilder::CreateMPSuccs(int street, int last_bet_size, int bet_to
   int all_in_bet_to = betting_abstraction_.StackSize();
   unique_ptr<bool []> bet_to_seen(new bool[all_in_bet_to + 1]);
   for (int bt = 0; bt <= all_in_bet_to; ++bt) bet_to_seen[bt] = false;
-  
-  if (num_street_bets < betting_abstraction_.MaxBets(street, our_bet)) {
-    if ((! betting_abstraction_.Asymmetric() && betting_abstraction_.AlwaysAllIn()) ||
-	(betting_abstraction_.Asymmetric() && our_bet && betting_abstraction_.OurAlwaysAllIn()) ||
-	(betting_abstraction_.Asymmetric() && ! our_bet && betting_abstraction_.OppAlwaysAllIn())) {
-      // Allow an all-in bet
-      bet_to_seen[all_in_bet_to] = true;
+
+  if (betting_abstraction_.AllowableBetTosSpecified()) {
+    if (num_street_bets < betting_abstraction_.MaxBets(street, our_bet)) {
+      GetAllowableBetTos(bet_to, last_bet_size, bet_to_seen.get());
     }
-  }
-  
-  if (num_street_bets < betting_abstraction_.MaxBets(street, our_bet)) {
-    if ((! betting_abstraction_.Asymmetric() &&
-	 betting_abstraction_.AlwaysMinBet(street, num_street_bets)) ||
-	(betting_abstraction_.Asymmetric() && our_bet &&
-	 betting_abstraction_.OurAlwaysMinBet(street, num_street_bets)) ||
-	(betting_abstraction_.Asymmetric() && ! our_bet &&
-	 betting_abstraction_.OppAlwaysMinBet(street, num_street_bets))) {
-      // Allow a min bet
-      int min_bet;
-      if (num_street_bets == 0) {
-	min_bet = betting_abstraction_.MinBet();
-      } else {
-	min_bet = last_bet_size;
-      }
-      int new_bet_to = bet_to + min_bet;
-      if (new_bet_to > all_in_bet_to) {
+  } else {
+    if (num_street_bets < betting_abstraction_.MaxBets(street, our_bet)) {
+      if ((! betting_abstraction_.Asymmetric() && betting_abstraction_.AlwaysAllIn()) ||
+	  (betting_abstraction_.Asymmetric() && our_bet && betting_abstraction_.OurAlwaysAllIn()) ||
+	  (betting_abstraction_.Asymmetric() && ! our_bet && betting_abstraction_.OppAlwaysAllIn())) {
+	// Allow an all-in bet
 	bet_to_seen[all_in_bet_to] = true;
-      } else {
-	if (betting_abstraction_.AllowableBetTo(new_bet_to)) {
-	  bet_to_seen[new_bet_to] = true;
+      }
+    }
+
+    if (num_street_bets < betting_abstraction_.MaxBets(street, our_bet)) {
+      if ((! betting_abstraction_.Asymmetric() &&
+	   betting_abstraction_.AlwaysMinBet(street, num_street_bets)) ||
+	  (betting_abstraction_.Asymmetric() && our_bet &&
+	   betting_abstraction_.OurAlwaysMinBet(street, num_street_bets)) ||
+	  (betting_abstraction_.Asymmetric() && ! our_bet &&
+	   betting_abstraction_.OppAlwaysMinBet(street, num_street_bets))) {
+	// Allow a min bet
+	int min_bet;
+	if (num_street_bets == 0) {
+	  min_bet = betting_abstraction_.MinBet();
 	} else {
-	  int old_pot_size = 2 * bet_to;
-	  int nearest_allowable_bet_to =
-	    NearestAllowableBetTo(old_pot_size, new_bet_to, last_bet_size);
-	  bet_to_seen[nearest_allowable_bet_to] = true;
+	  min_bet = last_bet_size;
+	}
+	int new_bet_to = bet_to + min_bet;
+	if (new_bet_to > all_in_bet_to) {
+	  bet_to_seen[all_in_bet_to] = true;
+	} else {
+	  if (betting_abstraction_.AllowableBetTo(new_bet_to)) {
+	    bet_to_seen[new_bet_to] = true;
+	  } else {
+	    int old_pot_size = 2 * bet_to;
+	    int nearest_allowable_bet_to =
+	      NearestAllowableBetTo(old_pot_size, new_bet_to, last_bet_size);
+	    bet_to_seen[nearest_allowable_bet_to] = true;
 #if 0
-	  if (nearest_allowable_bet_to != new_bet_to) {
-	    fprintf(stderr, "Changed %u to %u\n", new_bet_to - bet_to,
-		    nearest_allowable_bet_to - bet_to);
-	  }
+	    if (nearest_allowable_bet_to != new_bet_to) {
+	      fprintf(stderr, "Changed %u to %u\n", new_bet_to - bet_to,
+		      nearest_allowable_bet_to - bet_to);
+	    }
 #endif
+	  }
 	}
       }
     }
-  }
   
-  if (num_street_bets < betting_abstraction_.MaxBets(street, our_bet)) {
-    const vector<double> &pot_fracs =
-      betting_abstraction_.BetSizes(street, num_street_bets, our_bet, player_acting);
-    GetNewBetTos(bet_to, last_bet_size, pot_fracs, player_acting, target_player, bet_to_seen.get());
+    if (num_street_bets < betting_abstraction_.MaxBets(street, our_bet)) {
+      const vector<double> &pot_fracs =
+	betting_abstraction_.BetSizes(street, num_street_bets, our_bet, player_acting);
+      GetNewBetTos(bet_to, last_bet_size, pot_fracs, player_acting, target_player,
+		   bet_to_seen.get());
+    }
   }
 
   for (int new_bet_to = 0; new_bet_to <= all_in_bet_to; ++new_bet_to) {

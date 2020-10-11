@@ -94,6 +94,9 @@ class BettingAbstraction {
     if (merge_rules_.size() == 0) return 0;
     else                          return merge_rules_[st][num_rem];
   }
+  bool AllowableBetTosSpecified(void) const {
+    return allowable_bet_tos_.get() != nullptr;
+  }
   bool AllowableBetTo(int bt) const {
     if (allowable_bet_tos_.get() == nullptr) return true;
     else                                     return allowable_bet_tos_[bt];

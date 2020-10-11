@@ -1,3 +1,89 @@
+Seems like our bet sizes are too small.
+STATE:10:cr400c/r500f:KcAd|Jd5c/6s7c4h:400|-400:mb3b3aai|example
+
+Implement resolving in agent
+
+138 gigs for flop one char sumprobs files
+
+Experiment with:
+  Rounding near-zero probs to zero
+  Eliminating rarely reached states
+  Translation
+  
+Try solving a base game with no betting on the turn.
+Should make run_rgbr read as it goes.
+Is it a problem that our sumprobs files get gigantic?
+
+Solve base game with reentrancy.
+Can make the turn reentrant as well as the river.  Or even the flop.
+Could try to merge adjacent pot sizes.
+Can also change betting abstraction to limit number of distinct pot sizes.
+One river state is 2.7b hands.  With 5 bytes per hand, that's 13.5 GB.  Can't have
+  too many of those.  Can we get sumprobs down to as little as one byte?  Then it
+  would be 5.4GB per state.  Still can't have too many.  An mb1b1 system will have
+  four nonterminals on the river (root, c, b, cb).  With 20 different pot sizes,
+  that's 80 states.  Times 5.4 GB, that's 432 GB.  Doable.
+Have certain allowable pot-sizes/bet-tos.
+Could go down to 100 BB to make my life easier.
+But 200 BB doesn't actually add much.
+11 pot sizes: 200BB, 100BB, 50BB, 40BB, 30BB, 20BB, 10BB, 8BB, 6BB, 4BB, 2BB.
+With 2.7b river hands and 44 states, you will only see a river hand in a state
+on 1/100b iterations.  Will we need a huge number of iterations to converge?
+Results look promising, but I haven't tried an equivalently sized system with
+a regular (non-reentrant tree).  bigh5 system is 35 megs.  Maybe try nnnwml1
+or some other "nnn" system.
+
+I would like a fast approximate real-game best-response strategy that will handle
+resolved systems.  Has to allow deviation from the base strategy starting at the
+root.  We could allow just one bet size for the responder.  Evaluate only one
+hand for best responder?  Does that help?
+
+Can I evaluate on holdem/mb1b1 systems?  I think best-response takes 6 hours (?)
+locally.  Could be faster on Amazon.  How much memory would we need?
+Four pot sizes at river initial nodes, 4 nodes, 2 succs.  So 32 * 2.7b * 4
+(for int sumprobs) =~ 350 GB.  Doable.
+
+Implement an ACPC bot with backup resolving and translation.
+Should I copy my server code into this repo?
+Should I shrink the size of the strategy even further?  Yes, eventually.
+
+Big system on Amazon.  144g for one system, 279g for two.
+
+run_approx_rgbr multithreading is not very good.  If we are sampling only a single flop,
+for example, we will have single-threaded processing.  In fact, don't even get to
+multi-threading part when sampling a flop board.
+
+Can I precompute all flops?  Probably not.  Could only solve an mb1b1 system.  What
+would we do when opponent deviates?  Can't dynamically solve a flop.
+Can I precompute all flop subgames for certain common preflop betting sequences like
+b2c and b4c?  1755 flop boards.
+
+If exploitability is getting worse already, should I stop training?
+
+Experiment with game that we can compute exact exploitability of.
+Solve with tcfr and null abstraction for preflop/flop and coarse abstraction for turn/river
+What does the exploitability look like when we resolve turns?
+See if it helps to train the base for a long time or not.
+May need to use a bigger game than holdem5.
+
+Does high exploitability result from best-responder playing to poorly trained nodes?
+
+What is the exploitability introduced by translation?
+
+Can we learn range-vs-range estimates and introduce into training?  Learn a base system
+with learned estimates at some street (river?).  This is kind of what Deep Stack does.
+Need to incorporate into CFR+.  Will need to implement a regression model in C++.
+Probably not deep neural networks.  Could do a nearest neighbor thing.  Blend CVs of
+N nearest neighbors.
+
+What if we started with an abstraction with only all-in bets; train that to convergence;
+then add in the next largest bet sizes; train that to convergence; etc.
+
+Could solve base system with only check/call on the river and very fine-grained card
+abstraction.  Seems like that might distort the strategy.  No good reason to bet big
+with strong hands or strong draws on the flop?  But at least we shouldn't have
+exploitable holes.
+
 Investigate some questions on holdem5/null/mb1b1:
 1) Is targeted CFR better or external CFR?
 2) Is FTL better or regret matching?
@@ -18,6 +104,7 @@ Preflop sumprobs for one system: 2.2 MB
 I guess I had 768 GB of RAM for CFR.
 I can reduce by a factor of 4 pretty easily.
 Wait, can I just use my built-in quantizing?
+Need 540GB + 135GB = 700 GB?
 
 Train and assess big sym system.
 1) Seems like exploitability gets substantially worse over time.  Confirm.

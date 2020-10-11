@@ -150,6 +150,7 @@ sudo chmod 777 /data/poker2019/cfr
 sudo chmod 777 /data2
 mkdir /data/poker2019/cfr/holdem.???
 aws configure
+  I have my keys in .bashrc
 Remove old binaries, old object files
 git pull
 Modify max allocation size in tcfr.cpp

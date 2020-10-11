@@ -1,5 +1,13 @@
 #!/bin/bash
 
-time ../bin/build_rollout_features holdem_params 0 wml0.3 0.3 wmls 0.5
-time ../bin/build_rollout_features holdem_params 1 wml0.3 0.3 wmls 0.5
-time ../bin/build_rollout_features holdem_params 2 wml0.3 0.3 wmls 0.5
+# ../bin/run_tcfr holdem6_params null_params mb1b1r2_params tcfr_params 8 0 1 1000000000 1
+# ../bin/run_rgbr holdem6_params null_params mb1b1r2_params tcfr_params 8 0 avg raw
+# ../bin/solve_all_subgames holdem6_params null_params none_params mb1b1r2_params mb1b1_params tcfr_params cfrps_params 2 0 200 combined cbrs card zerosum avg none mem 1 8
+# ../bin/assemble_subgames holdem6_params null_params none_params nullnone2_params mb1b1r2_params mb1b1_params tcfr_params cfrps_params cfrpsmc_params 2 0 200 combined
+# ../bin/run_rgbr holdem6_params nullnone2_params mb1b1_params cfrpsmc_params 8 200 avg raw
+
+../bin/run_tcfr holdem6_params null_params mb1b1r2_params tcfr_params 8 1 2 1000000000 1
+../bin/run_rgbr holdem6_params null_params mb1b1r2_params tcfr_params 8 1 avg raw
+../bin/solve_all_subgames holdem6_params null_params none_params mb1b1r2_params mb1b1_params tcfr_params cfrps_params 2 1 200 combined cbrs card zerosum avg none mem 1 8
+../bin/assemble_subgames holdem6_params null_params none_params nullnone2_params mb1b1r2_params mb1b1_params tcfr_params cfrps_params cfrpsmc_params 2 1 200 combined
+../bin/run_rgbr holdem6_params nullnone2_params mb1b1_params cfrpsmc_params 8 200 avg raw

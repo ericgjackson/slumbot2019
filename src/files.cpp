@@ -18,14 +18,14 @@ void Files::Init(void) {
   gethostname(hostname_buf, sizeof(hostname_buf));
 
   if (! strcmp(hostname_buf, "koele")) {
-    old_cfr_base_ = "/data2/poker2019/cfr";
-    new_cfr_base_ = "/data2/poker2019/cfr";
-    static_base_ = "/data2/poker2019/static";
-  } else {
-    // Assume Amazon
     old_cfr_base_ = "/data/poker2019/cfr";
     new_cfr_base_ = "/data/poker2019/cfr";
     static_base_ = "/data/poker2019/static";
+  } else {
+    // Default to current directory
+    old_cfr_base_ = ".";
+    new_cfr_base_ = ".";
+    static_base_ = ".";
   }
 }
 
