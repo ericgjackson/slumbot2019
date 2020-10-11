@@ -22,7 +22,13 @@ void Files::Init(void) {
     new_cfr_base_ = "/data/poker2019/cfr";
     static_base_ = "/data/poker2019/static";
   } else {
-    // Default to current directory
+    // Specify where you want files to be written to and read from.
+    // Default to current directory.
+    // Static files are things like the card abstraction that are reused across multiple runs
+    // of CFR.
+    // The CFR directory contains the files for computed strategies.
+    // You can use the same directory for static files and CFR files if you want.
+    // (old_cfr_base and new_cfr_base should be the same.)
     old_cfr_base_ = ".";
     new_cfr_base_ = ".";
     static_base_ = ".";

@@ -17,8 +17,9 @@ poker games
 
 You should have a version of gcc that supports C++ 17.  gcc 7.3 is known to work.
 
-Set up a "static" directory and a "cfr" directory with enough disk space available.
-Specify these paths in files.cpp.
+By default, the various programs will read and write from the current directory.  If
+this is not desirable, edit the paths in Files::Init() in src/files.cpp.  I'll sometimes
+keep "static" files in a different director that "cfr" files, but that's not necessary.
 
 Build whatever binaries you need from the top level.  For example:
 
@@ -55,6 +56,13 @@ cd runs
 ../bin/build_unique_buckets holdem_params 2 hs hs
 ../bin/build_unique_buckets holdem_params 3 hs hs
 ../bin/run_tcfr holdem_params nhs2_params mb1b1_params tcfr_params 8 0 1 100000000 1
+```
+
+The Targeted CFR implementation (in tcfr.cpp) is a little messy; there is a simpler implementation
+of External CFR in ecfr.cpp.  Run it like so:
+
+```
+../bin/run_ecfr holdem_params nhs2_params mb1b1_params ecfr_params 8 0 1 100000000 1
 ```
 
 ## Evaluation

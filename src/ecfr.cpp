@@ -497,7 +497,7 @@ static int Factorial(int n) {
 }
 
 ECFR::ECFR(const CardAbstraction &ca, const BettingAbstraction &ba, const CFRConfig &cc,
-	     const Buckets &buckets, int num_threads) :
+	   const Buckets &buckets, int num_threads) :
   card_abstraction_(ca), betting_abstraction_(ba), cfr_config_(cc), buckets_(buckets),
   num_cfr_threads_(num_threads) {
   BettingTrees betting_trees(betting_abstraction_);
