@@ -13,7 +13,7 @@ HEADS =	src/fast_hash.h src/rand.h src/constants.h src/files.h src/cards.h src/i
 	src/tcfr.h src/rollout.h src/sparse_and_dense.h src/kmeans.h src/reach_probs.h \
 	src/backup_tree.h src/ecfr.h src/disk_probs.h src/agent.h src/logging.h src/socket_io.h \
 	src/nb_socket_io.h src/server.h src/match_state.h src/acpc_protocol.h src/bot.h \
-	src/acpc_server.h
+	src/acpc_server.h src/mp_ecfr_node.h src/mp_ecfr.h
 
 # -Wl,--no-as-needed fixes my problem of undefined reference to
 # pthread_create (and pthread_join).  Comments I found on the web indicate
@@ -47,7 +47,8 @@ OBJS =	obj/fast_hash.o obj/rand.o obj/files.o obj/cards.o obj/io.o obj/split.o o
 	obj/combined_eg_cfr.o obj/regret_compression.o obj/tcfr.o obj/rollout.o \
 	obj/sparse_and_dense.o obj/kmeans.o obj/mcts.o obj/reach_probs.o obj/backup_tree.o \
 	obj/ecfr.o obj/disk_probs.o obj/agent.o obj/logging.o obj/socket_io.o obj/nb_socket_io.o \
-	obj/server.o obj/match_state.o obj/acpc_protocol.o obj/bot.o obj/acpc_server.o
+	obj/server.o obj/match_state.o obj/acpc_protocol.o obj/bot.o obj/acpc_server.o \
+	obj/mp_ecfr_node.o obj/mp_ecfr.o
 
 all:	bin/show_num_boards bin/show_boards bin/build_hand_value_tree bin/build_null_buckets \
 	bin/build_rollout_features bin/combine_features bin/build_unique_buckets \
@@ -210,6 +211,10 @@ bin/run_acpc_server:	obj/run_acpc_server.o $(OBJS) $(HEADS)
 
 bin/run_bot:	obj/run_bot.o $(OBJS) $(HEADS)
 	g++ $(LDFLAGS) $(CFLAGS) -o bin/run_bot obj/run_bot.o $(OBJS) $(LIBRARIES)
+
+bin/test_hand_indexing:	obj/test_hand_indexing.o $(OBJS) $(HEADS)
+	g++ $(LDFLAGS) $(CFLAGS) -o bin/test_hand_indexing obj/test_hand_indexing.o $(OBJS) \
+	$(LIBRARIES)
 
 bin/x:	obj/x.o $(OBJS) $(HEADS)
 	g++ $(LDFLAGS) $(CFLAGS) -o bin/x obj/x.o $(OBJS) $(LIBRARIES)
