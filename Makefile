@@ -30,7 +30,7 @@ LDFLAGS =
 # -ffast-math makes small changes to results of floating point calculations!
 # For profiling:
 # CFLAGS = -std=c++17 -Wall -O3 -march=native -ffast-math -g -pg
-CFLAGS = -std=c++17 -Wall -O3 -march=native -ffast-math -flto
+CFLAGS = -std=c++17 -Wall -O3 -march=native -ffast-math -flto -Wno-alloc-size-larger-than
 
 obj/%.o:	src/%.cpp $(HEADS)
 		gcc $(CFLAGS) -c -o $@ $<

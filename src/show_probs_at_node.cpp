@@ -50,60 +50,61 @@ void Show(Node *node, const Buckets &buckets, const CFRValues &values) {
     i_street_values = dynamic_cast<CFRStreetValues<int> *>(street_values);
     i_values = i_street_values->AllValues(pa, nt);
   }
+
+  unsigned int num_hole_card_pairs = Game::NumHoleCardPairs(st);
+  unsigned int num_board_cards = Game::NumBoardCards(st);
+  unsigned int num_boards = BoardTree::NumBoards(st);
   int max_card = Game::MaxCard();
-  // Initialize to -1 because we want to increment at the top of the loop below.
-  int hcp = -1;
-  unordered_set<int> seen_buckets;
-  for (int hi = 1; hi <= max_card; ++hi) {
-    for (int lo = 0; lo < hi; ++lo) {
-      ++hcp;
-      int offset, b = -1;
-      if (buckets.None(st)) {
-	offset = hcp * num_succs;
-      } else {
-	b = buckets.Bucket(st, hcp);
-	if (seen_buckets.find(b) != seen_buckets.end()) {
-	  // fprintf(stderr, "hi %i lo %i b %i\n", hi, lo, b);
-	  continue;
-	}
-	seen_buckets.insert(b);
-	offset = b * num_succs;
-      }
-      OutputTwoCards(hi, lo);
-      double sum = 0;
-      if (i_values) {
-	for (int s = 0; s < num_succs; ++s) {
-	  int iv = i_values[offset + s];
-	  if (iv > 0) sum += iv;
-	}
-      } else {
-	for (int s = 0; s < num_succs; ++s) {
-	  double dv = d_values[offset + s];
-	  if (dv > 0) sum += dv;
-	}
-      }
-      if (sum == 0) {
-	for (int s = 0; s < num_succs; ++s) {
-	  printf(" %f", s == dsi ? 1.0 : 0);
-	}
-      } else {
-	for (int s = 0; s < num_succs; ++s) {
-	  if (i_values) {
+
+  for (unsigned int bd = 0; bd < num_boards; ++bd) {
+    const Card *board = BoardTree::Board(st, bd);
+    unsigned int hcp = 0;
+    for (int hi = 1; hi <= max_card; ++hi) {
+      if (InCards(hi, board, num_board_cards)) continue;
+      for (int lo = 0; lo < hi; ++lo) {
+	if (InCards(lo, board, num_board_cards)) continue;
+	OutputNCards(board, num_board_cards);
+	printf(" / ");
+	OutputTwoCards(hi, lo);
+	unsigned int h = bd * num_hole_card_pairs + hcp;
+	int b = buckets.Bucket(st, h);
+	int offset = b * num_succs;
+	double sum = 0;
+	if (i_values) {
+	  for (int s = 0; s < num_succs; ++s) {
 	    int iv = i_values[offset + s];
-	    printf(" %f (%i)", iv > 0 ? iv / sum : 0,
-		   i_values[offset + s]);
-	  } else {
+	    if (iv > 0) sum += iv;
+	  }
+	} else {
+	  for (int s = 0; s < num_succs; ++s) {
 	    double dv = d_values[offset + s];
-	    printf(" %f (%f)", dv > 0 ? dv / sum : 0,
-		   d_values[offset + s]);
+	    if (dv > 0) sum += dv;
 	  }
 	}
+	if (sum == 0) {
+	  for (int s = 0; s < num_succs; ++s) {
+	    printf(" %f", s == dsi ? 1.0 : 0);
+	  }
+	} else {
+	  for (int s = 0; s < num_succs; ++s) {
+	    if (i_values) {
+	      int iv = i_values[offset + s];
+	      printf(" %f (%i)", iv > 0 ? iv / sum : 0,
+		     i_values[offset + s]);
+	    } else {
+	      double dv = d_values[offset + s];
+	      printf(" %f (%f)", dv > 0 ? dv / sum : 0,
+		     d_values[offset + s]);
+	    }
+	  }
+	}
+	if (! buckets.None(st)) {
+	  printf(" (b %i)", b);
+	}
+	printf(" (pa %i nt %i)\n", node->PlayerActing(), node->NonterminalID());
+	fflush(stdout);
+	++hcp;
       }
-      if (! buckets.None(st)) {
-	printf(" (b %u)", b);
-      }
-      printf(" (pa %u nt %u)\n", node->PlayerActing(), node->NonterminalID());
-      fflush(stdout);
     }
   }
 }
@@ -200,7 +201,7 @@ int main(int argc, char *argv[]) {
   int max_street = Game::MaxStreet();
   unique_ptr<bool []> streets(new bool[max_street + 1]);
   for (int st = 0; st <= max_street; ++st) {
-    streets[st] = (st == 0);
+    streets[st] = true;
   }
   CFRValues values(players.get(), streets.get(), 0, 0, buckets, betting_tree.get());
   char dir[500];
