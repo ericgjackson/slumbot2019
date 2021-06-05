@@ -296,7 +296,6 @@ static vector<short> *ComputeRollout(Card *board, bool wins, unsigned int st) {
     } else if (num_new_board_cards == 3) {
       unsigned int hi, mid, lo;
       for (hi = 2; hi <= max_card; ++hi) {
-	fprintf(stderr, "hi %u/%u\n", hi, max_card + 1);
 	if (InCards(hi, board, num_board_cards)) continue;
 	board[num_board_cards] = hi;
 	for (mid = 1; mid < hi; ++mid) {
@@ -331,8 +330,8 @@ short *ComputeRollout(unsigned int st, double *percentiles, unsigned int num_per
   unsigned int num_boards = BoardTree::NumBoards(st);
   unsigned int num_board_cards = Game::NumBoardCards(st);
   unsigned int num_hole_card_pairs = Game::NumHoleCardPairs(st);
-  unsigned int num_hands = num_boards * num_hole_card_pairs;
-  unsigned int num_vals = num_hands * num_percentiles;
+  unsigned long long int num_hands = num_boards * num_hole_card_pairs;
+  unsigned long long int num_vals = num_hands * num_percentiles;
   short *pct_vals;
   if (st == 0) {
     pct_vals = ComputePreflopPercentiles(percentiles, num_percentiles, wins);
@@ -340,7 +339,7 @@ short *ComputeRollout(unsigned int st, double *percentiles, unsigned int num_per
     pct_vals = new short[num_vals];
     Card board[5];
     for (unsigned int bd = 0; bd < num_boards; ++bd) {
-      fprintf(stderr, "bd %u/%u\n", bd, num_boards);
+      if (bd % 1000 == 0) fprintf(stderr, "bd %i\n", bd);
       const Card *st_board = BoardTree::Board(st, bd);
       for (unsigned int i = 0; i < num_board_cards; ++i) {
 	board[i] = st_board[i];
@@ -363,14 +362,14 @@ short *ComputeRollout(unsigned int st, double *percentiles, unsigned int num_per
   }
   short min_val = 32700;
   short max_val = -32700;
-  for (unsigned int i = 0; i < num_vals; ++i) {
+  for (unsigned long long int i = 0; i < num_vals; ++i) {
     short val = pct_vals[i];
     if (val < min_val) min_val = val;
     if (val > max_val) max_val = val;
   }
   // Renormalize vals so that worse hands have higher values and the lowest
   // value is zero.  Then squash by raising to the given power.
-  for (unsigned int i = 0; i < num_vals; ++i) {
+  for (unsigned long long int i = 0; i < num_vals; ++i) {
     short val = pct_vals[i];
     short norm_val = -(val - max_val);
     pct_vals[i] = (short)pow(norm_val, squashing);
