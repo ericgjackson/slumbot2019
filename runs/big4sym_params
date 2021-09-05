@@ -2,7 +2,6 @@ BettingAbstractionName big4sym
 Limit false
 StackSize 200
 Asymmetric false
-NoLimitTreeType 1
 MinBet 2
 MaxBets 7,7,3,3
 AlwaysAllIn true

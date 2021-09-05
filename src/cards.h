@@ -32,6 +32,7 @@ void OutputNCards(const Card *cards, int n);
 Card ParseCard(const char *str);
 void ParseTwoCards(const char *str, bool space_separated, Card *cards);
 void ParseThreeCards(const char *str, bool space_separated, Card *cards);
+void ParseFourCards(const char *str, bool space_separated, Card *cards);
 void ParseFiveCards(const char *str, bool space_separated, Card *cards);
 bool InCards(Card c, const Card *cards, int num_cards);
 int MaxSuit(Card *board, int num_board);

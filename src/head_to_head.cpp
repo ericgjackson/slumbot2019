@@ -30,6 +30,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/time.h> // gettimeofday()
+#include <unistd.h>   // sleep()
 
 #include <algorithm>
 #include <memory>
@@ -71,92 +72,91 @@ using std::vector;
 
 class Player {
 public:
-  Player(const BettingAbstraction &a_ba, const BettingAbstraction &b_ba,
-	 const CardAbstraction &a_ca, const CardAbstraction &b_ca, const CFRConfig &a_cc,
-	 const CFRConfig &b_cc, int a_it, int b_it, int resolve_st, bool resolve_a, bool resolve_b,
-	 const CardAbstraction &as_ca, const BettingAbstraction &as_ba, const CFRConfig &as_cc,
-	 const CardAbstraction &bs_ca, const BettingAbstraction &bs_ba, const CFRConfig &bc_cc,
-	 bool a_quantize, bool b_quantize);
+  Player(const CardAbstraction &a_ca, const CardAbstraction &b_ca,
+	 const BettingAbstraction &a_ba, const BettingAbstraction &b_ba,
+	 const CFRConfig &a_cc, const CFRConfig &b_cc, int a_it, int b_it, int resolve_st,
+	 bool resolve_a, bool resolve_b, const CardAbstraction &as_ca,
+	 const BettingAbstraction &as_ba, const CFRConfig &as_cc,
+	 const CardAbstraction &bs_ca, const BettingAbstraction &bs_ba,
+	 const CFRConfig &bs_cc, bool a_quantize, bool b_quantize);
   ~Player(void) {}
-  void Go(int num_sampled_max_street_boards, bool deterministic);
+  void Go(int num_sampled_max_street_boards, bool deterministic, int num_threads);
+  const CardAbstraction &ACardAbstraction(void) const {return a_card_abstraction_;}
+  const CardAbstraction &BCardAbstraction(void) const {return b_card_abstraction_;}
+  const BettingAbstraction &ABettingAbstraction(void) const {return a_betting_abstraction_;}
+  const BettingAbstraction &BBettingAbstraction(void) const {return b_betting_abstraction_;}
+  const CFRConfig &ACFRConfig(void) const {return a_cfr_config_;}
+  const CFRConfig &BCFRConfig(void) const {return b_cfr_config_;}
+  shared_ptr<Buckets> ASubgameBuckets(void) const {return a_subgame_buckets_;}
+  shared_ptr<Buckets> BSubgameBuckets(void) const {return b_subgame_buckets_;}
+  const CardAbstraction &ASubgameCardAbstraction(void) const {return a_subgame_card_abstraction_;}
+  const CardAbstraction &BSubgameCardAbstraction(void) const {return b_subgame_card_abstraction_;}
+  const BettingAbstraction &ASubgameBettingAbstraction(void) const {
+    return a_subgame_betting_abstraction_;
+  }
+  const BettingAbstraction &BSubgameBettingAbstraction(void) const {
+    return b_subgame_betting_abstraction_;
+  }
+  const CFRConfig &ASubgameCFRConfig(void) const {return a_subgame_cfr_config_;}
+  const CFRConfig &BSubgameCFRConfig(void) const {return b_subgame_cfr_config_;}
+  shared_ptr<Buckets> ABaseBuckets(void) const {return a_base_buckets_;}
+  shared_ptr<Buckets> BBaseBuckets(void) const {return b_base_buckets_;}
+  const BettingTrees &ABettingTrees(void) const {return *a_betting_trees_;}
+  const BettingTrees &BBettingTrees(void) const {return *b_betting_trees_;}
+  shared_ptr<CFRValues> AProbs(void) const {return a_probs_;}
+  shared_ptr<CFRValues> BProbs(void) const {return b_probs_;}
+  int ResolveSt(void) const {return resolve_st_;}
+  bool ResolveA(void) const {return resolve_a_;}
+  bool ResolveB(void) const {return resolve_b_;}
 private:
-  void Showdown(Node *a_node, Node *b_node, const ReachProbs &reach_probs);
-  void Fold(Node *a_node, Node *b_node, const ReachProbs &reach_probs);
-  void Nonterminal(Node *a_node, Node *b_node, const string &action_sequence,
-		   const ReachProbs &reach_probs);
-  void Walk(Node *a_node, Node *b_node, const string &action_sequence,
-	    const ReachProbs &reach_probs, int last_st);
-  void ProcessMaxStreetBoard(int msbd);
+  void Compute(int num_sampled_max_street_boards, bool deterministic, int num_threads, double *sum,
+	       double *sum_sqd);
+  void Report(double sum, double sum_sqd, int num_sampled_max_street_boards);
 
+  const CardAbstraction &a_card_abstraction_;
+  const CardAbstraction &b_card_abstraction_;
   const BettingAbstraction &a_betting_abstraction_;
   const BettingAbstraction &b_betting_abstraction_;
+  const CFRConfig &a_cfr_config_;
+  const CFRConfig &b_cfr_config_;
+  const CardAbstraction &a_subgame_card_abstraction_;
   const BettingAbstraction &a_subgame_betting_abstraction_;
+  const CFRConfig &a_subgame_cfr_config_;
+  const CardAbstraction &b_subgame_card_abstraction_;
   const BettingAbstraction &b_subgame_betting_abstraction_;
-  // bool a_asymmetric_;
-  // bool b_asymmetric_;
-  unique_ptr<BettingTrees> a_betting_trees_;
-  unique_ptr<BettingTrees> b_betting_trees_;
+  const CFRConfig &b_subgame_cfr_config_;
   shared_ptr<Buckets> a_base_buckets_;
   shared_ptr<Buckets> b_base_buckets_;
+  unique_ptr<BettingTrees> a_betting_trees_;
+  unique_ptr<BettingTrees> b_betting_trees_;
   shared_ptr<CFRValues> a_probs_;
   shared_ptr<CFRValues> b_probs_;
   int resolve_st_;
   bool resolve_a_;
   bool resolve_b_;
-  // When we resolve a street, the board index may change.  This is why we have separate
-  // a boards and b boards.  Only one player may be resolving.
-  unique_ptr<int []> a_gbds_;
-  unique_ptr<int []> a_lbds_;
-  unique_ptr<int []> b_gbds_;
-  unique_ptr<int []> b_lbds_;
-  // The number of times we sampled this board.
-  int num_samples_;
-  int msbd_;
-  int b_pos_;
-  // shared_ptr<HandTree> hand_tree_;
-  shared_ptr<HandTree> resolve_hand_tree_;
-  unique_ptr<shared_ptr<CanonicalCards> []> street_hands_;
-  double sum_b_outcomes_;
-  double sum_p0_outcomes_;
-  double sum_p1_outcomes_;
-  double sum_weights_;
   shared_ptr<Buckets> a_subgame_buckets_;
   shared_ptr<Buckets> b_subgame_buckets_;
-  unique_ptr<BettingTrees> a_subtrees_;
-  unique_ptr<BettingTrees> b_subtrees_;
-  unique_ptr<EGCFR> a_eg_cfr_;
-  unique_ptr<EGCFR> b_eg_cfr_;
-  int num_subgame_its_;
-  int num_resolves_;
-  double resolving_secs_;
+  int num_board_samples_;
+  unique_ptr<int []> board_samples_;
 };
 
-Player::Player(const BettingAbstraction &a_ba, const BettingAbstraction &b_ba,
-	       const CardAbstraction &a_ca, const CardAbstraction &b_ca, const CFRConfig &a_cc,
-	       const CFRConfig &b_cc, int a_it, int b_it, int resolve_st, bool resolve_a,
-	       bool resolve_b, const CardAbstraction &as_ca, const BettingAbstraction &as_ba,
-	       const CFRConfig &as_cc, const CardAbstraction &bs_ca,
-	       const BettingAbstraction &bs_ba, const CFRConfig &bs_cc, bool a_quantize,
-	       bool b_quantize) :
+Player::Player(const CardAbstraction &a_ca, const CardAbstraction &b_ca,
+	       const BettingAbstraction &a_ba, const BettingAbstraction &b_ba,
+	       const CFRConfig &a_cc, const CFRConfig &b_cc, int a_it, int b_it, int resolve_st,
+	       bool resolve_a, bool resolve_b, const CardAbstraction &as_ca,
+	       const BettingAbstraction &as_ba, const CFRConfig &as_cc,
+	       const CardAbstraction &bs_ca, const BettingAbstraction &bs_ba,
+	       const CFRConfig &bs_cc, bool a_quantize, bool b_quantize) :
+  a_card_abstraction_(a_ca), b_card_abstraction_(b_ca),
   a_betting_abstraction_(a_ba), b_betting_abstraction_(b_ba),
-  a_subgame_betting_abstraction_(as_ba), b_subgame_betting_abstraction_(bs_ba) {
+  a_cfr_config_(a_cc), b_cfr_config_(b_cc),
+  a_subgame_card_abstraction_(as_ca), a_subgame_betting_abstraction_(as_ba),
+  a_subgame_cfr_config_(as_cc), b_subgame_card_abstraction_(bs_ca),
+  b_subgame_betting_abstraction_(bs_ba), b_subgame_cfr_config_(bs_cc) {
   int max_street = Game::MaxStreet();
-  a_gbds_.reset(new int[max_street + 1]);
-  a_lbds_.reset(new int[max_street + 1]);
-  b_gbds_.reset(new int[max_street + 1]);
-  b_lbds_.reset(new int[max_street + 1]);
-  a_gbds_[0] = 0;
-  a_lbds_[0] = 0;
-  b_gbds_[0] = 0;
-  b_lbds_[0] = 0;
-  sum_b_outcomes_ = 0;
-  sum_p0_outcomes_ = 0;
-  sum_p1_outcomes_ = 0;
-  sum_weights_ = 0;
   resolve_a_ = resolve_a;
   resolve_b_ = resolve_b;
   resolve_st_ = resolve_st;
-  num_subgame_its_ = 200;
 
   a_base_buckets_.reset(new Buckets(a_ca, false));
   if (a_ca.CardAbstractionName() == b_ca.CardAbstractionName()) {
@@ -174,8 +174,6 @@ Player::Player(const BettingAbstraction &a_ba, const BettingAbstraction &b_ba,
   a_betting_trees_.reset(new BettingTrees(a_ba));
   b_betting_trees_.reset(new BettingTrees(b_ba));
 
-  street_hands_.reset(new shared_ptr<CanonicalCards>[max_street + 1]);
-  
   bool shared_probs = 
     (a_ca.CardAbstractionName().c_str() == b_ca.CardAbstractionName() &&
      a_ba.BettingAbstractionName().c_str() == b_ba.BettingAbstractionName() &&
@@ -246,16 +244,124 @@ Player::Player(const BettingAbstraction &a_ba, const BettingAbstraction &b_ba,
   // Check for dups for buckets
   if (resolve_a_) {
     a_subgame_buckets_.reset(new Buckets(as_ca, false));
-    a_eg_cfr_.reset(new UnsafeEGCFR(as_ca, a_ca, a_ba, as_cc, a_cc, *a_subgame_buckets_, 1));
   }
   if (resolve_b_) {
     b_subgame_buckets_.reset(new Buckets(bs_ca, false));
-    b_eg_cfr_.reset(new UnsafeEGCFR(bs_ca, b_ca, b_ba, bs_cc, b_cc, *b_subgame_buckets_, 1));
+  }
+
+  // Want to be able to randomly sample a board from board_samples_.
+  // Sampling must be proportional to the frequency of the board.
+  int num_max_street_boards = BoardTree::NumBoards(max_street);
+  // Should be able to compute this more directly.
+  // For full holdem, it's (52 * 51 * 50 / 6) * 49 * 48.
+  num_board_samples_ = 0;
+  for (int bd = 0; bd < num_max_street_boards; ++bd) {
+    num_board_samples_ += BoardTree::BoardCount(max_street, bd);
+  }
+  fprintf(stderr, "num_board_samples_ %i\n", num_board_samples_);
+  board_samples_.reset(new int[num_board_samples_]);
+  int i = 0;
+  for (int bd = 0; bd < num_max_street_boards; ++bd) {
+    int bd_num_samples = BoardTree::BoardCount(max_street, bd);
+    for (int j = 0; j < bd_num_samples; ++j) {
+      board_samples_[i++] = bd;
+    }
   }
 }
 
+class PlayerThread {
+public:
+  PlayerThread(const Player &player, int thread_index, int num_threads,
+	       const vector<int> &sampled_boards);
+  void Go(void);
+  void Run(void);
+  void Join(void);
+  double Sum(void) const {return sum_;}
+  double SumSqd(void) const {return sum_sqd_;}
+  int NumResolves(void) const {return num_resolves_;}
+  double ResolvingSecs(void) const {return resolving_secs_;}
+private:
+  void Showdown(Node *a_node, Node *b_node, const ReachProbs &reach_probs);
+  void Fold(Node *a_node, Node *b_node, const ReachProbs &reach_probs);
+  void Nonterminal(Node *a_node, Node *b_node, const string &action_sequence,
+		   const ReachProbs &reach_probs);
+  void Walk(Node *a_node, Node *b_node, const string &action_sequence,
+	    const ReachProbs &reach_probs, int last_st);
+  double ProcessMaxStreetBoard(int msbd);
+
+  const Player &player_;
+  int thread_index_;
+  int num_threads_;
+  unique_ptr<shared_ptr<CanonicalCards> []> street_hands_;
+  unique_ptr<EGCFR> a_eg_cfr_;
+  unique_ptr<EGCFR> b_eg_cfr_;
+  // When we resolve a street, the board index may change.  This is why we have separate
+  // a boards and b boards.  Only one player may be resolving.
+  unique_ptr<int []> a_gbds_;
+  unique_ptr<int []> a_lbds_;
+  unique_ptr<int []> b_gbds_;
+  unique_ptr<int []> b_lbds_;
+  int msbd_;
+  unique_ptr<BettingTrees> a_subtrees_;
+  unique_ptr<BettingTrees> b_subtrees_;
+  shared_ptr<HandTree> resolve_hand_tree_;
+  int num_subgame_its_;
+  int b_pos_;
+  double sum_b_outcomes_;
+  double sum_weights_;
+  int num_resolves_;
+  double resolving_secs_;
+  double sum_;
+  double sum_sqd_;
+  const vector<int> &sampled_boards_;
+  pthread_t pthread_id_;
+};
+
+PlayerThread::PlayerThread(const Player &player, int thread_index, int num_threads,
+			   const vector<int> &sampled_boards) :
+  player_(player), thread_index_(thread_index), num_threads_(num_threads),
+  sampled_boards_(sampled_boards) {
+  int max_street = Game::MaxStreet();
+  street_hands_.reset(new shared_ptr<CanonicalCards>[max_street + 1]);
+  b_pos_ = 0;
+  sum_b_outcomes_ = 0;
+  sum_weights_ = 0;
+  num_resolves_ = 0;
+  resolving_secs_ = 0;
+  // Check for dups for buckets
+  if (player_.ResolveA()) {
+    const CardAbstraction &a_ca = player_.ACardAbstraction();
+    const BettingAbstraction &a_ba = player_.ABettingAbstraction();
+    const CFRConfig &a_cc = player_.ACFRConfig();
+    const CardAbstraction &as_ca = player_.ASubgameCardAbstraction();
+    const CFRConfig &as_cc = player_.ASubgameCFRConfig();
+    shared_ptr<Buckets> a_subgame_buckets = player_.ASubgameBuckets();
+    a_eg_cfr_.reset(new UnsafeEGCFR(as_ca, a_ca, a_ba, as_cc, a_cc, *a_subgame_buckets, 1));
+  }
+  if (player_.ResolveB()) {
+    const CardAbstraction &b_ca = player_.BCardAbstraction();
+    const BettingAbstraction &b_ba = player_.BBettingAbstraction();
+    const CFRConfig &b_cc = player_.BCFRConfig();
+    const CardAbstraction &bs_ca = player_.BSubgameCardAbstraction();
+    const CFRConfig &bs_cc = player_.BSubgameCFRConfig();
+    shared_ptr<Buckets> b_subgame_buckets = player_.BSubgameBuckets();
+    b_eg_cfr_.reset(new UnsafeEGCFR(bs_ca, b_ca, b_ba, bs_cc, b_cc, *b_subgame_buckets, 1));
+  }
+  a_gbds_.reset(new int[max_street + 1]);
+  a_lbds_.reset(new int[max_street + 1]);
+  b_gbds_.reset(new int[max_street + 1]);
+  b_lbds_.reset(new int[max_street + 1]);
+  a_gbds_[0] = 0;
+  a_lbds_[0] = 0;
+  b_gbds_[0] = 0;
+  b_lbds_[0] = 0;
+  // Should expose as configurable parameter
+  num_subgame_its_ = 200;
+}
+
+
 // Compute outcome from B's perspective
-void Player::Showdown(Node *a_node, Node *b_node, const ReachProbs &reach_probs) {
+void PlayerThread::Showdown(Node *a_node, Node *b_node, const ReachProbs &reach_probs) {
   Card max_card1 = Game::MaxCard() + 1;
 
   // double *a_probs = b_pos_ == 0 ? reach_probs[1].get() : reach_probs[0].get();
@@ -338,22 +444,12 @@ void Player::Showdown(Node *a_node, Node *b_node, const ReachProbs &reach_probs)
     }
   }
 
-  // Scale to account for frequency of board
-  double wtd_sum_our_vals = sum_our_vals * (double)num_samples_;
-  double wtd_sum_joint_probs = sum_joint_probs * (double)num_samples_;
-  sum_b_outcomes_ += wtd_sum_our_vals;
-  if (b_pos_ == 0) {
-    sum_p0_outcomes_ += wtd_sum_our_vals;
-    sum_p1_outcomes_ -= wtd_sum_our_vals;
-  } else {
-    sum_p0_outcomes_ -= wtd_sum_our_vals;
-    sum_p1_outcomes_ += wtd_sum_our_vals;
-  }
-  sum_weights_ += wtd_sum_joint_probs;
+  sum_b_outcomes_ += sum_our_vals;
+  sum_weights_ += sum_joint_probs;
 }
   
 // Compute outcome from B's perspective
-void Player::Fold(Node *a_node, Node *b_node, const ReachProbs &reach_probs) {
+void PlayerThread::Fold(Node *a_node, Node *b_node, const ReachProbs &reach_probs) {
   Card max_card1 = Game::MaxCard() + 1;
 
   double half_pot = a_node->LastBetTo();
@@ -409,22 +505,12 @@ void Player::Fold(Node *a_node, Node *b_node, const ReachProbs &reach_probs) {
     sum_joint_probs += our_prob * sum_consistent_opp_probs;    
   }
 
-  // Scale to account for frequency of board
-  double wtd_sum_our_vals = sum_our_vals * num_samples_;
-  double wtd_sum_joint_probs = sum_joint_probs * num_samples_;
-  sum_b_outcomes_ += wtd_sum_our_vals;
-  if (b_pos_ == 0) {
-    sum_p0_outcomes_ += wtd_sum_our_vals;
-    sum_p1_outcomes_ -= wtd_sum_our_vals;
-  } else {
-    sum_p0_outcomes_ -= wtd_sum_our_vals;
-    sum_p1_outcomes_ += wtd_sum_our_vals;
-  }
-  sum_weights_ += wtd_sum_joint_probs;
+  sum_b_outcomes_ += sum_our_vals;
+  sum_weights_ += sum_joint_probs;
 }
 
-void Player::Nonterminal(Node *a_node, Node *b_node, const string &action_sequence,
-			 const ReachProbs &reach_probs) {
+void PlayerThread::Nonterminal(Node *a_node, Node *b_node, const string &action_sequence,
+			       const ReachProbs &reach_probs) {
   int st = a_node->Street();
   int pa = a_node->PlayerActing();
   // A and B may have different numbers of succs.  I think this may only be the case if either
@@ -448,29 +534,28 @@ void Player::Nonterminal(Node *a_node, Node *b_node, const string &action_sequen
   unique_ptr<int []> succ_mapping = GetSuccMapping(acting_node, opp_node);
   
   shared_ptr<ReachProbs []> succ_reach_probs;
-  // shared_ptr<double []> **succ_reach_probs;
   if (pa == b_pos_) {
     // This doesn't support multiplayer yet
     const CFRValues *sumprobs;
-    if (resolve_b_ && st >= resolve_st_) {
+    if (player_.ResolveB() && st >= player_.ResolveSt()) {
       sumprobs = b_eg_cfr_->Sumprobs().get();
     } else {
-      sumprobs = b_probs_.get();
+      sumprobs = player_.BProbs().get();
     }
     const Buckets &buckets =
-      (resolve_b_ && st >= resolve_st_) ? *b_subgame_buckets_ : *b_base_buckets_;
+      (player_.ResolveB() && st >= player_.ResolveSt()) ? *player_.BSubgameBuckets() : *player_.BBaseBuckets();
     const CanonicalCards *hands = street_hands_[st].get();
     succ_reach_probs = ReachProbs::CreateSuccReachProbs(b_node, b_gbds_[st], b_lbds_[st], hands,
 							buckets, sumprobs, reach_probs, false);
   } else {
     const CFRValues *sumprobs;
-    if (resolve_a_ && st >= resolve_st_) {
+    if (player_.ResolveA() && st >= player_.ResolveSt()) {
       sumprobs = a_eg_cfr_->Sumprobs().get();
     } else {
-      sumprobs = a_probs_.get();
+      sumprobs = player_.AProbs().get();
     }
     const Buckets &buckets =
-      (resolve_a_ && st >= resolve_st_) ? *a_subgame_buckets_ : *a_base_buckets_;
+      (player_.ResolveA() && st >= player_.ResolveSt()) ? *player_.ASubgameBuckets() : *player_.ABaseBuckets();
     const CanonicalCards *hands = street_hands_[st].get();
     succ_reach_probs = ReachProbs::CreateSuccReachProbs(a_node, a_gbds_[st], a_lbds_[st], hands,
 							buckets, sumprobs, reach_probs, false);
@@ -489,22 +574,18 @@ void Player::Nonterminal(Node *a_node, Node *b_node, const string &action_sequen
     }
     Walk(a_succ, b_succ, action_sequence + action, succ_reach_probs[s], st);
   }
-#if 0
-  for (int s = 0; s < acting_num_succs; ++s) {
-    delete [] succ_reach_probs[s];
-  }
-  delete [] succ_reach_probs;
-#endif
 }
  
-void Player::Walk(Node *a_node, Node *b_node, const string &action_sequence,
-		  const ReachProbs &reach_probs, int last_st) {
+void PlayerThread::Walk(Node *a_node, Node *b_node, const string &action_sequence,
+			const ReachProbs &reach_probs, int last_st) {
   int st = a_node->Street();
-  if (st > last_st && st == resolve_st_) {
+  if (st > last_st && st == player_.ResolveSt()) {
+    const BettingAbstraction &a_ba = player_.ABettingAbstraction();
     Node *next_a_node, *next_b_node;
-    if (resolve_a_ && a_node->LastBetTo() < a_betting_abstraction_.StackSize()) {
+    if (player_.ResolveA() && a_node->LastBetTo() < a_ba.StackSize()) {
+      const BettingAbstraction &as_ba = player_.ASubgameBettingAbstraction();
       a_subtrees_.reset(CreateSubtrees(st, a_node->PlayerActing(), a_node->LastBetTo(), -1,
-				       a_subgame_betting_abstraction_));
+				       as_ba));
       int max_street = Game::MaxStreet();
       int root_bd;
       if (st == max_street) root_bd = msbd_;
@@ -527,23 +608,25 @@ void Player::Walk(Node *a_node, Node *b_node, const string &action_sequence,
     } else {
       next_a_node = a_node;
     }
-    if (resolve_b_ && b_node->LastBetTo() < b_betting_abstraction_.StackSize()) {
+    const BettingAbstraction &b_ba = player_.BBettingAbstraction();
+    if (player_.ResolveB() && b_node->LastBetTo() < b_ba.StackSize()) {
+      const BettingAbstraction &bs_ba = player_.BSubgameBettingAbstraction();
       b_subtrees_.reset(CreateSubtrees(st, b_node->PlayerActing(), b_node->LastBetTo(), -1,
-				       b_subgame_betting_abstraction_));
+				       bs_ba));
       int max_street = Game::MaxStreet();
       int root_bd;
       if (st == max_street) root_bd = msbd_;
       else                  root_bd = BoardTree::PredBoard(msbd_, st);
-      printf("Resolving %s b_pos_ %i id %i lbt %i\n", action_sequence.c_str(), b_pos_,
-	     b_node->NonterminalID(), b_node->LastBetTo());
-      fflush(stdout);
+      fprintf(stderr, "Resolving %s b_pos_ %i id %i lbt %i\n", action_sequence.c_str(), b_pos_,
+	      b_node->NonterminalID(), b_node->LastBetTo());
       struct timespec start, finish;
       clock_gettime(CLOCK_MONOTONIC, &start);
       b_eg_cfr_->SolveSubgame(b_subtrees_.get(), root_bd, reach_probs, action_sequence,
 			      resolve_hand_tree_.get(), nullptr, -1, true, num_subgame_its_);
       clock_gettime(CLOCK_MONOTONIC, &finish);
-      resolving_secs_ += (finish.tv_sec - start.tv_sec);
-      resolving_secs_ += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+      double secs = (finish.tv_sec - start.tv_sec) + (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+      fprintf(stderr, "Resolved in %f secs\n", secs);
+      resolving_secs_ += secs;
       ++num_resolves_;
       next_b_node = b_subtrees_->Root();
       for (int st1 = st; st1 <= max_street; ++st1) {
@@ -557,10 +640,10 @@ void Player::Walk(Node *a_node, Node *b_node, const string &action_sequence,
     }
     Walk(next_a_node, next_b_node, action_sequence, reach_probs, st);
     // Release the memory now.  And make sure stale sumprobs are not accidentally used later.
-    if (resolve_a_) {
+    if (player_.ResolveA()) {
       a_eg_cfr_->ClearSumprobs();
     }
-    if (resolve_b_) {
+    if (player_.ResolveB()) {
       b_eg_cfr_->ClearSumprobs();
     }
     return;
@@ -584,7 +667,7 @@ void Player::Walk(Node *a_node, Node *b_node, const string &action_sequence,
   }
 }
 
-void Player::ProcessMaxStreetBoard(int msbd) {
+double PlayerThread::ProcessMaxStreetBoard(int msbd) {
   int max_street = Game::MaxStreet();
   msbd_ = msbd;
   a_gbds_[max_street] = msbd_;
@@ -598,10 +681,13 @@ void Player::ProcessMaxStreetBoard(int msbd) {
     b_gbds_[st] = pbd;
     b_lbds_[st] = pbd;
   }
+  sum_b_outcomes_ = 0;
+  sum_weights_ = 0;
 
-  if (resolve_a_ || resolve_b_) {
-    if (resolve_st_ < max_street) {
-      resolve_hand_tree_.reset(new HandTree(resolve_st_, BoardTree::PredBoard(msbd_, resolve_st_),
+  if (player_.ResolveA() || player_.ResolveB()) {
+    int resolve_st = player_.ResolveSt();
+    if (resolve_st < max_street) {
+      resolve_hand_tree_.reset(new HandTree(resolve_st, BoardTree::PredBoard(msbd_, resolve_st),
 					    max_street));
     } else {
       resolve_hand_tree_.reset(new HandTree(max_street, msbd_, max_street));
@@ -622,84 +708,128 @@ void Player::ProcessMaxStreetBoard(int msbd) {
   int num_players = Game::NumPlayers();
   unique_ptr<ReachProbs> reach_probs(ReachProbs::CreateRoot());
   Node *a_root, *b_root;
+  const BettingTrees &a_betting_trees = player_.ABettingTrees();
+  const BettingTrees &b_betting_trees = player_.BBettingTrees();
   for (b_pos_ = 0; b_pos_ < num_players; ++b_pos_) {
-    b_root = b_betting_trees_->Root(b_pos_);
-    a_root = a_betting_trees_->Root(b_pos_^1);
+    b_root = b_betting_trees.Root(b_pos_);
+    a_root = a_betting_trees.Root(b_pos_^1);
     Walk(a_root, b_root, "x", *reach_probs, 0);
+  }
+  return sum_b_outcomes_ / sum_weights_;
+}
+
+void PlayerThread::Go(void) {
+  // Iterate through the sampled boards processing those that "belong" to this thread.
+  sum_ = 0;
+  sum_sqd_ = 0;
+  int num_samples = sampled_boards_.size();
+  for (int i = thread_index_; i < num_samples; i += num_threads_) {
+    int bd = sampled_boards_[i];
+    double avg_b_outcome = ProcessMaxStreetBoard(bd);
+    sum_ += avg_b_outcome;
+    sum_sqd_ += avg_b_outcome * avg_b_outcome;
+    fprintf(stderr, "Thread %i sample %i outcome %f mbb %f\n", thread_index_, i, avg_b_outcome,
+	    (avg_b_outcome / 2.0) * 1000.0);
   }
 }
 
-void Player::Go(int num_sampled_max_street_boards, bool deterministic) {
-  num_resolves_ = 0;
-  resolving_secs_ = 0;
-  int max_street = Game::MaxStreet();
-  int num_max_street_boards = BoardTree::NumBoards(max_street);
-  if (num_sampled_max_street_boards == 0 ||
-      num_sampled_max_street_boards > num_max_street_boards) {
-    num_sampled_max_street_boards = num_max_street_boards;
-  }
+static void *player_thread_run(void *v_t) {
+  PlayerThread *t = (PlayerThread *)v_t;
+  t->Go();
+  return NULL;
+}
 
-  if (num_sampled_max_street_boards == num_max_street_boards) {
-    fprintf(stderr, "Processing all max street boards\n");
-    for (int bd = 0; bd < num_max_street_boards; ++bd) {
-      num_samples_ = BoardTree::BoardCount(max_street, bd);
-      ProcessMaxStreetBoard(bd);
-    }
+void PlayerThread::Run(void) {
+  pthread_create(&pthread_id_, NULL, player_thread_run, this);
+}
+
+void PlayerThread::Join(void) {
+  pthread_join(pthread_id_, NULL); 
+}
+
+void Player::Compute(int num_sampled_max_street_boards, bool deterministic, int num_threads,
+		     double *sum, double *sum_sqd) {
+  struct drand48_data rand_buf;
+  if (deterministic) {
+    srand48_r(0, &rand_buf);
   } else {
-    unique_ptr<int []> max_street_board_samples(new int[num_max_street_boards]);
-    for (int bd = 0; bd < num_max_street_boards; ++bd) max_street_board_samples[bd] = 0;
-    struct drand48_data rand_buf;
-    if (deterministic) {
-      srand48_r(0, &rand_buf);
-    } else {
-      struct timeval time; 
-      gettimeofday(&time, NULL);
-      srand48_r((time.tv_sec * 1000) + (time.tv_usec / 1000), &rand_buf);
-    }
-    vector< pair<double, int> > v;
-    for (int bd = 0; bd < num_max_street_boards; ++bd) {
-      int board_count = BoardTree::BoardCount(max_street, bd);
-      for (int i = 0; i < board_count; ++i) {
-	double r;
-	drand48_r(&rand_buf, &r);
-	v.push_back(std::make_pair(r, bd));
-      }
-    }
-    std::sort(v.begin(), v.end());
-    for (int i = 0; i < num_sampled_max_street_boards; ++i) {
-      int bd = v[i].second;
-      ++max_street_board_samples[bd];
-    }
-
-    int so_far = 0;
-    for (int bd = 0; bd < num_max_street_boards; ++bd) {
-      num_samples_ = max_street_board_samples[bd];
-      if (num_samples_ == 0) continue;
-      ProcessMaxStreetBoard(bd);
-      so_far += num_samples_;
-      fprintf(stderr, "Processed %i/%i\n", so_far, num_sampled_max_street_boards);
-    }
+    struct timeval time; 
+    gettimeofday(&time, NULL);
+    srand48_r((time.tv_sec * 1000) + (time.tv_usec / 1000), &rand_buf);
   }
-
-  double avg_b_outcome = sum_b_outcomes_ / sum_weights_;
-  // avg_b_outcome is in units of the small blind
-  double b_mbb_g = (avg_b_outcome / 2.0) * 1000.0;
-  fprintf(stderr, "Avg B outcome: %f (%.1f mbb/g)\n", avg_b_outcome, b_mbb_g);
-  double avg_p1_outcome = sum_p1_outcomes_ / sum_weights_;
-  double p1_mbb_g = (avg_p1_outcome / 2.0) * 1000.0;
-  fprintf(stderr, "Avg P1 outcome: %f (%.1f mbb/g)\n", avg_p1_outcome, p1_mbb_g);
-  fprintf(stderr, "%.1f secs spent resolving\n", resolving_secs_);
-  if (num_resolves_ > 0) {
-    fprintf(stderr, "Avg %.2f secs per resolve (%i resolves)\n", resolving_secs_ / num_resolves_,
-	    num_resolves_);
+  vector<int> sampled_boards;
+  double r;
+  for (int i = 0; i < num_sampled_max_street_boards; ++i) {
+    drand48_r(&rand_buf, &r);
+    // Choose a board by uniformly sampling from board_samples_.
+    int s = r * num_board_samples_;
+    int bd = board_samples_[s];
+    sampled_boards.push_back(bd);
   }
+  unique_ptr<PlayerThread * []> threads(new PlayerThread *[num_threads]);
+  for (int i = 0; i < num_threads; ++i) {
+    threads[i] = new PlayerThread(*this, i, num_threads, sampled_boards);
+  }
+  for (int i = 1; i < num_threads; ++i) {
+    threads[i]->Run();
+  }
+  threads[0]->Go();
+  for (int i = 1; i < num_threads; ++i) {
+    threads[i]->Join();
+  }
+  *sum = 0;
+  *sum_sqd = 0;
+  int num_resolves = 0;
+  double resolving_secs = 0;
+  for (int i = 0; i < num_threads; ++i) {
+    *sum += threads[i]->Sum();
+    *sum_sqd += threads[i]->SumSqd();
+    num_resolves += threads[i]->NumResolves();
+    resolving_secs += threads[i]->ResolvingSecs();
+  }
+  if (num_resolves > 0) {
+    fprintf(stderr, "Avg resolve time: %f (%f/%i)\n", resolving_secs / num_resolves,
+	    resolving_secs, num_resolves);
+  }
+  for (int i = 0; i < num_threads; ++i) {
+    delete threads[i];
+  }
+}
+
+void Player::Report(double sum, double sum_sqd, int num_sampled_max_street_boards) {
+  double mean = sum / num_sampled_max_street_boards;
+  double mean_mbb = (mean / 2.0) * 1000.0;
+  fprintf(stderr, "Mean B outcome: %f\n", mean);
+  fprintf(stderr, "MBB mean: %f\n", mean_mbb);
+  if (num_sampled_max_street_boards > 1) {
+    // Variance is the mean of the squares minus the square of the means
+    double var = sum_sqd / ((double)num_sampled_max_street_boards) - mean * mean;
+    double stddev = sqrt(var);
+    double sum_stddev = stddev * sqrt(num_sampled_max_street_boards);
+    double sum_lower = sum - 1.96 * sum_stddev;
+    double sum_upper = sum + 1.96 * sum_stddev;
+    double mbb_lower = ((sum_lower / (num_sampled_max_street_boards)) / 2.0) * 1000.0;
+    double mbb_upper = ((sum_upper / (num_sampled_max_street_boards)) / 2.0) * 1000.0;
+    fprintf(stderr, "MBB confidence interval: %f-%f\n", mbb_lower, mbb_upper);
+    double single_lower = mean - 1.96 * stddev;
+    double single_upper = mean + 1.96 * stddev;
+    double single_lower_mbb = (single_lower / 2.0) * 1000.0;
+    double single_upper_mbb = (single_upper / 2.0) * 1000.0;
+    fprintf(stderr, "MBB single confidence interval: %f-%f\n", single_lower_mbb, single_upper_mbb);
+  }
+}
+
+void Player::Go(int num_sampled_max_street_boards, bool deterministic, int num_threads) {
+  double sum, sum_sqd;
+  Compute(num_sampled_max_street_boards, deterministic, num_threads, &sum, &sum_sqd);
+  Report(sum, sum_sqd, num_sampled_max_street_boards);
 }
 
 static void Usage(const char *prog_name) {
   fprintf(stderr, "USAGE: %s <game params> <A card params> <B card params> "
 	  "<A betting abstraction params> <B betting abstraction params> <A CFR params> "
-	  "<B CFR params> <A it> <B it> <num sampled max street boards> [quantize|raw] "
-	  "[quantize|raw] [deterministic|nondeterministic] <resolve A> <resolve B> "
+	  "<B CFR params> <A it> <B it> <num sampled max street boards> <num threads> "
+	  "[quantize|raw] [quantize|raw] [deterministic|nondeterministic] <resolve A> <resolve B> "
 	  "(<resolve st>) (<A resolve card params> <A resolve betting params> "
 	  "<A resolve CFR config>) (<B resolve card params> <B resolve betting params> "
 	  "<B resolve CFR config>)\n", prog_name);
@@ -710,7 +840,7 @@ static void Usage(const char *prog_name) {
 }
 
 int main(int argc, char *argv[]) {
-  if (argc != 16 && argc != 20 && argc != 23) Usage(argv[0]);
+  if (argc != 17 && argc != 21 && argc != 24) Usage(argv[0]);
   Files::Init();
   unique_ptr<Params> game_params = CreateGameParams();
   game_params->ReadFromFile(argv[1]);
@@ -740,46 +870,47 @@ int main(int argc, char *argv[]) {
   unique_ptr<CFRConfig>
     b_cfr_config(new CFRConfig(*b_cfr_params));
 
-  int a_it, b_it, num_sampled_max_street_boards;
+  int a_it, b_it, num_sampled_max_street_boards, num_threads;
   if (sscanf(argv[8], "%i", &a_it) != 1)                           Usage(argv[0]);
   if (sscanf(argv[9], "%i", &b_it) != 1)                           Usage(argv[0]);
   if (sscanf(argv[10], "%i", &num_sampled_max_street_boards) != 1) Usage(argv[0]);
+  if (sscanf(argv[11], "%i", &num_threads) != 1)                   Usage(argv[0]);
 
   bool a_quantize = false, b_quantize = false;
-  string qa = argv[11];
+  string qa = argv[12];
   if (qa == "quantize") a_quantize = true;
   else if (qa == "raw") a_quantize = false;
   else                  Usage(argv[0]);
-  string qb = argv[12];
+  string qb = argv[13];
   if (qb == "quantize") b_quantize = true;
   else if (qb == "raw") b_quantize = false;
   else                  Usage(argv[0]);
 
   bool deterministic = false;
-  string da = argv[13];
+  string da = argv[14];
   if (da == "deterministic")         deterministic = true;
   else if (da == "nondeterministic") deterministic = false;
   else                               Usage(argv[0]);
   
   bool resolve_a = false;
   bool resolve_b = false;
-  string ra = argv[14];
+  string ra = argv[15];
   if (ra == "true")       resolve_a = true;
   else if (ra == "false") resolve_a = false;
   else                    Usage(argv[0]);
-  string rb = argv[15];
+  string rb = argv[16];
   if (rb == "true")       resolve_b = true;
   else if (rb == "false") resolve_b = false;
   else                    Usage(argv[0]);
 
-  if (resolve_a && resolve_b && argc != 23)     Usage(argv[0]);
-  if (resolve_a && ! resolve_b && argc != 20)   Usage(argv[0]);
-  if (! resolve_a && resolve_b && argc != 20)   Usage(argv[0]);
-  if (! resolve_a && ! resolve_b && argc != 16) Usage(argv[0]);
+  if (resolve_a && resolve_b && argc != 24)     Usage(argv[0]);
+  if (resolve_a && ! resolve_b && argc != 21)   Usage(argv[0]);
+  if (! resolve_a && resolve_b && argc != 21)   Usage(argv[0]);
+  if (! resolve_a && ! resolve_b && argc != 17) Usage(argv[0]);
 
   int resolve_st = -1;
   if (resolve_a || resolve_b) {
-    if (sscanf(argv[16], "%i", &resolve_st) != 1) Usage(argv[0]);
+    if (sscanf(argv[17], "%i", &resolve_st) != 1) Usage(argv[0]);
   }
   
   unique_ptr<CardAbstraction> a_subgame_card_abstraction, b_subgame_card_abstraction;
@@ -787,17 +918,17 @@ int main(int argc, char *argv[]) {
   unique_ptr<CFRConfig> a_subgame_cfr_config, b_subgame_cfr_config;
   if (resolve_a) {
     unique_ptr<Params> subgame_card_params = CreateCardAbstractionParams();
-    subgame_card_params->ReadFromFile(argv[17]);
+    subgame_card_params->ReadFromFile(argv[18]);
     a_subgame_card_abstraction.reset(new CardAbstraction(*subgame_card_params));
     unique_ptr<Params> subgame_betting_params = CreateBettingAbstractionParams();
-    subgame_betting_params->ReadFromFile(argv[18]);
+    subgame_betting_params->ReadFromFile(argv[19]);
     a_subgame_betting_abstraction.reset(new BettingAbstraction(*subgame_betting_params));
     unique_ptr<Params> subgame_cfr_params = CreateCFRParams();
-    subgame_cfr_params->ReadFromFile(argv[19]);
+    subgame_cfr_params->ReadFromFile(argv[20]);
     a_subgame_cfr_config.reset(new CFRConfig(*subgame_cfr_params));
   }
   if (resolve_b) {
-    int a = resolve_a ? 20 : 17;
+    int a = resolve_a ? 21 : 18;
     unique_ptr<Params> subgame_card_params = CreateCardAbstractionParams();
     subgame_card_params->ReadFromFile(argv[a]);
     b_subgame_card_abstraction.reset(new CardAbstraction(*subgame_card_params));
@@ -811,10 +942,10 @@ int main(int argc, char *argv[]) {
 
   HandValueTree::Create();
   
-  Player player(*a_betting_abstraction, *b_betting_abstraction, *a_card_abstraction,
-		*b_card_abstraction, *a_cfr_config, *b_cfr_config, a_it, b_it, resolve_st,
+  Player player(*a_card_abstraction, *b_card_abstraction, *a_betting_abstraction,
+		*b_betting_abstraction, *a_cfr_config, *b_cfr_config, a_it, b_it, resolve_st,
 		resolve_a, resolve_b, *a_subgame_card_abstraction, *a_subgame_betting_abstraction,
 		*a_subgame_cfr_config, *b_subgame_card_abstraction, *b_subgame_betting_abstraction,
 		*b_subgame_cfr_config, a_quantize, b_quantize);
-  player.Go(num_sampled_max_street_boards, deterministic);
+  player.Go(num_sampled_max_street_boards, deterministic, num_threads);
 }

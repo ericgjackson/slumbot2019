@@ -27,9 +27,14 @@ static void Walk(Node *node, const Buckets &buckets, const CFRConfig &cfr_config
 		 long long int *num_sumprob_turn_bytes,
 		 long long int *num_sumprob_river_bytes,
 		 long long int *num_preflop_bytes,
-		 long long int *num_flop_bytes) {
+		 long long int *num_flop_bytes,
+		 bool ***seen) {
   if (node->Terminal()) return;
   int st = node->Street();
+  int pa = node->PlayerActing();
+  int nt = node->NonterminalID();
+  if (seen[st][pa][nt]) return;
+  seen[st][pa][nt] = true;
   int num_succs = node->NumSuccs();
   if (num_succs > 1) {
     int nb = buckets.NumBuckets(st);
@@ -56,7 +61,8 @@ static void Walk(Node *node, const Buckets &buckets, const CFRConfig &cfr_config
   }
   for (int s = 0; s < num_succs; ++s) {
     Walk(node->IthSucc(s), buckets, cfr_config, num_bytes, num_sumprob_bytes, num_sumprob_flop_bytes,
-	 num_sumprob_turn_bytes, num_sumprob_river_bytes, num_preflop_bytes, num_flop_bytes);
+	 num_sumprob_turn_bytes, num_sumprob_river_bytes, num_preflop_bytes, num_flop_bytes,
+	 seen);
   }
 }
 
@@ -85,14 +91,31 @@ int main(int argc, char *argv[]) {
   unique_ptr<CFRConfig> cfr_config(new CFRConfig(*cfr_params));
   Buckets buckets(*card_abstraction, true);
   BettingTrees betting_trees(*betting_abstraction);
+
   long long int num_bytes = 0LL, num_sumprob_bytes = 0LL;
   long long int num_sumprob_flop_bytes = 0LL;
   long long int num_sumprob_turn_bytes = 0LL;
   long long int num_sumprob_river_bytes = 0LL;
   long long int num_preflop_bytes = 0LL, num_flop_bytes = 0LL;
+
+  int max_street = Game::MaxStreet();
+  int num_players = Game::NumPlayers();
+  bool ***seen = new bool **[max_street + 1];
+  for (int st = 0; st <= max_street; ++st) {
+    seen[st] = new bool *[num_players];
+    for (int p = 0; p < num_players; ++p) {
+      const BettingTree *betting_tree = betting_trees.GetBettingTree(p);
+      int num_nt = betting_tree->NumNonterminals(p, st);
+      seen[st][p] = new bool[num_nt];
+      for (int i = 0; i < num_nt; ++i) {
+	seen[st][p][i] = false;
+      }
+    }
+  }
+
   Walk(betting_trees.Root(), buckets, *cfr_config, &num_bytes, &num_sumprob_bytes,
        &num_sumprob_flop_bytes, &num_sumprob_turn_bytes, &num_sumprob_river_bytes,
-       &num_preflop_bytes, &num_flop_bytes);
+       &num_preflop_bytes, &num_flop_bytes, seen);
   printf("%lli bytes\n", num_bytes);
   printf("%lli sumprob bytes\n", num_sumprob_bytes);
   printf("%lli sumprob flop bytes\n", num_sumprob_flop_bytes);

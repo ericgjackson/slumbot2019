@@ -1,3 +1,5 @@
+// Broken?  Was very slow last time I ran it.
+//
 // Uses less memory than assemble_subgames.
 // Assume we solved subgames with no abstraction with double sumprobs.
 // We write as we go.

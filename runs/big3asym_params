@@ -2,7 +2,6 @@ BettingAbstractionName big3asym
 Limit false
 StackSize 200
 Asymmetric true
-NoLimitTreeType 1
 MinBet 2
 OurMaxBets 5,5,2,2
 OppMaxBets 5,5,2,2

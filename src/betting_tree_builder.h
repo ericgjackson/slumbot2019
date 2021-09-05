@@ -55,6 +55,19 @@ public:
 				  bool *folded, int target_player, std::string *key,
 				  int *terminal_id);
   std::shared_ptr<Node> CreateMPTree(int target_player, int *terminal_id);
+
+#if 0
+  std::shared_ptr<Node> CreateConsistentFoldSucc(int st, int player_remaining, int last_bet_to,
+						 int *terminal_id);
+  std::shared_ptr<Node> CreateBetSucc(int st, int player_acting, int last_bet_to, int bet_size,
+				      int num_street_bets, int *terminal_id);
+  std::shared_ptr<Node> CreateCallFork(int st, int bet_to, int player_acting,
+				       int max_contribution, int *terminal_id);
+  std::shared_ptr<Node> CreateBetFork(int st, int last_bet_to, int new_bet_to, int player_acting,
+				      int max_contribution, int *terminal_id);
+  std::shared_ptr<Node> CreateConsistentStreet(int st, int bet_to, int *terminal_id);
+  std::shared_ptr<Node> CreateConsistentTree(int *terminal_id);
+#endif
   
 private:
   bool FindReentrantNode(const std::string &key, std::shared_ptr<Node> *node);

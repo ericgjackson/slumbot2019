@@ -29,8 +29,6 @@ using std::string;
 using std::unique_ptr;
 using std::vector;
 
-extern bool g_debug;
-
 static void Process(int we_p, int hand_no, const string &action, Card our_hi, Card our_lo,
 		    Card opp_hi, Card opp_lo, Card *board, Agent &agent) {
   bool call, fold;
@@ -85,7 +83,6 @@ int main(int argc, char *argv[]) {
   board[2] = MakeCard(0, 1);
   board[3] = MakeCard(4, 2);
   board[4] = MakeCard(2, 2);
-  g_debug = true;
 
   Process(0, 0, "r300", MakeCard(4, 1), MakeCard(4, 0), -1, -1, board.get(), agent);
   Process(0, 0, "r250", MakeCard(4, 1), MakeCard(4, 0), -1, -1, board.get(), agent);

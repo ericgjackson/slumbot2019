@@ -27,8 +27,6 @@
 using std::string;
 using std::unique_ptr;
 
-bool g_debug = false;
-
 void Agent::Initialize(const CardAbstraction &ca, const BettingAbstraction &ba, const CFRConfig &cc,
 		       int it, int big_blind, int seed) {
   subgame_ba_ = nullptr;
@@ -194,13 +192,7 @@ void Agent::GetTwoClosestSuccs(Node *node, int actual_bet_to, int *below_succ, i
 			       int *above_succ, int *above_bet_to) {
   int num_succs = node->NumSuccs();
   // Want to find closest bet below and closest bet above
-  int csi = node->CallSuccIndex();
   int fsi = node->FoldSuccIndex();
-  if (g_debug) {
-    fprintf(stderr, "s %i pa %i nt %i ns %i fsi %i csi %i\n", node->Street(),
-	    node->PlayerActing(), node->NonterminalID(), node->NumSuccs(),
-	    fsi, csi);
-  }
   *below_succ = -1;
   *below_bet_to = -1;
   *above_succ = -1;
@@ -211,10 +203,6 @@ void Agent::GetTwoClosestSuccs(Node *node, int actual_bet_to, int *below_succ, i
     if (s == fsi) continue;
     int this_bet_to = node->IthSucc(s)->LastBetTo() * small_blind_;
     int diff = this_bet_to - actual_bet_to;
-    if (g_debug) {
-      fprintf(stderr, "s %i this_bet_to %i actual_bet_to %i diff %i\n", s,
-	      this_bet_to, actual_bet_to, diff);
-    }
     if (diff <= 0) {
       if (-diff < best_below_diff) {
 	best_below_diff = -diff;
@@ -228,10 +216,6 @@ void Agent::GetTwoClosestSuccs(Node *node, int actual_bet_to, int *below_succ, i
 	*above_bet_to = this_bet_to;
       }
     }
-  }
-  if (g_debug) {
-    fprintf(stderr, "Best below %i diff %i\n", *below_succ, best_below_diff);
-    fprintf(stderr, "Best above %i diff %i\n", *above_succ, best_above_diff);
   }
 }
 
@@ -252,23 +236,18 @@ double Agent::BelowProb(int actual_bet_to, int below_bet_to, int above_bet_to,
       fprintf(stderr, "below_frac %f\n", below_frac);
       exit(-1);
     }
-    if (g_debug) fprintf(stderr, "actual_frac %f\n", actual_frac);
-    if (g_debug) fprintf(stderr, "below_frac %f\n", below_frac);
     int above_bet = above_bet_to - last_bet_to;
     double above_frac = above_bet / d_actual_pot_size;
-    if (g_debug) fprintf(stderr, "above_frac %f\n", above_frac);
     below_prob =
       ((above_frac - actual_frac) *
        (1.0 + below_frac)) /
       ((above_frac - below_frac) *
        (1.0 + actual_frac));
     if (translation_method_ == 1) {
-      if (g_debug) fprintf(stderr, "Raw below prob: %f\n", below_prob);
       // Translate to nearest
       if (below_prob < 0.5) below_prob = 0;
       else                  below_prob = 1.0;
     }
-    if (g_debug) fprintf(stderr, "Below prob: %f\n", below_prob);
   } else {
     fprintf(stderr, "Unknown translation method %i\n", translation_method_);
     exit(-1);
@@ -321,7 +300,6 @@ int Agent::ChooseBetweenBetAndCall(Node *node, int below_succ, int above_succ, i
     } else {
       selected_succ = above_succ;
     }
-    if (g_debug) fprintf(stderr, "ChooseBetweenBetAndCall s %i r %f\n", selected_succ, r);
   }
   if (selected_succ == call_succ) {
     // Don't use above_succ; it might be kMaxUInt
@@ -334,9 +312,6 @@ int Agent::ChooseBetweenTwoBets(Node *node, int below_succ, int above_succ, int 
 				int actual_pot_size) {
   if (above_succ == -1) {
     // Can happen if we do not have all-ins in our betting abstraction
-    if (g_debug) {
-      fprintf(stderr, "above_succ -1; selected below bet; succ %i\n", below_succ);
-    }
     return below_succ;
   } else if (below_succ == -1) {
     // There should always be a below succ.  All abstractions always
@@ -352,12 +327,9 @@ int Agent::ChooseBetweenTwoBets(Node *node, int below_succ, int above_succ, int 
     // Do I need a separate rand_buf_ for each player?
     // drand48_r(&rand_bufs_[node->PlayerActing()], &r);
     drand48_r(&rand_buf_, &r);
-    if (g_debug) fprintf(stderr, "below_prob %f r %f\n", below_prob, r);
     if (r < below_prob) {
-      if (g_debug) fprintf(stderr, "Selected below bet; succ %i\n", below_succ);
       return below_succ;
     } else {
-      if (g_debug) fprintf(stderr, "Selected above bet; succ %i\n", above_succ);
       return above_succ;
     }
   }
@@ -369,11 +341,9 @@ int Agent::ChooseOppAction(Node *node, int below_succ, int above_succ, int actua
 			   int actual_pot_size, Node **raise_node) {
   int call_succ = node->CallSuccIndex();
   if (below_succ == call_succ || above_succ == call_succ) {
-    if (g_debug) fprintf(stderr, "Choosing between bet and call\n");
     return ChooseBetweenBetAndCall(node, below_succ, above_succ, actual_bet_to, actual_pot_size,
 				   raise_node);
   } else {
-    if (g_debug) fprintf(stderr, "Choosing between two bets\n");
     *raise_node = nullptr;
     return ChooseBetweenTwoBets(node, below_succ, above_succ, actual_bet_to, actual_pot_size);
   }
@@ -470,9 +440,6 @@ Node *Agent::ProcessAction(const string &action, int we_p, const int *buckets, N
 	    fprintf(stderr, "Terminal node\n");
 	  }
 	  exit(-1);
-	}
-	if (g_debug) {
-	  fprintf(stderr, "Two closest: %i %i\n", below_succ, above_succ);
 	}
 	
 	int actual_pot_size = 2 * actual_bet_to;

@@ -158,6 +158,7 @@ static void ParseMergeRules(const string &value, vector< vector<int> > *merge_ru
 BettingAbstraction::BettingAbstraction(const Params &params) {
   betting_abstraction_name_ = params.GetStringValue("BettingAbstractionName");
   limit_ = params.GetBooleanValue("Limit");
+  consistent_ = params.GetBooleanValue("Consistent");
   stack_size_ = params.GetIntValue("StackSize");
   min_bet_ = params.GetIntValue("MinBet");
   int max_street = Game::MaxStreet();
@@ -190,8 +191,6 @@ BettingAbstraction::BettingAbstraction(const Params &params) {
   initial_street_ = params.GetIntValue("InitialStreet");
   asymmetric_ = params.GetBooleanValue("Asymmetric");
 
-  no_limit_tree_type_ = params.GetIntValue("NoLimitTreeType");
-
   if (asymmetric_) {
     ParseMaxBets(params, "OurMaxBets", &our_max_bets_);
     ParseMaxBets(params, "OppMaxBets", &opp_max_bets_);
@@ -209,44 +208,41 @@ BettingAbstraction::BettingAbstraction(const Params &params) {
     }
   }
   
-  if (no_limit_tree_type_ == 3) {
-  } else {
-    if (need_bet_sizes) {
-      if (asymmetric_) {
-	if (params.IsSet("BetSizes")) {
-	  fprintf(stderr, "Use OurBetSizes and OppBetSizes for asymmetric "
-		  "systems, not BetSizes\n");
+  if (need_bet_sizes) {
+    if (asymmetric_) {
+      if (params.IsSet("BetSizes")) {
+	fprintf(stderr, "Use OurBetSizes and OppBetSizes for asymmetric "
+		"systems, not BetSizes\n");
+	exit(-1);
+      }
+      if (! params.IsSet("OurBetSizes") || ! params.IsSet("OppBetSizes")) {
+	fprintf(stderr, "Expect OurBetSizes and OppBetSizes to be set\n");
+	exit(-1);
+      }
+      ParseBetSizes(params.GetStringValue("OurBetSizes"), &our_bet_sizes_);
+      for (int st = 0; st <= max_street; ++st) {
+	if ((int)our_bet_sizes_[st].size() != our_max_bets_[st]) {
+	  fprintf(stderr, "Max bets mismatch\n");
 	  exit(-1);
 	}
-	if (! params.IsSet("OurBetSizes") || ! params.IsSet("OppBetSizes")) {
-	  fprintf(stderr, "Expect OurBetSizes and OppBetSizes to be set\n");
+      }
+      ParseBetSizes(params.GetStringValue("OppBetSizes"), &opp_bet_sizes_);
+      for (int st = 0; st <= max_street; ++st) {
+	if ((int)opp_bet_sizes_[st].size() != opp_max_bets_[st]) {
+	  fprintf(stderr, "Max bets mismatch\n");
 	  exit(-1);
 	}
-	ParseBetSizes(params.GetStringValue("OurBetSizes"), &our_bet_sizes_);
-	for (int st = 0; st <= max_street; ++st) {
-	  if ((int)our_bet_sizes_[st].size() != our_max_bets_[st]) {
-	    fprintf(stderr, "Max bets mismatch\n");
-	    exit(-1);
-	  }
-	}
-	ParseBetSizes(params.GetStringValue("OppBetSizes"), &opp_bet_sizes_);
-	for (int st = 0; st <= max_street; ++st) {
-	  if ((int)opp_bet_sizes_[st].size() != opp_max_bets_[st]) {
-	    fprintf(stderr, "Max bets mismatch\n");
-	    exit(-1);
-	  }
-	}
-      } else {
-	if (! params.IsSet("BetSizes")) {
-	  fprintf(stderr, "Expect BetSizes to be set\n");
+      }
+    } else {
+      if (! params.IsSet("BetSizes")) {
+	fprintf(stderr, "Expect BetSizes to be set\n");
+	exit(-1);
+      }
+      ParseBetSizes(params.GetStringValue("BetSizes"), &bet_sizes_);
+      for (int st = 0; st <= max_street; ++st) {
+	if ((int)bet_sizes_[st].size() != max_bets_[st]) {
+	  fprintf(stderr, "Max bets mismatch\n");
 	  exit(-1);
-	}
-	ParseBetSizes(params.GetStringValue("BetSizes"), &bet_sizes_);
-	for (int st = 0; st <= max_street; ++st) {
-	  if ((int)bet_sizes_[st].size() != max_bets_[st]) {
-	    fprintf(stderr, "Max bets mismatch\n");
-	    exit(-1);
-	  }
 	}
       }
     }

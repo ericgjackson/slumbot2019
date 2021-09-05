@@ -1,3 +1,69 @@
+New plan
+  Resolve only rivers
+  Build 200BB system
+  Base systems should be 200BB with decent turn
+
+Building on Amazon
+  No local disk, right?
+  How much storage do we need?
+  If memory footprint is 768 GB, is the disk as well?
+  
+Write version of head_to_head which works with systems with different betting abstractions.
+  Needs to take agents that can perform translation.
+  Otherwise pretty similar to existing code.
+  Is it going to be tricky handling that funny logic with bets smaller than the smallest bet
+    size?
+  Let's say system A bets 1/4 pot and we only have check or a 1/2 pot bet.
+    With 44 maybe we want to check behind 50% or raise 50%.
+    Could set reach probs accordingly.
+    Tricky thing is that we want to force a raise when we map the 1/4 pot bet up to the 1/2 pot bet
+    Can we have an array of booleans for force-raise?
+  Could implement translate function
+    But would need raise probs.
+
+Can I evaluate resolving using head_to_head for the reentrant holdem system I built?
+  Confirm results match those we get from play
+
+What are the parameters for the base system I built on Amazon?
+  b_params (null/null/wmls3.10k/wmls4.c.10k)
+  big4sym
+  tcfrqcss
+  River sumprobs as ints are only 7.2 GB
+Verify resolving working
+  Evaluate with resolving against without resolving.
+    Head-to-head?
+    Approx RGBR?
+      Verify working on small games.
+      Should converge to full RGBR
+      When working with resolving, should converge to full RGBR on solve_all_subgames
+
+Verify backup resolving working
+
+How to verify final system working?
+  Evaluate head-to-head against Slumbot
+    New system is only 100 BB.
+    Build a new 200 BB system?!?  Could use reentrancy.
+  run_approx_rgbr?
+
+Verify head_to_head with resolving working.
+
+Do I want to try to do turn resolving?
+  Is it prohibitively slow?
+    Measure speed on my desktop.  Later on Amazon.  I could buy a more powerful instance.
+    I can also prohibit this system for API use.
+  See if I build river resolving systems that are no more than 25% worse (by some measure)
+    than turn resolving systems.
+
+Build new system that only resolves rivers?  Redo experiments comparing turn-resolved
+system to river-resolved system.  Depends on number of buckets, I suppose.  Can I do
+a null turn abstraction in the base with reentrancy?  Around 70m buckets on the turn.
+4 bytes: 2 bytes for the regret, 2 bytes for the sumprob.  Suppose 20 different initial
+pot sizes, 25 different internal nodes, 2 players.  70m * 4 * 1000 = 280 GB.  Doable, no?
+
+Write reassign program that reassigns probabilities of hands reaching rarely reached
+states.  Rarely reached means of my entire distribution few if any hands reach that state.
+Measure exploitability of reassigned system and also exploitability of reassigned+resolved.
+
 Seems like our bet sizes are too small.
 STATE:10:cr400c/r500f:KcAd|Jd5c/6s7c4h:400|-400:mb3b3aai|example
 

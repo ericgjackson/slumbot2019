@@ -55,7 +55,16 @@ int main(int argc, char *argv[]) {
   if (sscanf(argv[3], "%i", &st) != 1) Usage(argv[0]);
 
   BettingTree betting_tree(*ba);
-  
+
+  int max_street = Game::MaxStreet();
+  unique_ptr<int []> min_bets(new int[max_street + 1]);
+  unique_ptr<int []> max_bets(new int[max_street + 1]);
+  for (int st = 0; st <= max_street; ++st) {
+    // Min and max bets are the same
+    min_bets[st] = ba->MaxBets(st, true);
+    max_bets[st] = ba->MaxBets(st, true);
+  }
+
   BackupBuilder builder(ba->StackSize());
 #if 0
   vector<Node *> path;
@@ -66,6 +75,7 @@ int main(int argc, char *argv[]) {
   observed_bets.AddObservedBet(2, 1, 0, 0, 18);
   // P0 opening bet on river
   observed_bets.AddObservedBet(3, 0, 0, 1, 36);
-  unique_ptr<BettingTrees> subtrees(builder.BuildTrees(observed_bets, 2, 18));
+  unique_ptr<BettingTrees> subtrees(builder.BuildTrees(observed_bets, min_bets.get(),
+						       max_bets.get(), 2, 18));
   subtrees->GetBettingTree()->Display();
 }

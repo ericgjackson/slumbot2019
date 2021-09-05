@@ -31,3 +31,12 @@ If resolving turns, the number of buckets on the river in the base doesn't matte
 Big wins the earlier the street you can resolve at.
 
 Reentrant resolving seems like a good idea.
+
+Reentrant system (with large card abstraction) outperforms non-reentrant system (with small
+card abstraction) on a rich betting abstraction, holding the size of the strategy fixed.
+See may2021.
+
+Turn resolving seems to be a substantial improvement over river resolving.  See
+resolving_2021.
+
+Approx RGBR doesn't do a good job on resolved systems (lower bound is too low).

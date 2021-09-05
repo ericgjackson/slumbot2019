@@ -15,6 +15,7 @@ class BettingAbstraction {
     return betting_abstraction_name_;
   }
   bool Limit(void) const {return limit_;}
+  bool Consistent(void) const {return consistent_;}
   int StackSize(void) const {return stack_size_;}
   int MinBet(void) const {return min_bet_;}
   bool AllBetSizeStreet(int st) const {return all_bet_sizes_[st];}
@@ -54,7 +55,6 @@ class BettingAbstraction {
     return opp_always_min_bet_[st][nsb];
   }
   int MinAllInPot(void) const {return min_all_in_pot_;}
-  int NoLimitTreeType(void) const {return no_limit_tree_type_;}
   bool NoOpenLimp(void) const {return no_open_limp_;}
   bool OurNoOpenLimp(void) const {return our_no_open_limp_;}
   bool OppNoOpenLimp(void) const {return opp_no_open_limp_;}
@@ -107,6 +107,7 @@ class BettingAbstraction {
   
   std::string betting_abstraction_name_;
   bool limit_;
+  bool consistent_;
   int stack_size_;
   int min_bet_;
   std::unique_ptr<bool []> all_bet_sizes_;
@@ -126,7 +127,6 @@ class BettingAbstraction {
   std::vector< std::vector<bool> > our_always_min_bet_;
   std::vector< std::vector<bool> > opp_always_min_bet_;
   int min_all_in_pot_;
-  int no_limit_tree_type_;
   bool no_open_limp_;
   bool our_no_open_limp_;
   bool opp_no_open_limp_;

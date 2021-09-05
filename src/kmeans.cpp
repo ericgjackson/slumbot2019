@@ -5,6 +5,21 @@
 // being clustered will have different types of features.
 // Have to take the square root or the triangle equality based test will not
 // work properly.
+// Should we skip neighbors-based shortcut on first iteration?  The initial cluster assignment for
+// almost all objects is essentially random.  Why did I see an abbreviated percentage of 20% on
+// the first iteration?  Expected more like 1-2%.
+// How to choose neighbor_thresh?
+//   If time spent in ComputeIntraCentroidDistances() is dominating, consider setting
+//     neighbor_thresh to 0 to turn off this optimization altogether.  This may happen if the
+//     number of clusters gets too close to the number of objects.
+//   You want dist_pct to be as low as possible.
+//     A high dist_pct could mean either of two things:
+//       Neighbors lists are too long so we evaluate too many neighbors
+//       Neighbors lists are too short so we fall back to an exhaustive search too often
+//   In other words, you don't necessarily know what to do in response to a bad dist_pct
+//   But generally we want to choose a large enough threshold so that the abbreviated pct is quite
+//     high (well over 90%, I think?).  This assumes the length of a neighbors list is much lower
+//     than the total number of clusters which should be true typically.
 
 #include <math.h>
 #include <pthread.h>

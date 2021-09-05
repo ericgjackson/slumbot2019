@@ -105,6 +105,8 @@ private:
   int num_subgame_its_;
   int num_inner_threads_;
   int num_outer_threads_;
+  int num_resolves_;
+  double resolving_secs_;
 };
 
 SubgameSolver::SubgameSolver(const CardAbstraction &base_card_abstraction,
@@ -374,8 +376,14 @@ void SubgameSolver::ResolveUnsafe(Node *node, int gbd, const string &action_sequ
 
     if (method_ == ResolvingMethod::UNSAFE) {
       // One solve for unsafe endgame solving, no t_vals
+      struct timespec start, finish;
+      clock_gettime(CLOCK_MONOTONIC, &start);
       eg_cfr->SolveSubgame(subgame_subtrees, gbd, reach_probs, action_sequence, &hand_tree, nullptr,
 			   -1, true, num_subgame_its_);
+      clock_gettime(CLOCK_MONOTONIC, &finish);
+      resolving_secs_ += (finish.tv_sec - start.tv_sec);
+      resolving_secs_ += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+      num_resolves_ += 1;
       // Write out the P0 and P1 strategies
       for (int solve_p = 0; solve_p < num_players; ++solve_p) {
 	WriteSubgame(subgame_subtrees->Root(), action_sequence, action_sequence, gbd,
@@ -528,9 +536,17 @@ void SubgameSolver::Walk(Node *node, const string &action_sequence, int gbd,
 }
 
 void SubgameSolver::Walk(void) {
+  num_resolves_ = 0;
+  resolving_secs_ = 0.0;
   int last_bet_size = Game::BigBlind() - Game::SmallBlind();
   unique_ptr<ReachProbs> reach_probs(ReachProbs::CreateRoot());
   Walk(base_betting_trees_->Root(), "x", 0, *reach_probs, last_bet_size, 0, 0, 2, 0);
+  if (num_resolves_ > 0) {
+    fprintf(stderr, "Avg resolve: %f secs (%f/%i)\n", resolving_secs_ / num_resolves_,
+	    resolving_secs_, num_resolves_);
+  } else {
+    fprintf(stderr, "No resolves?!?\n");
+  }
 }
 
 static void Usage(const char *prog_name) {

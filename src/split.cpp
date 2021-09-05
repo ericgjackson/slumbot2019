@@ -10,8 +10,7 @@
 using std::string;
 using std::vector;
 
-void Split(const char *line, char sep, bool allow_empty,
-	   vector<string> *comps) {
+void Split(const char *line, char sep, bool allow_empty, vector<string> *comps) {
   comps->clear();
   int len = strlen(line);
   int i = 0;

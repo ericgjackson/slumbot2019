@@ -1,6 +1,3 @@
-// New implementation of run_approx_rgbr.  Difference is that PreResponder no longer is a subclass
-// of VCFR.  Needs to maintain reach probs so that we can support endgame solving.
-//
 // Computes an approximate real-game best-response.  It is a sampling approximation of a lower
 // bound to the true best-response value.
 //

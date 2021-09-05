@@ -238,6 +238,19 @@ void ParseThreeCards(const char *str, bool space_separated, Card *cards) {
   }
 }
 
+void ParseFourCards(const char *str, bool space_separated, Card *cards) {
+  cards[0] = ParseCard(str);
+  if (space_separated) {
+    cards[1] = ParseCard(str + 3);
+    cards[2] = ParseCard(str + 6);
+    cards[3] = ParseCard(str + 8);
+  } else {
+    cards[1] = ParseCard(str + 2);
+    cards[2] = ParseCard(str + 4);
+    cards[3] = ParseCard(str + 6);
+  }
+}
+
 void ParseFiveCards(const char *str, bool space_separated, Card *cards) {
   cards[0] = ParseCard(str);
   if (space_separated) {

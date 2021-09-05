@@ -18,3 +18,99 @@ Then cluster states based on reach distributions.
 What if I train a reentrant system, then expand subtrees one-by-one (or batch-by-batch)?
 Do additional training for each multiplied-out subtree.  Maybe do targeted CFR to
 direct training to the multiplied-out subtree.
+
+----------------------------------------------------------
+
+Can I force CFR to learn to play the same hands to each flop node that has the same
+pot size?  Then reentrant solving will not require combining nodes that are distinct.
+How can I do that?  b300c and cb300c, for example.
+This implies hand range of c should be superset of b300?
+Imagine you first choose your hand distribution at each reentrant flop-initial node.
+Then you work backwards to
+Could you choose your all-in hands first?
+Then the call/fold decision to the previous bet.
+Let's say there are a maximum of three bets.
+So as P1 we select a range for b300b900b2700 and the same range for
+  cb300b900b2700c.
+Then we decide the hands for b300b900c and cb300b900c.
+  cb300b900c must be a superset of cb300b900b2700c.
+    We don't know if P0 is going to raise or not.
+  b300b900c + b300b900b2700 = cb300b900c.
+  This seems to imply we can't raise at b300b900 or else our two 900 ranges will diverge.
+Separate ranges for last bettor or last caller.
+Bet to 2700
+Call 2700
+Bet 900
+Call 900
+Bet 300
+Call 300
+Still work backwards from flop-initial nodes.
+
+b300b900b2700 (A)
+b300b900c (B)
+b300b900f (C)
+b300b600b2700 (D)
+b300b600c (E)
+b300b600f (F)
+  b300 (G = A + B + C; G = D + E + F)
+cb300b900b2700c
+cb300b900b2700f
+
+If I choose A/B/C independently of D/E/F, how do I ensure they are consistent?
+
+Choose:
+  P1
+    Open-raise branch
+      Hands I will raise to 2700 with as P1 - r300r900r2700 (A)
+      Hands I will raise to 300 with as P1 - r300 (B) - must be superset of A
+      Hands I will fold r300r900f as P1 (C) - must be subset of B-A
+      Hands I will call r300r900c as P1 (D) - must be B-A-C
+    Open-call branch
+      Hands I will call a raise to 2700 with as P1 - cr300r900r2700c (E) - distinct from B
+      Hands I will raise to 900 with as P1 - cr300r900 (F) - must be superset of E, dist from B
+      cr300r900f (G) Subset of F-E
+      cr300r900c (H) F-E-G
+      c (I) Superset of F and distinct from D
+      f (J) All hands - B - I
+  P0
+    Hands I will fold cr300 (G) - must be distinct from C
+    Hands I will call cr300c (H) - must be distinct from C and G
+
+How to ensure that (I) is both a superset of F and distinct from D?
+  Choose A, B, C, D first.
+  Then can choose E, F, G, H, I?
+
+The above example doesn't actually have any reentrancy.
+
+Suppose I also have:
+  r300r600r2700
+That's not a problem.
+
+Suppose the root has these branches:
+  Fold
+  Max 300
+  Max 900
+  Max 2700
+And then:
+  Fold
+  Limp+fold-to-any
+    c
+  Max 300
+    c
+    r300
+  Max 900
+    c
+    r300
+  Max 2700
+    c
+    r300
+Can't fold at r300r900 if you're on the max 2700 branch.
+Wait, this doesn't guarantee that r300r900r2700 is the same
+  range as cr300r900r2700c.
+  But maybe it encourages the ranges to be similar?
+You could force the c/r300 decision to be a 50/50 coinflip.
+Even if we force ourselves to play the same range to r300r900r2700 and
+  cr300r900r2700c, the opponent will act with different ranges, and our
+  range will be different due to card replacement effects.  Maybe that's
+  fine.
+All decisions after the root will be forced, no?

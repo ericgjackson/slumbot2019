@@ -31,10 +31,16 @@ void BettingTreeBuilder::Build(void) {
     }
   }
 #endif
-  // Used to do this for 2-person games
-  // root_ = CreateNoLimitTree1(target_player_, &terminal_id);
-  // Used to do this only for games with 3 or more players
-  root_ = CreateMPTree(target_player_, &terminal_id);
+  if (betting_abstraction_.Consistent()) {
+    fprintf(stderr, "Consistent trees not supported\n");
+    exit(-1);
+    // root_ = CreateConsistentTree(&terminal_id);
+  } else {
+    // Used to do this for 2-person games
+    // root_ = CreateNoLimitTree1(target_player_, &terminal_id);
+    // Used to do this only for games with 3 or more players
+    root_ = CreateMPTree(target_player_, &terminal_id);
+  }
   num_terminals_ = terminal_id;
 }
 
