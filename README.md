@@ -78,7 +78,7 @@ of External CFR in ecfr.cpp.  Run it like so:
 First run MCCFR for another batch of 100 million iterations:
 
 ```
-../bin/run_tcfr holdem_params nhs2_params mb1b1_params ecfr_params 8 1 2 100000000 1
+../bin/run_ecfr holdem_params nhs2_params mb1b1_params ecfr_params 8 1 2 100000000 1
 ```
 
 You can compare the two checkpoints using head_to_head:
