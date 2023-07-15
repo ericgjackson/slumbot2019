@@ -1,0 +1,24 @@
+BettingAbstractionName nlt5
+Limit false
+StackSize 400
+Asymmetric true
+NoLimitTreeType 5
+MinBet 2
+AlwaysAllIn false
+OppAlwaysAllIn true
+# MinAllInPot 100
+TargetSmallOpenPotFracs 0.5
+LargePotSize 16
+TargetP2CPotFracs 1.0
+TargetP2BPotFracs 1.0
+TargetPotFracs 0.5,1.0
+TargetTwoBetPotFracs 0.5,1.0
+TargetThreeBetPotFracs 1.0
+TargetFourBetPotFracs 1.0
+OppPotFracs 0.25,0.5,1.0,2.0
+OppTwoBetPotFracs 0.5,1.0,2.0
+OppThreeBetPotFracs 1.0
+OppFourBetPotFracs 1.0
+# Don't think parameters below are respected
+UsNoOpenCall true
+NoFlopDonk true
