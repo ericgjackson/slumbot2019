@@ -160,9 +160,13 @@ double RGBR::Go(int it, int p, const BettingAbstraction &ba) {
   }
 #endif
   
-  int num_remaining = Game::NumCardsInDeck() -
-    Game::NumCardsForStreet(0);
-  int num_opp_hole_card_pairs = num_remaining * (num_remaining - 1) / 2;
+  int num_remaining = Game::NumCardsInDeck() - Game::NumCardsForStreet(0);
+  int num_opp_hole_card_pairs;
+  if (Game::NumCardsForStreet(0) == 2) {
+    num_opp_hole_card_pairs = num_remaining * (num_remaining - 1) / 2;
+  } else {
+    num_opp_hole_card_pairs = num_remaining;
+  }
   double sum = 0;
   for (int i = 0; i < num_hole_card_pairs; ++i) {
     sum += vals[i];

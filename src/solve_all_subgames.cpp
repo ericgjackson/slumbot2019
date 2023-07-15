@@ -468,16 +468,20 @@ void SubgameSolver::ResolveSafe(Node *node, int gbd, const string &action_sequen
       // for the entire endgame.
       t_vals = dynamic_cbr_->Compute(node, reach_probs, gbd, trunk_hand_tree_.get(),
 				     solve_p^1, cfrs_, zero_sum_, current_, pure_streets_[st]);
-      // fprintf(stderr, "solve_p %i t_vals[0] %f\n", solve_p, t_vals[0]);
-      // exit(-1);
     } else {
       t_vals = dynamic_cbr_->Compute(node, reach_probs, gbd, &hand_tree, solve_p^1, cfrs_,
 				     zero_sum_, current_, pure_streets_[st]);
     }
+    struct timespec start, finish;
+    clock_gettime(CLOCK_MONOTONIC, &start);
     // Pass in false for both_players.  I am doing separate solves for
     // each player.
     eg_cfr->SolveSubgame(subgame_subtrees.get(), gbd, reach_probs, action_sequence, &hand_tree,
 			 t_vals.get(), solve_p, false, num_subgame_its_);
+    clock_gettime(CLOCK_MONOTONIC, &finish);
+    resolving_secs_ += (finish.tv_sec - start.tv_sec);
+    resolving_secs_ += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+    num_resolves_ += 1;
 
     WriteSubgame(subgame_subtrees->Root(), action_sequence, action_sequence, gbd,
 		 base_card_abstraction_, subgame_card_abstraction_, base_betting_abstraction_,
