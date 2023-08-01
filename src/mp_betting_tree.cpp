@@ -426,7 +426,7 @@ BettingTreeBuilder::CreateMPStreet(int street, int bet_to, int num_bets, bool *f
     if (! folded[p]) ++num_players_remaining;
   }
   int next_player_to_act =
-    NextPlayerToAct(Game::FirstToAct(street + 1), folded);
+    NextPlayerToAct(Game::FirstToAct(street), folded);
   shared_ptr<Node> node =
     CreateMPSubtree(street, 0, bet_to, 0, num_bets, next_player_to_act, num_players_remaining,
 		    folded, target_player, key, terminal_id);
