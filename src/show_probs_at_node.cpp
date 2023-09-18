@@ -66,9 +66,14 @@ void Show(Node *node, const Buckets &buckets, const CFRValues &values) {
 	OutputNCards(board, num_board_cards);
 	printf(" / ");
 	OutputTwoCards(hi, lo);
-	unsigned int h = bd * num_hole_card_pairs + hcp;
-	int b = buckets.Bucket(st, h);
-	int offset = b * num_succs;
+	int offset, b;
+	if (buckets.None(st)) {
+	  offset = hcp * num_succs;
+	} else {
+	  unsigned int h = bd * num_hole_card_pairs + hcp;
+	  b = buckets.Bucket(st, h);
+	  offset = b * num_succs;
+	}
 	double sum = 0;
 	if (i_values) {
 	  for (int s = 0; s < num_succs; ++s) {
